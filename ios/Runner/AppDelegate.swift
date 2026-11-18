@@ -37,6 +37,7 @@ import UIKit
         result(true)
 
       case "play":
+        self.atmosPlayer.stop()
         let args = call.arguments as? [String: Any]
         let title = args?["title"] as? String ?? "Now Playing"
         let url = args?["url"] as? String
@@ -46,6 +47,11 @@ import UIKit
 
       case "pause":
         audioManager.pause()
+        result(true)
+
+      case "stop":
+        audioManager.stop()
+        self.atmosPlayer.stop()
         result(true)
 
       case "setVolume":
@@ -286,6 +292,11 @@ import UIKit
 
       case "pause":
         self.atmosPlayer.pause()
+        result(true)
+
+      case "stop":
+        self.atmosPlayer.stop()
+        audioManager.stop()
         result(true)
 
       case "seek":

@@ -24,6 +24,7 @@ final class AtmosPlayer: NSObject {
     private var player: AVPlayer?
     private var currentURL: URL?
     private var timeObserverToken: Any?
+    private var endObserver: NSObjectProtocol?
 
     // Now Playing Metadata
     private var currentTitle: String = "Dolby Atmos Stream"
@@ -63,6 +64,7 @@ final class AtmosPlayer: NSObject {
         channelLayout: String? = nil,
         bandwidth: Int? = nil
     ) throws {
+        stop()
 
         guard let url = URL(string: urlString),
               url.scheme == "https" else {
@@ -140,8 +142,28 @@ final class AtmosPlayer: NSObject {
         player = AVPlayer(playerItem: item)
         player?.automaticallyWaitsToMinimizeStalling = true
 
+        endObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: item,
+            queue: .main
+        ) { [weak self] _ in
+            self?.updateNowPlayingPlaybackState(isPlaying: false)
+        }
+
         setupPeriodicTimeObserver()
         updateNowPlayingInfo()
+    }
+
+    func stop() {
+        removeTimeObserver()
+        if let observer = endObserver {
+            NotificationCenter.default.removeObserver(observer)
+            endObserver = nil
+        }
+        player?.pause()
+        player?.replaceCurrentItem(with: nil)
+        player = nil
+        updateNowPlayingPlaybackState(isPlaying: false)
     }
 
     func play() {
@@ -395,10 +417,7 @@ final class AtmosPlayer: NSObject {
     }
 
     func dispose() {
-        removeTimeObserver()
-        player?.pause()
-        player?.replaceCurrentItem(with: nil)
-        player = nil
+        stop()
         currentURL = nil
 
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil

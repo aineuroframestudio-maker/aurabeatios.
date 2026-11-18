@@ -25,6 +25,12 @@ class WebAudioBridge {
     } catch (_) {}
   }
 
+  static void stop() {
+    try {
+      _channel.invokeMethod('stop').catchError((_) {});
+    } catch (_) {}
+  }
+
   /// Sets Desktop Spatial Audio state (matching BitChord Desktop: playbackEngine.setSpatialAudio).
   static void setSpatialAudio(bool enabled) {
     try {

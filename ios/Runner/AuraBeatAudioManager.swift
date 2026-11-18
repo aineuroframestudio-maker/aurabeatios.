@@ -537,6 +537,7 @@ public final class AuraBeatAudioManager: NSObject {
     }
 
     public func play(title: String, urlString: String?, sampleRate: Double = 48000.0) {
+        stop()
         activeSampleRate = sampleRate
         currentUrlString = urlString
         isPlaying = true
@@ -610,6 +611,15 @@ public final class AuraBeatAudioManager: NSObject {
         } else {
             try? nativeEngine.pause()
         }
+    }
+
+    public func stop() {
+        isPlaying = false
+        if isDolbyActive {
+            dolbyRenderer.stop()
+            isDolbyActive = false
+        }
+        try? nativeEngine.stop()
     }
 
     public func resume() {

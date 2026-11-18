@@ -51,6 +51,12 @@ class AtmosPlayerService {
     } catch (_) {}
   }
 
+  Future<void> stop() async {
+    try {
+      await _channel.invokeMethod('stop');
+    } catch (_) {}
+  }
+
   Future<void> seek(double seconds) async {
     try {
       await _channel.invokeMethod(

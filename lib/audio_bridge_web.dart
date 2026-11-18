@@ -41,6 +41,12 @@ class WebAudioBridge {
     } catch (_) {}
   }
 
+  static void stop() {
+    try {
+      _auraBeatAudio?.pause();
+    } catch (_) {}
+  }
+
   static void setSpatialAudio(bool enabled) {
     try {
       _auraBeatAudio?.setSpatial(enabled, 2.5, 0.0, 0.0);

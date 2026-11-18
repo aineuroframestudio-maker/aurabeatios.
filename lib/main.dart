@@ -118,6 +118,20 @@ class SongItem {
       streamUrl: streamUrl ?? this.streamUrl,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SongItem && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
+}
+
+enum RepeatMode {
+  off,
+  all,
+  one,
 }
 
 class AlbumItem {
@@ -322,6 +336,14 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
   bool _isLiked = false;
   bool _showLyrics = false;
   Timer? _playbackTimer;
+
+  // Authoritative Playback Queue & Navigation State
+  RepeatMode _repeatMode = RepeatMode.off;
+  bool _isShuffle = false;
+  List<SongItem> _queue = [];
+  int _queueIndex = 0;
+  List<int> _shuffledIndices = [];
+  int _playGeneration = 0;
 
   // Desktop Spatial Audio & Dolby Atmos State
   bool _isSpatialAudio = false;
@@ -1549,6 +1571,8 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
   @override
   void initState() {
     super.initState();
+    _queue = List<SongItem>.from(_songs);
+    _queueIndex = 0;
     _currentSong = _songs.first;
     WebAudioBridge.init();
     WebAudioBridge.setVolume(_volume);
@@ -1849,6 +1873,24 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     AuraBeatAudioEngine.instance.setSpatialAudio(effectiveSpatial);
   }
 
+  void _startPlaybackTimer() {
+    _playbackTimer?.cancel();
+    _playbackTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || !_isPlaying) {
+        timer.cancel();
+        return;
+      }
+      if (_currentPosition < _currentSong.durationSec) {
+        setState(() {
+          _currentPosition += 1.0;
+        });
+      } else {
+        timer.cancel();
+        _onTrackEnded();
+      }
+    });
+  }
+
   void _togglePlayPause() {
     setState(() {
       _isPlaying = !_isPlaying;
@@ -1857,31 +1899,17 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     if (_isPlaying) {
       WebAudioBridge.play(_currentSong.title, _currentSong.streamUrl, (_currentAudioMetadata.sampleRateHz ?? 192000).toDouble());
       WebAudioBridge.setVolume(_volume);
+      WebAudioBridge.setPlaybackSpeed(_playbackSpeed);
+      WebAudioBridge.setSilenceSkipping(_skipSilence);
       WebAudioBridge.setBassBoost(_bassBoostEnabled, _bassBoostGain);
       WebAudioBridge.setEqualizer(_equalizerBands);
       final effectiveSpatial = _isSpatialAudio;
       WebAudioBridge.setSpatialAudio(effectiveSpatial);
       AuraBeatAudioEngine.instance.setSpatialAudio(effectiveSpatial);
       if ((_currentAudioMetadata.isDolbyAtmos || _currentSong.isDolbyAtmos) && _currentSong.streamUrl != null) {
-        _atmosStreamingManager.player.load(
-          _currentSong.streamUrl!,
-          title: _currentSong.title,
-          artist: _currentSong.artist,
-          album: _currentSong.album,
-          durationSeconds: _currentSong.durationSec.toDouble(),
-        ).then((_) {
-          if (_isPlaying) _atmosStreamingManager.player.play();
-        }).catchError((_) {});
+        _atmosStreamingManager.player.play();
       }
-      _playbackTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (_currentPosition < _currentSong.durationSec) {
-          setState(() {
-            _currentPosition += 1.0;
-          });
-        } else {
-          _onTrackEnded();
-        }
-      });
+      _startPlaybackTimer();
     } else {
       WebAudioBridge.pause();
       _atmosStreamingManager.player.pause();
@@ -1891,61 +1919,159 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
 
   void _onTrackEnded() {
     _recEngine.recordPlay(_currentSong, _currentPosition, false);
-    if (_recEngine.profile.autoplayEnabled) {
-      final next = _recEngine.getNextAutoplayTrack(_currentSong, _songs, _sessionHistory);
-      if (next != null && next is SongItem) {
-        _selectSong(next);
-        return;
-      }
+    if (_repeatMode == RepeatMode.one) {
+      _selectSong(_currentSong);
+      return;
     }
-    _skipNext();
+    _skipNext(isAuto: true);
   }
 
-  void _skipNext() {
-    if (_currentPosition < 25.0) {
+  void _skipNext({bool isAuto = false}) {
+    if (_currentPosition < 25.0 && !isAuto) {
       _recEngine.recordPlay(_currentSong, _currentPosition, true); // fast skip penalty
     }
-    if (_recEngine.profile.autoplayEnabled && _sessionHistory.length >= 2) {
+
+    if (_repeatMode == RepeatMode.one && isAuto) {
+      _selectSong(_currentSong);
+      return;
+    }
+
+    if (_queue.isEmpty) {
+      _queue = List<SongItem>.from(_songs);
+    }
+
+    int nextIndex = -1;
+
+    if (_isShuffle) {
+      if (_shuffledIndices.isEmpty || _shuffledIndices.length != _queue.length) {
+        _generateShuffleIndices();
+      }
+      final curPos = _shuffledIndices.indexOf(_queueIndex);
+      if (curPos != -1 && curPos + 1 < _shuffledIndices.length) {
+        nextIndex = _shuffledIndices[curPos + 1];
+      } else if (_repeatMode == RepeatMode.all) {
+        _generateShuffleIndices();
+        nextIndex = _shuffledIndices.isNotEmpty ? _shuffledIndices.first : 0;
+      }
+    } else {
+      final curIdx = _queue.indexWhere((s) => s.id == _currentSong.id);
+      final activeIdx = curIdx != -1 ? curIdx : _queueIndex;
+
+      if (activeIdx + 1 < _queue.length) {
+        nextIndex = activeIdx + 1;
+      } else if (_repeatMode == RepeatMode.all) {
+        nextIndex = 0;
+      }
+    }
+
+    if (nextIndex >= 0 && nextIndex < _queue.length) {
+      _selectSong(_queue[nextIndex]);
+      return;
+    }
+
+    // Reached queue end with Repeat Off: check autoplay
+    if (_recEngine.profile.autoplayEnabled) {
       final next = _recEngine.getNextAutoplayTrack(_currentSong, _songs, _sessionHistory);
       if (next != null && next is SongItem && next.id != _currentSong.id) {
+        _queue.add(next);
+        if (_isShuffle) {
+          _shuffledIndices.add(_queue.length - 1);
+        }
         _selectSong(next);
         return;
       }
     }
-    final currentIndex = _songs.indexOf(_currentSong);
-    final nextIndex = (currentIndex + 1) % _songs.length;
-    _selectSong(_songs[nextIndex]);
+
+    // Queue ended with no autoplay
+    setState(() {
+      _isPlaying = false;
+      _currentPosition = 0;
+    });
+    _playbackTimer?.cancel();
+    WebAudioBridge.stop();
+    _atmosStreamingManager.player.pause();
   }
 
   void _skipPrev() {
-    final currentIndex = _songs.indexOf(_currentSong);
-    final prevIndex = (currentIndex - 1 + _songs.length) % _songs.length;
-    final targetSong = _songs[prevIndex];
-    setState(() {
-      _currentSong = targetSong;
-      _currentPosition = 0;
-    });
-    _updateMetadataForSong(targetSong);
-    if (_isPlaying) {
-      WebAudioBridge.play(_currentSong.title, _currentSong.streamUrl, (_currentAudioMetadata.sampleRateHz ?? 192000).toDouble());
-      WebAudioBridge.setVolume(_volume);
-      WebAudioBridge.setBassBoost(_bassBoostEnabled, _bassBoostGain);
-      WebAudioBridge.setEqualizer(_equalizerBands);
-      final effectiveSpatial = _isSpatialAudio;
-      WebAudioBridge.setSpatialAudio(effectiveSpatial);
-      AuraBeatAudioEngine.instance.setSpatialAudio(effectiveSpatial);
-      if ((_currentAudioMetadata.isDolbyAtmos || targetSong.isDolbyAtmos) && _currentSong.streamUrl != null) {
-        _atmosStreamingManager.player.load(
-          _currentSong.streamUrl!,
-          title: _currentSong.title,
-          artist: _currentSong.artist,
-          album: _currentSong.album,
-          durationSeconds: _currentSong.durationSec.toDouble(),
-        ).then((_) {
-          if (_isPlaying) _atmosStreamingManager.player.play();
-        }).catchError((_) {});
+    if (_currentPosition > 3.0) {
+      setState(() {
+        _currentPosition = 0;
+      });
+      if (_isPlaying) {
+        _atmosStreamingManager.player.seek(0);
+        WebAudioBridge.play(_currentSong.title, _currentSong.streamUrl, (_currentAudioMetadata.sampleRateHz ?? 192000).toDouble());
+      }
+      return;
+    }
+
+    if (_queue.isEmpty) {
+      _queue = List<SongItem>.from(_songs);
+    }
+
+    int prevIndex = -1;
+
+    if (_isShuffle) {
+      if (_shuffledIndices.isEmpty || _shuffledIndices.length != _queue.length) {
+        _generateShuffleIndices();
+      }
+      final curPos = _shuffledIndices.indexOf(_queueIndex);
+      if (curPos > 0) {
+        prevIndex = _shuffledIndices[curPos - 1];
+      } else if (_repeatMode == RepeatMode.all) {
+        prevIndex = _shuffledIndices.isNotEmpty ? _shuffledIndices.last : 0;
+      } else {
+        prevIndex = _shuffledIndices.isNotEmpty ? _shuffledIndices.first : 0;
+      }
+    } else {
+      final curIdx = _queue.indexWhere((s) => s.id == _currentSong.id);
+      final activeIdx = curIdx != -1 ? curIdx : _queueIndex;
+
+      if (activeIdx - 1 >= 0) {
+        prevIndex = activeIdx - 1;
+      } else if (_repeatMode == RepeatMode.all) {
+        prevIndex = _queue.length - 1;
+      } else {
+        prevIndex = 0;
       }
     }
+
+    if (prevIndex >= 0 && prevIndex < _queue.length) {
+      _selectSong(_queue[prevIndex]);
+    }
+  }
+
+  void _generateShuffleIndices() {
+    _shuffledIndices = List<int>.generate(_queue.length, (i) => i);
+    final curIdx = _queue.indexWhere((s) => s.id == _currentSong.id);
+    final activeIdx = curIdx != -1 ? curIdx : _queueIndex;
+    _shuffledIndices.remove(activeIdx);
+    _shuffledIndices.shuffle();
+    _shuffledIndices.insert(0, activeIdx);
+  }
+
+  void _toggleShuffle() {
+    setState(() {
+      _isShuffle = !_isShuffle;
+      if (_isShuffle) {
+        _generateShuffleIndices();
+      }
+    });
+  }
+
+  void _toggleRepeat() {
+    setState(() {
+      switch (_repeatMode) {
+        case RepeatMode.off:
+          _repeatMode = RepeatMode.all;
+          break;
+        case RepeatMode.all:
+          _repeatMode = RepeatMode.one;
+          break;
+        case RepeatMode.one:
+          _repeatMode = RepeatMode.off;
+          break;
+      }
+    });
   }
 
   String? _resolveStreamUrlForQuality(String? originalUrl, String tier) {
@@ -2047,7 +2173,35 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     AuraBeatAudioEngine.instance.setSpatialAudio(effectiveSpatial);
   }
 
-  void _selectSong(SongItem song) {
+  void _selectSong(SongItem song, {List<SongItem>? newQueue, int? indexInQueue}) {
+    final requestGen = ++_playGeneration;
+
+    // 1. Terminate any previous playback completely to avoid overlapping audio
+    _playbackTimer?.cancel();
+    WebAudioBridge.stop();
+    _atmosStreamingManager.player.pause();
+
+    // 2. Synchronize authoritative queue state
+    if (newQueue != null && newQueue.isNotEmpty) {
+      _queue = List<SongItem>.from(newQueue);
+      if (_isShuffle) {
+        _generateShuffleIndices();
+      }
+    } else if (_queue.isEmpty) {
+      _queue = List<SongItem>.from(_songs);
+    }
+
+    int targetIndex = indexInQueue ?? _queue.indexWhere((s) => s.id == song.id);
+    if (targetIndex != -1) {
+      _queueIndex = targetIndex;
+    } else {
+      _queue.add(song);
+      _queueIndex = _queue.length - 1;
+      if (_isShuffle) {
+        _shuffledIndices.add(_queueIndex);
+      }
+    }
+
     _sessionHistory.add(song.id);
     _recEngine.recordPlay(song, 0, false);
 
@@ -2064,6 +2218,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       _isPlaying = true;
     });
     _updateMetadataForSong(songToPlay, sourceId: activeSource?.id, requestedTier: activeTier);
+
     WebAudioBridge.play(songToPlay.title, songToPlay.streamUrl, (_currentAudioMetadata.sampleRateHz ?? 192000).toDouble());
     WebAudioBridge.setVolume(_volume);
     WebAudioBridge.setPlaybackSpeed(_playbackSpeed);
@@ -2073,6 +2228,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     final effectiveSpatial = _isSpatialAudio;
     WebAudioBridge.setSpatialAudio(effectiveSpatial);
     AuraBeatAudioEngine.instance.setSpatialAudio(effectiveSpatial);
+
     if ((_currentAudioMetadata.isDolbyAtmos || songToPlay.isDolbyAtmos) && songToPlay.streamUrl != null) {
       _atmosStreamingManager.player.load(
         songToPlay.streamUrl!,
@@ -2081,7 +2237,9 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
         album: songToPlay.album,
         durationSeconds: songToPlay.durationSec.toDouble(),
       ).then((_) {
-        if (_isPlaying) _atmosStreamingManager.player.play();
+        if (requestGen == _playGeneration && _isPlaying) {
+          _atmosStreamingManager.player.play();
+        }
       }).catchError((_) {});
     }
 
@@ -2093,36 +2251,30 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
         artist: songToPlay.artist,
         qualityProfile: _globalStreamingProfile,
       ).then((res) {
-        if (res != null && res.url.isNotEmpty && _currentSong.id == songToPlay.id && _isPlaying) {
+        if (res != null && res.url.isNotEmpty && requestGen == _playGeneration && _isPlaying) {
+          final resolvedSong = _currentSong.copyWith(streamUrl: res.url);
           setState(() {
-            _currentSong = _currentSong.copyWith(streamUrl: res.url);
+            _currentSong = resolvedSong;
           });
-          WebAudioBridge.play(songToPlay.title, res.url, (_currentAudioMetadata.sampleRateHz ?? 192000).toDouble());
-          if (_currentAudioMetadata.isDolbyAtmos || songToPlay.isDolbyAtmos) {
+          WebAudioBridge.play(resolvedSong.title, res.url, (_currentAudioMetadata.sampleRateHz ?? 192000).toDouble());
+          if (_currentAudioMetadata.isDolbyAtmos || resolvedSong.isDolbyAtmos) {
             _atmosStreamingManager.player.load(
               res.url,
-              title: songToPlay.title,
-              artist: songToPlay.artist,
-              album: songToPlay.album,
-              durationSeconds: songToPlay.durationSec.toDouble(),
+              title: resolvedSong.title,
+              artist: resolvedSong.artist,
+              album: resolvedSong.album,
+              durationSeconds: resolvedSong.durationSec.toDouble(),
             ).then((_) {
-              if (_isPlaying) _atmosStreamingManager.player.play();
+              if (requestGen == _playGeneration && _isPlaying) {
+                _atmosStreamingManager.player.play();
+              }
             }).catchError((_) {});
           }
         }
       });
     }
 
-    _playbackTimer?.cancel();
-    _playbackTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_currentPosition < _currentSong.durationSec) {
-        setState(() {
-          _currentPosition += 1.0;
-        });
-      } else {
-        _skipNext();
-      }
-    });
+    _startPlaybackTimer();
   }
 
   String _formatTime(double seconds) {
@@ -2580,6 +2732,13 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
           ),
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+            onTap: () {
+              if (isSelected) {
+                _togglePlayPause();
+              } else {
+                _selectSong(song, newQueue: displaySongs, indexInQueue: idx);
+              }
+            },
             leading: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -2681,7 +2840,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                     if (isSelected) {
                       _togglePlayPause();
                     } else {
-                      _selectSong(song);
+                      _selectSong(song, newQueue: displaySongs, indexInQueue: idx);
                     }
                   },
                 ),
@@ -3319,7 +3478,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                   Row(
                     children: [
                       ElevatedButton.icon(
-                        onPressed: () => _selectSong(_songs.first),
+                        onPressed: () => _selectSong(_songs.first, newQueue: _songs, indexInQueue: 0),
                         icon: const Icon(Icons.play_arrow_rounded, color: Colors.black, size: 22),
                         label: const Text(
                           'Play Album',
@@ -3334,7 +3493,15 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                       ),
                       const SizedBox(width: 14),
                       OutlinedButton.icon(
-                        onPressed: () => _selectSong(_songs[1]),
+                        onPressed: () {
+                          setState(() {
+                            _isShuffle = true;
+                            _queue = List<SongItem>.from(_songs);
+                            _generateShuffleIndices();
+                            final firstShuffledIdx = _shuffledIndices.isNotEmpty ? _shuffledIndices.first : 0;
+                            _selectSong(_queue[firstShuffledIdx], newQueue: _queue, indexInQueue: firstShuffledIdx);
+                          });
+                        },
                         icon: const Icon(Icons.shuffle_rounded, color: Colors.white, size: 18),
                         label: const Text(
                           'Shuffle',
@@ -3387,7 +3554,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                 child: InkWell(
                   onTap: () {
                     if (pl.tracks.isNotEmpty && pl.tracks.first is SongItem) {
-                      _selectSong(pl.tracks.first as SongItem);
+                      _selectSong(pl.tracks.first as SongItem, newQueue: pl.tracks.cast<SongItem>(), indexInQueue: 0);
                     }
                   },
                   borderRadius: BorderRadius.circular(18),
@@ -3501,7 +3668,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                 width: 148,
                 margin: const EdgeInsets.only(right: 16),
                 child: InkWell(
-                  onTap: () => _selectSong(song),
+                  onTap: () => _selectSong(song, newQueue: similar.map((i) => i.song as SongItem).toList(), indexInQueue: idx),
                   borderRadius: BorderRadius.circular(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3601,7 +3768,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                       _selectedNav = 3;
                     });
                     if (st.queue.isNotEmpty && st.queue.first is SongItem) {
-                      _selectSong(st.queue.first as SongItem);
+                      _selectSong(st.queue.first as SongItem, newQueue: st.queue.cast<SongItem>(), indexInQueue: 0);
                     }
                   },
                   borderRadius: BorderRadius.circular(16),
@@ -3877,7 +4044,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                 width: 145,
                 margin: const EdgeInsets.only(right: 16),
                 child: InkWell(
-                  onTap: () => _selectSong(song),
+                  onTap: () => _selectSong(song, newQueue: gems.map((i) => i.song as SongItem).toList(), indexInQueue: idx),
                   borderRadius: BorderRadius.circular(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3929,7 +4096,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                 width: 155,
                 margin: const EdgeInsets.only(right: 18),
                 child: InkWell(
-                  onTap: () => _selectSong(_songs[idx % _songs.length]),
+                  onTap: () => _selectSong(_songs[idx % _songs.length], newQueue: _songs, indexInQueue: idx % _songs.length),
                   borderRadius: BorderRadius.circular(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3991,7 +4158,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                 width: 115,
                 margin: const EdgeInsets.only(right: 18),
                 child: InkWell(
-                  onTap: () => _selectSong(_songs[idx % _songs.length]),
+                  onTap: () => _selectSong(_songs[idx % _songs.length], newQueue: _songs, indexInQueue: idx % _songs.length),
                   borderRadius: BorderRadius.circular(60),
                   child: Column(
                     children: [
@@ -4244,7 +4411,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                         _activeRadioStation = st;
                         _selectedNav = 3;
                       });
-                      if (st.queue.isNotEmpty) _selectSong(st.queue.first as SongItem);
+                      if (st.queue.isNotEmpty) _selectSong(st.queue.first as SongItem, newQueue: st.queue.cast<SongItem>(), indexInQueue: 0);
                     },
                     icon: const Icon(Icons.sensors, size: 16),
                     label: const Text('Start Radio'),
@@ -4276,6 +4443,13 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                   ),
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                    onTap: () {
+                      if (isSelected) {
+                        _togglePlayPause();
+                      } else {
+                        _selectSong(song, newQueue: searchResult.matchingSongs.cast<SongItem>());
+                      }
+                    },
                     leading: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
@@ -4314,7 +4488,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                             if (isSelected) {
                               _togglePlayPause();
                             } else {
-                              _selectSong(song);
+                              _selectSong(song, newQueue: searchResult.matchingSongs.cast<SongItem>());
                             }
                           },
                         ),
@@ -4419,6 +4593,13 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                           ),
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            onTap: () {
+                              if (isSelected) {
+                                _togglePlayPause();
+                              } else {
+                                _selectSong(songItem);
+                              }
+                            },
                             leading: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.network(
@@ -4683,6 +4864,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                       ),
                       child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                        onTap: () => isSelected ? _togglePlayPause() : _selectSong(song, newQueue: artistTracks),
                         leading: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Image.network(
@@ -4706,7 +4888,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                             color: textPrimary,
                             size: 28,
                           ),
-                          onPressed: () => isSelected ? _togglePlayPause() : _selectSong(song),
+                          onPressed: () => isSelected ? _togglePlayPause() : _selectSong(song, newQueue: artistTracks),
                         ),
                       ),
                     );
@@ -4800,7 +4982,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                               _activeRadioStation = st;
                               _selectedNav = 3;
                             });
-                            if (st.queue.isNotEmpty) _selectSong(st.queue.first as SongItem);
+                            if (st.queue.isNotEmpty) _selectSong(st.queue.first as SongItem, newQueue: st.queue.cast<SongItem>(), indexInQueue: 0);
                           },
                           borderRadius: BorderRadius.circular(45),
                           child: Column(
@@ -4875,7 +5057,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                         width: 140,
                         margin: const EdgeInsets.only(right: 14),
                         child: InkWell(
-                          onTap: () => _selectSong(song),
+                          onTap: () => _selectSong(song, newQueue: sameGenreSongs, indexInQueue: idx),
                           borderRadius: BorderRadius.circular(14),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -5052,6 +5234,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                 ),
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                  onTap: () => isSelected ? _togglePlayPause() : _selectSong(song, newQueue: activeStation.queue.cast<SongItem>()),
                   leading: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
@@ -5090,7 +5273,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                           if (isSelected) {
                             _togglePlayPause();
                           } else {
-                            _selectSong(song);
+                            _selectSong(song, newQueue: activeStation.queue.cast<SongItem>());
                           }
                         },
                       ),
@@ -8128,8 +8311,13 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.shuffle, size: 18, color: Colors.white54),
-                      onPressed: () {},
+                      icon: Icon(
+                        Icons.shuffle,
+                        size: 18,
+                        color: _isShuffle ? const Color(0xFFFEDBB3) : Colors.white54,
+                      ),
+                      tooltip: _isShuffle ? 'Shuffle On' : 'Shuffle Off',
+                      onPressed: _toggleShuffle,
                     ),
                     IconButton(
                       icon: const Icon(Icons.skip_previous_rounded, size: 24, color: Color(0xFFFEDBB3)),
@@ -8153,11 +8341,22 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                     const SizedBox(width: 8),
                     IconButton(
                       icon: const Icon(Icons.skip_next_rounded, size: 24, color: Color(0xFFFEDBB3)),
-                      onPressed: _skipNext,
+                      onPressed: () => _skipNext(),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.repeat, size: 18, color: Colors.white54),
-                      onPressed: () {},
+                      icon: Icon(
+                        _repeatMode == RepeatMode.one
+                            ? Icons.repeat_one_rounded
+                            : Icons.repeat_rounded,
+                        size: 18,
+                        color: _repeatMode != RepeatMode.off ? const Color(0xFFFEDBB3) : Colors.white54,
+                      ),
+                      tooltip: _repeatMode == RepeatMode.off
+                          ? 'Repeat Off'
+                          : _repeatMode == RepeatMode.all
+                              ? 'Repeat All'
+                              : 'Repeat One',
+                      onPressed: _toggleRepeat,
                     ),
                   ],
                 ),
