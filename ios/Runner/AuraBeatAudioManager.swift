@@ -516,6 +516,8 @@ public final class AuraBeatAudioManager: NSObject {
     private var activeCodec: String = "Linear PCM"
     private var currentUrlString: String? = nil
     private var isDolbyActive: Bool = false
+    private var nativePlayer: AVPlayer?
+    private var nativePlayerEndObserver: NSObjectProtocol?
 
     // Network Monitor
     private let pathMonitor = NWPathMonitor()
@@ -624,8 +626,33 @@ public final class AuraBeatAudioManager: NSObject {
                     dolbyRenderer.play()
                     print("[AuraBeatAudio] Playing Spatial Audio (\(codec)) stream via AppleDolbyRenderer: \(title)")
                 } catch {
-                    print("[AuraBeatAudio] Spatial renderer prepare fallback to native engine: \(error.localizedDescription)")
-                    isDolbyActive = false
+                    print("[AuraBeatAudio] Spatial renderer prepare fallback to native AVPlayer: \(error.localizedDescription)")
+                    self.isDolbyActive = false
+                    if let url = URL(string: urlStr) {
+                        let session = AVAudioSession.sharedInstance()
+                        try? session.setCategory(.playback, mode: .default, options: [.allowBluetooth, .allowBluetoothA2DP, .allowAirPlay])
+                        try? session.setActive(true)
+                        
+                        let asset = AVURLAsset(url: url)
+                        let item = AVPlayerItem(asset: asset)
+                        let player = AVPlayer(playerItem: item)
+                        player.volume = self.currentVolume
+                        player.rate = self.playbackSpeed
+                        player.automaticallyWaitsToMinimizeStalling = true
+                        self.nativePlayer = player
+                        
+                        self.nativePlayerEndObserver = NotificationCenter.default.addObserver(
+                            forName: .AVPlayerItemDidPlayToEndTime,
+                            object: item,
+                            queue: .main
+                        ) { [weak self] _ in
+                            self?.isPlaying = false
+                            print("[AuraBeatAudio] Track finished playing: \(title)")
+                        }
+                        
+                        player.play()
+                        print("[AuraBeatAudio] Native AVPlayer playing fallback stream: \(title)")
+                    }
                     let request = LoadRequest(
                         source: urlStr,
                         title: title,
@@ -637,13 +664,40 @@ public final class AuraBeatAudioManager: NSObject {
                         loudnessDb: nil,
                         durationSeconds: nil
                     )
-                    try? nativeEngine.loadTrack(request: request)
-                    try? nativeEngine.play()
+                    try? self.nativeEngine.loadTrack(request: request)
+                    try? self.nativeEngine.play()
                 }
             }
         } else {
             isDolbyActive = false
             dolbyRenderer.stop()
+            
+            if let url = URL(string: urlStr) {
+                let session = AVAudioSession.sharedInstance()
+                try? session.setCategory(.playback, mode: .default, options: [.allowBluetooth, .allowBluetoothA2DP, .allowAirPlay])
+                try? session.setActive(true)
+                
+                let asset = AVURLAsset(url: url)
+                let item = AVPlayerItem(asset: asset)
+                let player = AVPlayer(playerItem: item)
+                player.volume = currentVolume
+                player.rate = playbackSpeed
+                player.automaticallyWaitsToMinimizeStalling = true
+                self.nativePlayer = player
+                
+                nativePlayerEndObserver = NotificationCenter.default.addObserver(
+                    forName: .AVPlayerItemDidPlayToEndTime,
+                    object: item,
+                    queue: .main
+                ) { [weak self] _ in
+                    self?.isPlaying = false
+                    print("[AuraBeatAudio] Track finished playing: \(title)")
+                }
+                
+                player.play()
+                print("[AuraBeatAudio] Playing native audio track via AVPlayer: \(title) -> \(urlStr)")
+            }
+
             let request = LoadRequest(
                 source: urlStr,
                 title: title,
@@ -657,7 +711,6 @@ public final class AuraBeatAudioManager: NSObject {
             )
             try? nativeEngine.loadTrack(request: request)
             try? nativeEngine.play()
-            print("[AuraBeatAudio] Playing native audio track: \(title)")
         }
 
         updateNowPlayingInfo(title: title, artist: "AuraBeat Master", album: "Studio Master Quality")
@@ -665,6 +718,7 @@ public final class AuraBeatAudioManager: NSObject {
 
     public func pause() {
         isPlaying = false
+        nativePlayer?.pause()
         if isDolbyActive {
             dolbyRenderer.pause()
         } else {
@@ -674,6 +728,12 @@ public final class AuraBeatAudioManager: NSObject {
 
     public func stop() {
         isPlaying = false
+        if let observer = nativePlayerEndObserver {
+            NotificationCenter.default.removeObserver(observer)
+            nativePlayerEndObserver = nil
+        }
+        nativePlayer?.pause()
+        nativePlayer = nil
         if isDolbyActive {
             dolbyRenderer.stop()
             isDolbyActive = false
@@ -683,6 +743,7 @@ public final class AuraBeatAudioManager: NSObject {
 
     public func resume() {
         isPlaying = true
+        nativePlayer?.play()
         if isDolbyActive {
             dolbyRenderer.play()
         } else {
@@ -692,6 +753,7 @@ public final class AuraBeatAudioManager: NSObject {
 
     public func setVolume(_ volume: Float) {
         currentVolume = max(0.0, min(volume, 1.0))
+        nativePlayer?.volume = currentVolume
         dolbyRenderer.volume = currentVolume
         nativeEngine.setVolume(gain: currentVolume)
     }
@@ -699,6 +761,7 @@ public final class AuraBeatAudioManager: NSObject {
     public func setPlaybackSpeed(_ speed: Float) {
         playbackSpeed = max(0.25, min(speed, 3.0))
         AuraBeatDSPConfiguration.shared.playbackSpeed = playbackSpeed
+        nativePlayer?.rate = playbackSpeed
         dolbyRenderer.rate = playbackSpeed
         try? nativeEngine.setPlaybackSpeed(speed: playbackSpeed)
     }

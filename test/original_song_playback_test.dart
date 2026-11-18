@@ -396,5 +396,41 @@ void main() {
       expect(playedUrls.toSet().length, equals(42),
           reason: 'All 42 queued songs must play distinct original bitstream URLs without repeating previous tracks');
     });
+
+    test('Phase 10.4: Distinctness of Punjabi & Bollywood tracks (25 vs 12, 27 vs 11, 30 vs 13)', () {
+      final mainFile = File('lib/main.dart');
+      expect(mainFile.existsSync(), isTrue);
+      final mainContent = mainFile.readAsStringSync();
+
+      // Song 1 must be Midnight City
+      expect(mainContent.contains("title: 'Midnight City'"), isTrue);
+      // Song 25 must be So High by Sidhu Moose Wala (not 295 duplicate)
+      expect(mainContent.contains("title: 'So High'"), isTrue);
+      // Song 27 must be Born to Shine by Diljit Dosanjh (not Lover duplicate)
+      expect(mainContent.contains("title: 'Born to Shine'"), isTrue);
+      // Song 30 must be Channa Mereya by Arijit Singh (not Kesariya duplicate)
+      expect(mainContent.contains("title: 'Channa Mereya'"), isTrue);
+
+      final workerFile = File('worker.mjs');
+      expect(workerFile.existsSync(), isTrue);
+      final workerContent = workerFile.readAsStringSync();
+
+      // Check worker distinct Saavn mappings
+      expect(RegExp(r"id:\s*'25',\s*saavnId:\s*'SXVUpHM9'").hasMatch(workerContent), isTrue);
+      expect(RegExp(r"id:\s*'12',\s*saavnId:\s*'H2r9PnvA'").hasMatch(workerContent), isTrue);
+      expect(RegExp(r"id:\s*'27',\s*saavnId:\s*'T3JBuGjG'").hasMatch(workerContent), isTrue);
+      expect(RegExp(r"id:\s*'11',\s*saavnId:\s*'M7k5t7vw'").hasMatch(workerContent), isTrue);
+      expect(RegExp(r"id:\s*'30',\s*saavnId:\s*'uiEWT3kP'").hasMatch(workerContent), isTrue);
+      expect(RegExp(r"id:\s*'13',\s*saavnId:\s*'KGfDrbWe'").hasMatch(workerContent), isTrue);
+    });
+
+    test('Phase 10.5: Web index.html playChord disabled and oscillator-free', () {
+      final webIndex = File('web/index.html');
+      expect(webIndex.existsSync(), isTrue);
+      final content = webIndex.readAsStringSync().replaceAll('\r\n', '\n');
+
+      expect(content.contains('function playChord() {\n        // Disallowed fake/synthesized music: real audio playback only.\n        return;\n      }'), isTrue);
+      expect(content.contains('createOscillator'), isFalse, reason: 'Zero oscillators must be created in web audio engine');
+    });
   });
 }
