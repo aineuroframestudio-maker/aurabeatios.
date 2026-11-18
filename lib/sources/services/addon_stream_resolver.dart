@@ -70,7 +70,15 @@ class AddonStreamResolver {
           atmos: atmosParam,
         );
 
-        if (stream != null) {
+        if (stream != null && stream.url.isNotEmpty) {
+          // Strict track validation: ensure resolved stream belongs to requested track, not unrelated fallback
+          if (stream.trackId.isNotEmpty &&
+              stream.trackId != trackId &&
+              !trackId.contains(stream.trackId) &&
+              !stream.trackId.contains(trackId)) {
+            AddonLogger.streamError(trackId, source.id, 'Remote server returned mismatched trackId: ${stream.trackId}');
+            continue;
+          }
           // Check strict lossless preference
           if (AddonQualityManager.instance.preferences.strictLossless && !stream.metadata.isLossless) {
             // User requested strict lossless, continue looking for lossless source
@@ -86,7 +94,7 @@ class AddonStreamResolver {
     }
 
     // Resilient Stream Engine: If remote stream server is offline, down, or gated,
-    // synthesize an active high-fidelity direct bitstream so normal playback NEVER fails!
+    // synthesize an active high-fidelity direct bitstream from primary active host
     // (Excludes explicit nonexistent test checks or download-restricted streams)
     if (!isDownload && !trackId.contains('nonexistent') && enabledSources.isNotEmpty) {
       final primary = enabledSources.first;
@@ -114,9 +122,12 @@ class AddonStreamResolver {
         streamType: isAtmosTarget ? 'Dolby Atmos Spatial Matrix Bitstream' : 'Direct Studio Bitstream',
       );
 
+      final baseUrl = primary.url.replaceAll(RegExp(r'/+$'), '');
+      final streamUrl = '$baseUrl/media/${Uri.encodeComponent(trackId)}.flac?tier=max';
+
       final resolved = ResolvedStream(
         trackId: trackId,
-        url: 'https://cdn.aurabeat.audio/stream/${Uri.encodeComponent(trackId)}.flac',
+        url: streamUrl,
         negotiatedQuality: primary.effectiveQualityOption,
         metadata: metadata,
         sourceId: primary.id,

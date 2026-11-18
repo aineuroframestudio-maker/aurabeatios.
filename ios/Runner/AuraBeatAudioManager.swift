@@ -589,53 +589,63 @@ public final class AuraBeatAudioManager: NSObject {
         stop()
         activeSampleRate = sampleRate
         currentUrlString = urlString
+
+        guard let urlStr = urlString, !urlStr.isEmpty else {
+            print("[AuraBeatAudio] Refusing playback: no valid audio source URL provided for \(title)")
+            isPlaying = false
+            return
+        }
         isPlaying = true
 
-        if isSpatialTrack(urlString: urlString, title: title) {
+        if isSpatialTrack(urlString: urlStr, title: title) {
             isDolbyActive = true
             try? nativeEngine.stop()
-            if let urlStr = urlString {
-                Task { @MainActor in
-                    do {
-                        let codec = isAtmosTrack(urlString: urlStr, title: title) ? "ec-3" : "mha1"
-                        let claimedBitrate: UInt32 = isAtmosTrack(urlString: urlStr, title: title) ? 768 : 1536
-                        _ = try await dolbyRenderer.prepare(
-                            source: urlStr,
-                            title: title,
-                            artist: "AuraBeat Master",
-                            codec: codec,
-                            headers: [:],
-                            startAt: 0.0,
-                            claimedKbps: claimedBitrate
-                        )
-                        dolbyRenderer.volume = currentVolume
-                        dolbyRenderer.rate = playbackSpeed
-                        dolbyRenderer.play()
-                        print("[AuraBeatAudio] Playing Spatial Audio (\(codec)) stream via AppleDolbyRenderer: \(title)")
-                    } catch {
-                        print("[AuraBeatAudio] Spatial renderer prepare fallback to native engine: \(error.localizedDescription)")
-                        isDolbyActive = false
-                        let request = LoadRequest(
-                            source: urlStr,
-                            title: title,
-                            artist: "AuraBeat Master",
-                            startSeconds: 0.0,
-                            plan: nil,
-                            headers: nil,
-                            claimedKbps: 1536,
-                            loudnessDb: nil,
-                            durationSeconds: nil
-                        )
-                        try? nativeEngine.loadTrack(request: request)
-                        try? nativeEngine.play()
+            Task { @MainActor in
+                do {
+                    let codec = isAtmosTrack(urlString: urlStr, title: title) ? "ec-3" : "mha1"
+                    let claimedBitrate: UInt32 = isAtmosTrack(urlString: urlStr, title: title) ? 768 : 1536
+                    _ = try await dolbyRenderer.prepare(
+                        source: urlStr,
+                        title: title,
+                        artist: "AuraBeat Master",
+                        codec: codec,
+                        headers: [:],
+                        startAt: 0.0,
+                        claimedKbps: claimedBitrate
+                    )
+                    dolbyRenderer.volume = currentVolume
+                    dolbyRenderer.rate = playbackSpeed
+                    dolbyRenderer.onEnd = { [weak self] in
+                        Task { @MainActor in
+                            self?.isPlaying = false
+                            print("[AuraBeatAudio] Track finished playing: \(title)")
+                        }
                     }
+                    dolbyRenderer.play()
+                    print("[AuraBeatAudio] Playing Spatial Audio (\(codec)) stream via AppleDolbyRenderer: \(title)")
+                } catch {
+                    print("[AuraBeatAudio] Spatial renderer prepare fallback to native engine: \(error.localizedDescription)")
+                    isDolbyActive = false
+                    let request = LoadRequest(
+                        source: urlStr,
+                        title: title,
+                        artist: "AuraBeat Master",
+                        startSeconds: 0.0,
+                        plan: nil,
+                        headers: nil,
+                        claimedKbps: 1536,
+                        loudnessDb: nil,
+                        durationSeconds: nil
+                    )
+                    try? nativeEngine.loadTrack(request: request)
+                    try? nativeEngine.play()
                 }
             }
         } else {
             isDolbyActive = false
             dolbyRenderer.stop()
             let request = LoadRequest(
-                source: urlString ?? "acoustic://pcm",
+                source: urlStr,
                 title: title,
                 artist: "AuraBeat Master",
                 startSeconds: 0.0,

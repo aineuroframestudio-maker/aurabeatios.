@@ -298,19 +298,18 @@
           }
           if (audioEl.src !== url) {
             audioEl.src = url;
+            audioEl.load();
           }
           audioEl.currentTime = 0;
           audioEl.volume = currentVolume;
           var p = audioEl.play();
           if (p !== undefined) {
             p.catch(function(err) {
-              console.warn('[AUDIO] Media play rejected, playing synth fallback:', err);
-              playChord();
+              console.warn('[AUDIO] Media play rejected:', err);
             });
           }
         } catch (err) {
           console.warn('[AUDIO] Error in playAudioUrl:', err);
-          playChord();
         }
       }
 
@@ -434,11 +433,31 @@
           initContext();
           isPlaying = true;
           updateDSP();
-          if (url && typeof url === 'string' && url.length > 8 && (url.indexOf('http') === 0 || url.indexOf('//') === 0)) {
+          if (url && typeof url === 'string' && url.length > 5 && (url.indexOf('http') === 0 || url.indexOf('//') === 0 || url.indexOf('blob:') === 0 || url.indexOf('data:') === 0)) {
             stopOscillators();
             playAudioUrl(url);
           } else {
-            playChord();
+            console.warn('[AUDIO] Refusing playback: no valid audio source URL provided for', title);
+            isPlaying = false;
+            stopOscillators();
+            if (audioEl) {
+              try {
+                audioEl.pause();
+                audioEl.removeAttribute('src');
+                audioEl.load();
+              } catch(e) {}
+            }
+          }
+        },
+        stop: function() {
+          isPlaying = false;
+          stopOscillators();
+          if (audioEl) {
+            try {
+              audioEl.pause();
+              audioEl.removeAttribute('src');
+              audioEl.load();
+            } catch(e) {}
           }
         },
         pause: function() {

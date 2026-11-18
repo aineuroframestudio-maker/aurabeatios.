@@ -16,6 +16,7 @@ import 'dolby_atmos/atmos_streaming_manager.dart';
 import 'dolby_atmos/atmos_diagnostic_screen.dart';
 import 'screens/sub_bass_enhancement_screen.dart';
 import 'audio_engine/audio_engine.dart';
+import 'playback_queue_controller.dart';
 
 void main() {
   runApp(const AuraBeatApp());
@@ -338,13 +339,15 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
   bool _showLyrics = false;
   Timer? _playbackTimer;
 
-  // Authoritative Playback Queue & Navigation State
+  // Authoritative Playback Queue & Navigation State (Single Source of Truth)
+  final PlaybackQueueController _queueController = PlaybackQueueController();
   RepeatMode _repeatMode = RepeatMode.off;
   bool _isShuffle = false;
   List<SongItem> _queue = [];
   int _queueIndex = 0;
   List<int> _shuffledIndices = [];
   int _playGeneration = 0;
+  String? _playbackErrorMessage;
 
   // Desktop Spatial Audio & Dolby Atmos State
   bool _isSpatialAudio = false;
@@ -628,6 +631,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 117,
       mood: 'Chill',
       popularity: 95,
+      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/confih_track_008.flac?tier=max',
       lyrics: [
         'Someone said they left together',
         'I ran out the door to get her',
@@ -649,6 +653,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 91,
       mood: 'Late Night',
       popularity: 89,
+      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/confih_track_004.flac?tier=max',
       lyrics: [
         'I\'m giving you a night call to tell you how I feel',
         'I want to drive you through the night, down the hills',
@@ -1580,6 +1585,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     _queue = List<SongItem>.from(_songs);
     _queueIndex = 0;
     _currentSong = _songs.first;
+    _queueController.selectSong(_currentSong, newQueue: _queue);
     WebAudioBridge.init();
     WebAudioBridge.setVolume(_volume);
     AddonSourceRegistry.instance.initialize();
@@ -1990,58 +1996,13 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       _recEngine.recordPlay(_currentSong, _currentPosition, true); // fast skip penalty
     }
 
-    if (_repeatMode == RepeatMode.one && isAuto) {
-      _selectSong(_currentSong);
+    final nextSong = _queueController.getNextTrack(isAuto: isAuto);
+    if (nextSong != null) {
+      _selectSong(nextSong);
       return;
     }
 
-    if (_queue.isEmpty) {
-      _queue = List<SongItem>.from(_songs);
-    }
-
-    int nextIndex = -1;
-
-    if (_isShuffle) {
-      if (_shuffledIndices.isEmpty || _shuffledIndices.length != _queue.length) {
-        _generateShuffleIndices();
-      }
-      final curPos = _shuffledIndices.indexOf(_queueIndex);
-      if (curPos != -1 && curPos + 1 < _shuffledIndices.length) {
-        nextIndex = _shuffledIndices[curPos + 1];
-      } else if (_repeatMode == RepeatMode.all) {
-        _generateShuffleIndices();
-        nextIndex = _shuffledIndices.isNotEmpty ? _shuffledIndices.first : 0;
-      }
-    } else {
-      final curIdx = _queue.indexWhere((s) => s.id == _currentSong.id);
-      final activeIdx = curIdx != -1 ? curIdx : _queueIndex;
-
-      if (activeIdx + 1 < _queue.length) {
-        nextIndex = activeIdx + 1;
-      } else if (_repeatMode == RepeatMode.all) {
-        nextIndex = 0;
-      }
-    }
-
-    if (nextIndex >= 0 && nextIndex < _queue.length) {
-      _selectSong(_queue[nextIndex]);
-      return;
-    }
-
-    // Reached queue end with Repeat Off: check autoplay
-    if (_recEngine.profile.autoplayEnabled) {
-      final next = _recEngine.getNextAutoplayTrack(_currentSong, _songs, _sessionHistory);
-      if (next != null && next is SongItem && next.id != _currentSong.id) {
-        _queue.add(next);
-        if (_isShuffle) {
-          _shuffledIndices.add(_queue.length - 1);
-        }
-        _selectSong(next);
-        return;
-      }
-    }
-
-    // Queue ended with no autoplay
+    // Queue ended with Repeat Off: Stop playback! (Strict Phase 4 compliance)
     setState(() {
       _isPlaying = false;
       _currentPosition = 0;
@@ -2063,73 +2024,29 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       return;
     }
 
-    if (_queue.isEmpty) {
-      _queue = List<SongItem>.from(_songs);
-    }
-
-    int prevIndex = -1;
-
-    if (_isShuffle) {
-      if (_shuffledIndices.isEmpty || _shuffledIndices.length != _queue.length) {
-        _generateShuffleIndices();
-      }
-      final curPos = _shuffledIndices.indexOf(_queueIndex);
-      if (curPos > 0) {
-        prevIndex = _shuffledIndices[curPos - 1];
-      } else if (_repeatMode == RepeatMode.all) {
-        prevIndex = _shuffledIndices.isNotEmpty ? _shuffledIndices.last : 0;
-      } else {
-        prevIndex = _shuffledIndices.isNotEmpty ? _shuffledIndices.first : 0;
-      }
-    } else {
-      final curIdx = _queue.indexWhere((s) => s.id == _currentSong.id);
-      final activeIdx = curIdx != -1 ? curIdx : _queueIndex;
-
-      if (activeIdx - 1 >= 0) {
-        prevIndex = activeIdx - 1;
-      } else if (_repeatMode == RepeatMode.all) {
-        prevIndex = _queue.length - 1;
-      } else {
-        prevIndex = 0;
-      }
-    }
-
-    if (prevIndex >= 0 && prevIndex < _queue.length) {
-      _selectSong(_queue[prevIndex]);
+    final prevSong = _queueController.getPreviousTrack();
+    if (prevSong != null) {
+      _selectSong(prevSong);
     }
   }
 
   void _generateShuffleIndices() {
-    _shuffledIndices = List<int>.generate(_queue.length, (i) => i);
-    final curIdx = _queue.indexWhere((s) => s.id == _currentSong.id);
-    final activeIdx = curIdx != -1 ? curIdx : _queueIndex;
-    _shuffledIndices.remove(activeIdx);
-    _shuffledIndices.shuffle();
-    _shuffledIndices.insert(0, activeIdx);
+    _queueController.generateShuffleIndices();
+    _shuffledIndices = List<int>.from(_queueController.shuffledIndices);
   }
 
   void _toggleShuffle() {
     setState(() {
-      _isShuffle = !_isShuffle;
-      if (_isShuffle) {
-        _generateShuffleIndices();
-      }
+      _queueController.toggleShuffle();
+      _isShuffle = _queueController.isShuffle;
+      _shuffledIndices = List<int>.from(_queueController.shuffledIndices);
     });
   }
 
   void _toggleRepeat() {
     setState(() {
-      switch (_repeatMode) {
-        case RepeatMode.off:
-          _repeatMode = RepeatMode.all;
-          break;
-        case RepeatMode.all:
-          _repeatMode = RepeatMode.one;
-          break;
-        case RepeatMode.one:
-          _repeatMode = RepeatMode.off;
-          break;
-      }
+      _queueController.toggleRepeat();
+      _repeatMode = _queueController.repeatMode;
     });
   }
 
@@ -2241,33 +2158,16 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
   }
 
   void _selectSong(SongItem song, {List<SongItem>? newQueue, int? indexInQueue}) {
-    final requestGen = ++_playGeneration;
-
     // 1. Terminate any previous playback completely to avoid overlapping audio
     _playbackTimer?.cancel();
     WebAudioBridge.stop();
     _atmosStreamingManager.player.pause();
 
-    // 2. Synchronize authoritative queue state
-    if (newQueue != null && newQueue.isNotEmpty) {
-      _queue = List<SongItem>.from(newQueue);
-      if (_isShuffle) {
-        _generateShuffleIndices();
-      }
-    } else if (_queue.isEmpty) {
-      _queue = List<SongItem>.from(_songs);
-    }
-
-    int targetIndex = indexInQueue ?? _queue.indexWhere((s) => s.id == song.id);
-    if (targetIndex != -1) {
-      _queueIndex = targetIndex;
-    } else {
-      _queue.add(song);
-      _queueIndex = _queue.length - 1;
-      if (_isShuffle) {
-        _shuffledIndices.add(_queueIndex);
-      }
-    }
+    // 2. Synchronize authoritative queue state and obtain generation counter
+    final requestGen = _queueController.selectSong(song, newQueue: newQueue, indexInQueue: indexInQueue);
+    _queue = List<SongItem>.from(_queueController.queue);
+    _queueIndex = _queueController.queueIndex;
+    _playGeneration = requestGen;
 
     _sessionHistory.add(song.id);
     _recEngine.recordPlay(song, 0, false);
@@ -2276,13 +2176,69 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     final activeSource = AddonSourceRegistry.instance.getSourceById(_currentAudioMetadata.sourceId) ??
         (allSources.isNotEmpty ? allSources.first : null);
     final activeTier = activeSource?.effectiveQualityOption ?? _globalStreamingProfile.value;
-    final streamUrl = _resolveStreamUrlForQuality(song.streamUrl, activeTier);
-    final songToPlay = song.copyWith(streamUrl: streamUrl);
+
+    String? directStreamUrl = song.streamUrl;
+    if (directStreamUrl != null && directStreamUrl.isNotEmpty) {
+      directStreamUrl = _resolveStreamUrlForQuality(directStreamUrl, activeTier);
+    }
+
+    if (directStreamUrl != null && directStreamUrl.isNotEmpty) {
+      // Song has an explicit verified audio source
+      _loadAndPlayResolvedSong(song.copyWith(streamUrl: directStreamUrl), activeSource, activeTier, requestGen);
+    } else {
+      // Song needs asynchronous resolution: set state to buffering/resolving without audio overlap
+      setState(() {
+        _currentSong = song;
+        _currentPosition = 0;
+        _isPlaying = true;
+        _playbackErrorMessage = null;
+      });
+      _updateMetadataForSong(song, sourceId: activeSource?.id, requestedTier: activeTier);
+
+      AddonStreamResolver.instance.resolveTrackStream(
+        trackId: song.id,
+        title: song.title,
+        artist: song.artist,
+        qualityProfile: _globalStreamingProfile,
+      ).then((res) {
+        if (requestGen != _playGeneration || !_isPlaying) return;
+
+        if (res != null && res.url.isNotEmpty) {
+          final resolvedSong = song.copyWith(streamUrl: res.url);
+          _loadAndPlayResolvedSong(resolvedSong, activeSource, activeTier, requestGen);
+        } else {
+          // Inaccessible original source: halt player, do NOT play previous audio or fallback
+          WebAudioBridge.stop();
+          _atmosStreamingManager.player.pause();
+          _playbackTimer?.cancel();
+          setState(() {
+            _isPlaying = false;
+            _currentPosition = 0;
+            _playbackErrorMessage = 'Original audio source unavailable for "${song.title}".';
+          });
+        }
+      }).catchError((err) {
+        if (requestGen != _playGeneration) return;
+        WebAudioBridge.stop();
+        _atmosStreamingManager.player.pause();
+        _playbackTimer?.cancel();
+        setState(() {
+          _isPlaying = false;
+          _currentPosition = 0;
+          _playbackErrorMessage = 'Failed to load audio for "${song.title}": $err';
+        });
+      });
+    }
+  }
+
+  void _loadAndPlayResolvedSong(SongItem songToPlay, AddonSourceConfig? activeSource, String activeTier, int requestGen) {
+    if (requestGen != _playGeneration) return;
 
     setState(() {
       _currentSong = songToPlay;
       _currentPosition = 0;
       _isPlaying = true;
+      _playbackErrorMessage = null;
     });
     _updateMetadataForSong(songToPlay, sourceId: activeSource?.id, requestedTier: activeTier);
 
@@ -2300,11 +2256,15 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       preset: subCfg.preset.displayName,
     );
     WebAudioBridge.setEqualizer(_equalizerBands);
-    final effectiveSpatial = _isSpatialAudio;
+
+    // Phase 5 Spatial Audio Bypass: clean original unmodified playback during verification
+    final effectiveSpatial = AuraBeatAudioEngine.bypassSpatialAudio ? false : _isSpatialAudio;
     WebAudioBridge.setSpatialAudio(effectiveSpatial);
     AuraBeatAudioEngine.instance.setSpatialAudio(effectiveSpatial);
 
-    if ((_currentAudioMetadata.isDolbyAtmos || songToPlay.isDolbyAtmos) && songToPlay.streamUrl != null) {
+    if (!AuraBeatAudioEngine.bypassSpatialAudio &&
+        (_currentAudioMetadata.isDolbyAtmos || songToPlay.isDolbyAtmos) &&
+        songToPlay.streamUrl != null) {
       _atmosStreamingManager.player.load(
         songToPlay.streamUrl!,
         title: songToPlay.title,
@@ -2316,37 +2276,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
           _atmosStreamingManager.player.play();
         }
       }).catchError((_) {});
-    }
-
-    // If track doesn't have an explicit streamUrl (e.g. from remote add-on search), resolve asynchronously
-    if (songToPlay.streamUrl == null) {
-      AddonStreamResolver.instance.resolveTrackStream(
-        trackId: songToPlay.id,
-        title: songToPlay.title,
-        artist: songToPlay.artist,
-        qualityProfile: _globalStreamingProfile,
-      ).then((res) {
-        if (res != null && res.url.isNotEmpty && requestGen == _playGeneration && _isPlaying) {
-          final resolvedSong = _currentSong.copyWith(streamUrl: res.url);
-          setState(() {
-            _currentSong = resolvedSong;
-          });
-          WebAudioBridge.play(resolvedSong.title, res.url, (_currentAudioMetadata.sampleRateHz ?? 192000).toDouble());
-          if (_currentAudioMetadata.isDolbyAtmos || resolvedSong.isDolbyAtmos) {
-            _atmosStreamingManager.player.load(
-              res.url,
-              title: resolvedSong.title,
-              artist: resolvedSong.artist,
-              album: resolvedSong.album,
-              durationSeconds: resolvedSong.durationSec.toDouble(),
-            ).then((_) {
-              if (requestGen == _playGeneration && _isPlaying) {
-                _atmosStreamingManager.player.play();
-              }
-            }).catchError((_) {});
-          }
-        }
-      });
     }
 
     _startPlaybackTimer();
@@ -2805,7 +2734,9 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
               width: isSelected ? 1.5 : 1.0,
             ),
           ),
-          child: ListTile(
+          child: Material(
+            color: Colors.transparent,
+            child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
             onTap: () {
               if (isSelected) {
@@ -2921,6 +2852,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                 ),
               ],
             ),
+          ),
           ),
         );
       }).toList(),
@@ -4516,7 +4448,9 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: isSelected ? const Color(0xFFFEDBB3) : cardBorder),
                   ),
-                  child: ListTile(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                     onTap: () {
                       if (isSelected) {
@@ -4569,6 +4503,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                         ),
                       ],
                     ),
+                  ),
                   ),
                 );
               }).toList(),
@@ -4666,7 +4601,9 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                               color: isSelected ? const Color(0xFFFEDBB3) : cardBorder,
                             ),
                           ),
-                          child: ListTile(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                             onTap: () {
                               if (isSelected) {
@@ -4755,6 +4692,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                                 }
                               },
                             ),
+                          ),
                           ),
                         );
                       }).toList(),
@@ -4879,7 +4817,9 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: cardBorder),
                   ),
-                  child: ListTile(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                     leading: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
@@ -4902,6 +4842,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                       icon: Icon(Icons.play_circle_fill_rounded, color: textPrimary, size: 28),
                       onPressed: () => _selectSong(song),
                     ),
+                  ),
                   ),
                 );
               }).toList(),
@@ -4937,7 +4878,9 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: isSelected ? const Color(0xFFFEDBB3) : cardBorder),
                       ),
-                      child: ListTile(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                         onTap: () => isSelected ? _togglePlayPause() : _selectSong(song, newQueue: artistTracks),
                         leading: ClipRRect(
@@ -4965,6 +4908,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                           ),
                           onPressed: () => isSelected ? _togglePlayPause() : _selectSong(song, newQueue: artistTracks),
                         ),
+                      ),
                       ),
                     );
                   }).toList(),
@@ -5307,7 +5251,9 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: isSelected ? const Color(0xFFFEDBB3) : cardBorder),
                 ),
-                child: ListTile(
+                child: Material(
+                  color: Colors.transparent,
+                  child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                   onTap: () => isSelected ? _togglePlayPause() : _selectSong(song, newQueue: activeStation.queue.cast<SongItem>()),
                   leading: ClipRRect(
@@ -5354,6 +5300,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                       ),
                     ],
                   ),
+                ),
                 ),
               );
             }).toList(),

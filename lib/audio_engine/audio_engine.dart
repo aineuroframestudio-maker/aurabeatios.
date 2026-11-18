@@ -59,6 +59,11 @@ EqCurve toneCurve(int x, int y, {bool focused = false}) {
 class AuraBeatAudioEngine {
   static final AuraBeatAudioEngine instance = AuraBeatAudioEngine._internal();
 
+  /// Temporary bypass flag for Phase 5 original playback verification.
+  /// Preserves all spatial features and settings, but disables spatial DSP rendering
+  /// during verification so that original audio is unmodified.
+  static bool bypassSpatialAudio = true;
+
   bool _spatialAudioEnabled = false;
   List<double> _manualBands = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
   double _playbackSpeed = 1.0;
@@ -103,9 +108,11 @@ class AuraBeatAudioEngine {
   }
 
   /// Sets Spatial Audio state (delegated directly to BitChord 1.0.8 PlayerEngine and HeadTracker).
+  /// Respects temporary Phase 5 bypass during playback verification.
   void setSpatialAudio(bool enabled) {
     _spatialAudioEnabled = enabled;
-    WebAudioBridge.setSpatialAudio(enabled);
+    final effective = bypassSpatialAudio ? false : enabled;
+    WebAudioBridge.setSpatialAudio(effective);
   }
 
   /// Backward-compatible alias for setSpatialAudio.

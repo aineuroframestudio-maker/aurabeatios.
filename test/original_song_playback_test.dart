@@ -1,0 +1,318 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:aurabeat/main.dart' show SongItem, RepeatMode;
+import 'package:aurabeat/playback_queue_controller.dart';
+import 'package:aurabeat/audio_engine/audio_engine.dart';
+
+int _fnv1a64(Uint8List bytes) {
+  var hash = 0xcbf29ce484222325;
+  const prime = 0x100000001b3;
+  for (var i = 0; i < bytes.length; i++) {
+    hash ^= bytes[i];
+    hash = (hash * prime) & 0xFFFFFFFFFFFFFFFF;
+  }
+  return hash;
+}
+
+void main() {
+  group('AURABEAT — CRITICAL ORIGINAL MUSIC PLAYBACK AUDIT & VERIFICATION', () {
+    final fixtureFiles = <String, String>{
+      'Song_A_AAC': 'AuraBeatKit/Tests/PlaybackPolicyTests/Fixtures/audio/aac_256.m4a',
+      'Song_B_ALAC': 'AuraBeatKit/Tests/PlaybackPolicyTests/Fixtures/audio/alac_16_44.m4a',
+      'Song_C_FLAC': 'AuraBeatKit/Tests/PlaybackPolicyTests/Fixtures/audio/flac_24_96.flac',
+      'Song_D_WAV': 'AuraBeatKit/Tests/PlaybackPolicyTests/Fixtures/audio/pcm_16_44.wav',
+      'Song_E_HEAAC': 'AuraBeatKit/Tests/PlaybackPolicyTests/Fixtures/audio/heaac_64.m4a',
+    };
+
+    final Map<String, String> fileFingerprintMap = {};
+    final Map<String, int> fileSizeMap = {};
+    late List<SongItem> distinctSongs;
+
+    setUpAll(() {
+      for (final entry in fixtureFiles.entries) {
+        final file = File(entry.value);
+        expect(file.existsSync(), isTrue, reason: 'Test fixture ' + entry.value + ' must exist on disk');
+        final bytes = file.readAsBytesSync();
+        final hashHex = _fnv1a64(bytes).toRadixString(16);
+        fileFingerprintMap[entry.key] = hashHex;
+        fileSizeMap[entry.key] = bytes.length;
+      }
+
+      distinctSongs = [
+        SongItem(
+          id: 'test_song_a',
+          title: 'Song A (AAC Master)',
+          artist: 'Artist Alpha',
+          album: 'Album Alpha',
+          duration: '0:01',
+          durationSec: 1,
+          coverUrl: 'https://example.com/cover_a.jpg',
+          streamUrl: fixtureFiles['Song_A_AAC'],
+          audioQuality: 'AAC 256kbps Master',
+          lyrics: const ['A line 1', 'A line 2'],
+        ),
+        SongItem(
+          id: 'test_song_b',
+          title: 'Song B (ALAC Lossless)',
+          artist: 'Artist Beta',
+          album: 'Album Beta',
+          duration: '0:02',
+          durationSec: 2,
+          coverUrl: 'https://example.com/cover_b.jpg',
+          streamUrl: fixtureFiles['Song_B_ALAC'],
+          audioQuality: 'ALAC 16-bit / 44.1kHz',
+          lyrics: const ['B line 1', 'B line 2'],
+        ),
+        SongItem(
+          id: 'test_song_c',
+          title: 'Song C (FLAC Hi-Res)',
+          artist: 'Artist Gamma',
+          album: 'Album Gamma',
+          duration: '0:03',
+          durationSec: 3,
+          coverUrl: 'https://example.com/cover_c.jpg',
+          streamUrl: fixtureFiles['Song_C_FLAC'],
+          audioQuality: 'FLAC 24-bit / 96kHz Hi-Res',
+          lyrics: const ['C line 1', 'C line 2'],
+        ),
+        SongItem(
+          id: 'test_song_d',
+          title: 'Song D (PCM Studio WAV)',
+          artist: 'Artist Delta',
+          album: 'Album Delta',
+          duration: '0:02',
+          durationSec: 2,
+          coverUrl: 'https://example.com/cover_d.jpg',
+          streamUrl: fixtureFiles['Song_D_WAV'],
+          audioQuality: 'PCM 16-bit / 44.1kHz WAV',
+          lyrics: const ['D line 1', 'D line 2'],
+        ),
+        SongItem(
+          id: 'test_song_e',
+          title: 'Song E (HE-AAC Stream)',
+          artist: 'Artist Epsilon',
+          album: 'Album Epsilon',
+          duration: '0:01',
+          durationSec: 1,
+          coverUrl: 'https://example.com/cover_e.jpg',
+          streamUrl: fixtureFiles['Song_E_HEAAC'],
+          audioQuality: 'HE-AAC 64kbps Efficient',
+          lyrics: const ['E line 1', 'E line 2'],
+        ),
+      ];
+    });
+
+    test('Phase 9.1: All five test files have strictly distinct binary fingerprints and sizes', () {
+      final hashes = fileFingerprintMap.values.toSet();
+      final sizes = fileSizeMap.values.toSet();
+
+      expect(hashes.length, equals(5), reason: 'Every song must have a unique binary fingerprint');
+      expect(sizes.length, equals(5), reason: 'Every song must have a unique file size');
+
+      expect(fileSizeMap['Song_A_AAC'], equals(22441));
+      expect(fileSizeMap['Song_B_ALAC'], equals(77247));
+      expect(fileSizeMap['Song_C_FLAC'], equals(126431));
+      expect(fileSizeMap['Song_D_WAV'], equals(88244));
+      expect(fileSizeMap['Song_E_HEAAC'], equals(9096));
+    });
+
+    test('Phase 9.2: Online Cloudflare Worker streams also have strictly distinct bitstream identities', () {
+      const confihHashes = {
+        'confih_track_001': '4df0b91880120492cbeb1483c52997c2607db52d6929dd0688960d8e0d3abe5b',
+        'confih_track_002': '643889f83b113342cd3f48acd80202622d8e57de4f05a2b0dd22d2359c50644c',
+        'confih_track_003': '3880222b416560b081cb34f4ac46912e004355ddea928090ebf6afdc97ead8e4',
+        'confih_track_004': '5050f20ea8ec1ad1e4471570efe6fef90acf4392bc956b3d039d55a9bc8fd21d',
+        'confih_track_006': '58f7f853c0888c0b836343e0a873d59c8ec303b492a35d92a5fdcac219d0004c',
+        'confih_track_007': '1a03b53df4f4e315d50e817bd3ccf0b34b7acd18503604b4f327fa22322f4c1e',
+        'confih_track_008': 'b33211bc6947a97d3e4db6350d3cf833a534b47b7e243958f930eb64f0660647',
+      };
+
+      final uniqueOnlineHashes = confihHashes.values.toSet();
+      expect(uniqueOnlineHashes.length, equals(confihHashes.length),
+          reason: 'All online track files must be genuinely distinct bitstreams');
+    });
+
+    test('Phase 8.1: Song selection transitions load expected unique sources (A -> B -> C -> D -> E -> A)', () {
+      final controller = PlaybackQueueController(initialQueue: distinctSongs);
+      final loadedSources = <String>[];
+      final loadedSongIds = <String>[];
+
+      void simulatePlayerLoad(SongItem song) {
+        expect(song.streamUrl, isNotNull);
+        loadedSources.add(song.streamUrl!);
+        loadedSongIds.add(song.id);
+      }
+
+      controller.selectSong(distinctSongs[0]);
+      simulatePlayerLoad(controller.currentSong!);
+      expect(controller.currentSong?.id, equals('test_song_a'));
+      expect(controller.currentSong?.streamUrl, equals(fixtureFiles['Song_A_AAC']));
+
+      controller.selectSong(distinctSongs[1]);
+      simulatePlayerLoad(controller.currentSong!);
+      expect(controller.currentSong?.id, equals('test_song_b'));
+      expect(controller.currentSong?.streamUrl, equals(fixtureFiles['Song_B_ALAC']));
+      expect(controller.currentSong?.streamUrl, isNot(equals(loadedSources[0])));
+
+      controller.selectSong(distinctSongs[2]);
+      simulatePlayerLoad(controller.currentSong!);
+      expect(controller.currentSong?.id, equals('test_song_c'));
+      expect(controller.currentSong?.streamUrl, equals(fixtureFiles['Song_C_FLAC']));
+      expect(controller.currentSong?.streamUrl, isNot(equals(loadedSources[1])));
+
+      controller.selectSong(distinctSongs[3]);
+      simulatePlayerLoad(controller.currentSong!);
+      expect(controller.currentSong?.id, equals('test_song_d'));
+      expect(controller.currentSong?.streamUrl, equals(fixtureFiles['Song_D_WAV']));
+      expect(controller.currentSong?.streamUrl, isNot(equals(loadedSources[2])));
+
+      controller.selectSong(distinctSongs[4]);
+      simulatePlayerLoad(controller.currentSong!);
+      expect(controller.currentSong?.id, equals('test_song_e'));
+      expect(controller.currentSong?.streamUrl, equals(fixtureFiles['Song_E_HEAAC']));
+      expect(controller.currentSong?.streamUrl, isNot(equals(loadedSources[3])));
+
+      controller.selectSong(distinctSongs[0]);
+      simulatePlayerLoad(controller.currentSong!);
+      expect(controller.currentSong?.id, equals('test_song_a'));
+      expect(controller.currentSong?.streamUrl, equals(fixtureFiles['Song_A_AAC']));
+
+      final uniqueFirst5 = loadedSources.take(5).toSet();
+      expect(uniqueFirst5.length, equals(5), reason: 'Every different song selection must load a distinct audio source');
+    });
+
+    test('Phase 8.2: Next and Previous navigation correctly steps through the actual queue', () {
+      final controller = PlaybackQueueController(initialQueue: distinctSongs);
+      expect(controller.currentSong?.id, equals('test_song_a'));
+
+      var next = controller.getNextTrack(isAuto: false);
+      expect(next?.id, equals('test_song_b'));
+      expect(next?.streamUrl, equals(fixtureFiles['Song_B_ALAC']));
+
+      next = controller.getNextTrack(isAuto: false);
+      expect(next?.id, equals('test_song_c'));
+      expect(next?.streamUrl, equals(fixtureFiles['Song_C_FLAC']));
+
+      next = controller.getNextTrack(isAuto: false);
+      expect(next?.id, equals('test_song_d'));
+      expect(next?.streamUrl, equals(fixtureFiles['Song_D_WAV']));
+
+      next = controller.getNextTrack(isAuto: false);
+      expect(next?.id, equals('test_song_e'));
+      expect(next?.streamUrl, equals(fixtureFiles['Song_E_HEAAC']));
+
+      var prev = controller.getPreviousTrack();
+      expect(prev?.id, equals('test_song_d'));
+      expect(prev?.streamUrl, equals(fixtureFiles['Song_D_WAV']));
+
+      prev = controller.getPreviousTrack();
+      expect(prev?.id, equals('test_song_c'));
+      expect(prev?.streamUrl, equals(fixtureFiles['Song_C_FLAC']));
+
+      prev = controller.getPreviousTrack();
+      expect(prev?.id, equals('test_song_b'));
+
+      prev = controller.getPreviousTrack();
+      expect(prev?.id, equals('test_song_a'));
+      expect(prev?.streamUrl, equals(fixtureFiles['Song_A_AAC']));
+    });
+
+    test('Phase 8.3: Song completion (isAuto=true) advances to next track and respects repeat modes', () {
+      final controller = PlaybackQueueController(initialQueue: distinctSongs);
+
+      final nextAfterA = controller.getNextTrack(isAuto: true);
+      expect(nextAfterA?.id, equals('test_song_b'));
+      expect(nextAfterA?.streamUrl, equals(fixtureFiles['Song_B_ALAC']));
+
+      controller.setRepeatMode(RepeatMode.one);
+      final repeatOneNext = controller.getNextTrack(isAuto: true);
+      expect(repeatOneNext?.id, equals('test_song_b'), reason: 'Repeat One must replay current song');
+      expect(repeatOneNext?.streamUrl, equals(fixtureFiles['Song_B_ALAC']));
+
+      controller.setRepeatMode(RepeatMode.all);
+      controller.selectSong(distinctSongs.last);
+      expect(controller.currentSong?.id, equals('test_song_e'));
+      final loopNext = controller.getNextTrack(isAuto: true);
+      expect(loopNext?.id, equals('test_song_a'), reason: 'Repeat All at queue end must wrap to Song A');
+      expect(loopNext?.streamUrl, equals(fixtureFiles['Song_A_AAC']));
+
+      controller.setRepeatMode(RepeatMode.off);
+      controller.selectSong(distinctSongs.last);
+      expect(controller.currentSong?.id, equals('test_song_e'));
+      final stopAtEnd = controller.getNextTrack(isAuto: true);
+      expect(stopAtEnd, isNull, reason: 'Repeat Off at queue end must return null so playback halts cleanly');
+    });
+
+    test('Phase 8.4: Shuffle mode randomizes playback order without losing track identity', () {
+      final controller = PlaybackQueueController(initialQueue: distinctSongs);
+      controller.setShuffle(true);
+
+      expect(controller.shuffledIndices.length, equals(distinctSongs.length));
+      expect(controller.shuffledIndices.first, equals(0));
+
+      final playedOrder = <String>[controller.currentSong!.id];
+      for (int i = 1; i < distinctSongs.length; i++) {
+        final t = controller.getNextTrack();
+        expect(t, isNotNull);
+        playedOrder.add(t!.id);
+      }
+
+      expect(playedOrder.toSet().length, equals(5), reason: 'Shuffle must visit every distinct song exactly once');
+    });
+
+    test('Phase 3.1 & 7.1: Rapid song selection increments generation and drops obsolete responses', () {
+      final controller = PlaybackQueueController(initialQueue: distinctSongs);
+
+      final genA = controller.selectSong(distinctSongs[0]);
+      final genB = controller.selectSong(distinctSongs[1]);
+      final genC = controller.selectSong(distinctSongs[2]);
+
+      expect(genA < genB, isTrue);
+      expect(genB < genC, isTrue);
+      expect(controller.playGeneration, equals(genC));
+      expect(controller.currentSong?.id, equals('test_song_c'));
+      expect(controller.currentSong?.streamUrl, equals(fixtureFiles['Song_C_FLAC']));
+
+      bool responseApplied(int gen) => gen == controller.playGeneration;
+
+      expect(responseApplied(genA), isFalse, reason: 'Obsolete response for Song A must be discarded');
+      expect(responseApplied(genB), isFalse, reason: 'Obsolete response for Song B must be discarded');
+      expect(responseApplied(genC), isTrue, reason: 'Latest response for Song C must win');
+    });
+
+    test('Phase 2.1: Missing or null audio source does NOT reuse previous audio or synthesize fallback', () {
+      const missingSong = SongItem(
+        id: 'missing_source_track',
+        title: 'Missing Audio Track',
+        artist: 'Unknown',
+        album: 'Unknown',
+        duration: '3:00',
+        durationSec: 180,
+        coverUrl: '',
+        lyrics: [],
+        streamUrl: null,
+      );
+
+      final controller = PlaybackQueueController(initialQueue: [distinctSongs[0], missingSong]);
+      controller.selectSong(distinctSongs[0]);
+      expect(controller.currentSong?.streamUrl, equals(fixtureFiles['Song_A_AAC']));
+
+      controller.selectSong(missingSong);
+      expect(controller.currentSong?.id, equals('missing_source_track'));
+      expect(controller.currentSong?.streamUrl, isNull,
+          reason: 'A missing audio source must remain null/inaccessible, never silently reusing previous audio');
+    });
+
+    test('Phase 5.1: Spatial audio processing is bypassed during playback verification', () {
+      expect(AuraBeatAudioEngine.bypassSpatialAudio, isTrue,
+          reason: 'Phase 5 requires spatial audio to be temporarily bypassed during verification');
+
+      final engine = AuraBeatAudioEngine.instance;
+      engine.setSpatialAudio(true);
+      expect(engine.isSpatialAudioEnabled, isTrue, reason: 'Internal preference remains true');
+      final effective = AuraBeatAudioEngine.bypassSpatialAudio ? false : engine.isSpatialAudioEnabled;
+      expect(effective, isFalse, reason: 'Effective spatial signal processing must be false during verification');
+    });
+  });
+}

@@ -11,6 +11,7 @@ extension _AuraBeatAudioJsExtension on _AuraBeatAudioJs {
   external void init();
   external void play(String title, [String? url]);
   external void pause();
+  external void stop();
   external void setSpatial(bool enabled, double width, double depth, double intensity);
   external void setVolume(double volume);
   external void setBassBoost(bool enabled, double gainDb);
@@ -44,7 +45,7 @@ class WebAudioBridge {
 
   static void stop() {
     try {
-      _auraBeatAudio?.pause();
+      _auraBeatAudio?.stop();
     } catch (_) {}
   }
 
