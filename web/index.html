@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Aura Beat - YouTube Music Client">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Aura Beat">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Aura Beat</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      background-color: #FEDBB3;
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+  <script>
+    // AuraBeat Web Audio Spatial Engine
+    window.AuraBeatAudio = (function() {
+      var ctx = null;
+      var isPlaying = false;
+      var isSpatial = false;
+      var spatialWidth = 1.8;
+      var spatialDepth = 0.45;
+      var spatialIntensity = 0.90;
+      var masterGain = null;
+      var currentVolume = 1.0;
+      var channelLeftGain = null;
+      var channelRightGain = null;
+      var leftPanner = null;
+      var rightPanner = null;
+      var crossGainL = null;
+      var crossGainR = null;
+      var delayL = null;
+      var delayR = null;
+      var filterL = null;
+      var filterR = null;
+      var oscList = [];
+      var chordTimer = null;
+
+      function initContext() {
+        if (!ctx) {
+          var AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) {
+            ctx = new AudioCtx();
+            buildDSPGraph();
+          }
+        }
+        if (ctx && ctx.state === 'suspended') {
+          ctx.resume();
+        }
+      }
+
+      function buildDSPGraph() {
+        if (!ctx) return;
+        masterGain = ctx.createGain();
+        masterGain.gain.setValueAtTime(currentVolume, ctx.currentTime);
+
+        channelLeftGain = ctx.createGain();
+        channelRightGain = ctx.createGain();
+
+        delayL = ctx.createDelay(0.05);
+        delayR = ctx.createDelay(0.05);
+        delayL.delayTime.setValueAtTime(0.0012, ctx.currentTime); // ~1.2ms HRTF ITD
+        delayR.delayTime.setValueAtTime(0.0012, ctx.currentTime);
+
+        filterL = ctx.createBiquadFilter();
+        filterR = ctx.createBiquadFilter();
+        filterL.type = 'lowpass';
+        filterR.type = 'lowpass';
+        filterL.frequency.setValueAtTime(1400, ctx.currentTime);
+        filterR.frequency.setValueAtTime(1400, ctx.currentTime);
+
+        crossGainL = ctx.createGain();
+        crossGainR = ctx.createGain();
+        crossGainL.gain.setValueAtTime(0.0, ctx.currentTime);
+        crossGainR.gain.setValueAtTime(0.0, ctx.currentTime);
+
+        leftPanner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+        rightPanner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+
+        if (leftPanner && rightPanner) {
+          leftPanner.pan.setValueAtTime(-0.8, ctx.currentTime);
+          rightPanner.pan.setValueAtTime(0.8, ctx.currentTime);
+
+          // Direct channel paths to panners
+          channelLeftGain.connect(leftPanner);
+          channelRightGain.connect(rightPanner);
+
+          // Crossfeed HRTF paths: Left -> delayL -> filterL -> crossGainL -> rightPanner
+          channelLeftGain.connect(delayL);
+          delayL.connect(filterL);
+          filterL.connect(crossGainL);
+          crossGainL.connect(rightPanner);
+
+          // Crossfeed HRTF paths: Right -> delayR -> filterR -> crossGainR -> leftPanner
+          channelRightGain.connect(delayR);
+          delayR.connect(filterR);
+          filterR.connect(crossGainR);
+          crossGainR.connect(leftPanner);
+
+          leftPanner.connect(masterGain);
+          rightPanner.connect(masterGain);
+        } else {
+          channelLeftGain.connect(masterGain);
+          channelRightGain.connect(masterGain);
+        }
+
+        masterGain.connect(ctx.destination);
+      }
+
+      function updateDSP() {
+        if (!ctx) return;
+        var effWidth = isSpatial ? (1.0 + (spatialWidth - 1.0) * spatialIntensity) : 1.0;
+        var effCross = isSpatial ? (0.35 * spatialDepth * spatialIntensity) : 0.0;
+        var pan = Math.min(Math.max((effWidth - 1.0) * 0.7 + 0.35, 0.35), 1.0);
+
+        if (leftPanner) leftPanner.pan.setTargetAtTime(-pan, ctx.currentTime, 0.05);
+        if (rightPanner) rightPanner.pan.setTargetAtTime(pan, ctx.currentTime, 0.05);
+        if (crossGainL) crossGainL.gain.setTargetAtTime(effCross, ctx.currentTime, 0.05);
+        if (crossGainR) crossGainR.gain.setTargetAtTime(effCross, ctx.currentTime, 0.05);
+      }
+
+      var chords = [
+        [220.0, 261.63, 329.63, 392.0],
+        [174.61, 220.0, 261.63, 329.63],
+        [261.63, 329.63, 392.0, 493.88],
+        [196.0, 246.94, 293.66, 392.0]
+      ];
+      var chordIndex = 0;
+
+      function playChord() {
+        if (!isPlaying || !ctx) return;
+        stopOscillators();
+        var chord = chords[chordIndex % chords.length];
+        chordIndex++;
+
+        chord.forEach(function(freq, i) {
+          var osc = ctx.createOscillator();
+          var gain = ctx.createGain();
+          osc.type = i % 2 === 0 ? 'sine' : 'triangle';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+          gain.gain.setValueAtTime(0.001, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.65 / Math.sqrt(chord.length), ctx.currentTime + 0.5);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 3.8);
+
+          osc.connect(gain);
+          if (i % 2 === 0 && channelLeftGain) {
+            gain.connect(channelLeftGain);
+          } else if (channelRightGain) {
+            gain.connect(channelRightGain);
+          } else {
+            gain.connect(masterGain);
+          }
+
+          osc.start();
+          osc.stop(ctx.currentTime + 4.0);
+          oscList.push(osc);
+        });
+
+        chordTimer = setTimeout(playChord, 3600);
+      }
+
+      function stopOscillators() {
+        oscList.forEach(function(o) {
+          try { o.stop(); o.disconnect(); } catch(e) {}
+        });
+        oscList = [];
+        if (chordTimer) {
+          clearTimeout(chordTimer);
+          chordTimer = null;
+        }
+      }
+
+      return {
+        init: function() { initContext(); },
+        play: function(title) {
+          initContext();
+          isPlaying = true;
+          updateDSP();
+          playChord();
+        },
+        pause: function() {
+          isPlaying = false;
+          stopOscillators();
+        },
+        setSpatial: function(enabled, width, depth, intensity) {
+          isSpatial = enabled;
+          spatialWidth = width;
+          spatialDepth = depth;
+          spatialIntensity = intensity;
+          updateDSP();
+        },
+        setVolume: function(vol) {
+          currentVolume = typeof vol === 'number' ? Math.max(0, Math.min(vol, 1.0)) : 1.0;
+          if (masterGain && ctx) {
+            masterGain.gain.setTargetAtTime(currentVolume, ctx.currentTime, 0.03);
+          }
+        }
+      };
+    })();
+  </script>
+</head>
+<body>
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
+
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

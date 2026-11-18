@@ -1,0 +1,54 @@
+name: Build AuraBeat IPA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios:
+    name: Build iOS IPA
+    runs-on: macos-latest   # if Xcode 27 is available, try: xcode-27
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Strip BOM from source files
+        run: |
+          find . -type f \( -name "*.swift" -o -name "*.sh" -o -name "*.plist" \
+            -o -name "*.pbxproj" -o -name "*.entitlements" -o -name "*.xcscheme" \
+            -o -name "*.xcconfig" -o -name "*.strings" -o -name "*.xcstrings" \
+            -o -name "*.json" -o -name "*.xctestplan" -o -name "*.xcworkspacedata" \) \
+            -not -path "./.git/*" -not -path "./build/*" \
+            -exec perl -i -pe 's/^\xEF\xBB\xBF// if $. == 1; close ARGV if eof' {} +
+
+      - name: Select newest Xcode
+        run: |
+          XC=$(ls -d /Applications/Xcode_2*.app 2>/dev/null | sort -V | tail -1)
+          echo "Using $XC"
+          sudo xcode-select -s "$XC"
+          echo "DEVELOPER_DIR=$XC/Contents/Developer" >> "$GITHUB_ENV"
+          xcodebuild -version
+
+      - name: Build AuraBeat IPA (low memory, auto-retry)
+        run: |
+          chmod +x scripts/*.sh
+          export JOBS=1
+          for i in 1 2 3; do
+            echo "=== Build attempt $i ==="
+            scripts/make-ipa.sh && exit 0
+            echo "Attempt $i failed, retrying..."
+            sleep 10
+          done
+          exit 1
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: AuraBeat-IPA
+          path: build/*.ipa
+          if-no-files-found: error
+          retention-days: 7

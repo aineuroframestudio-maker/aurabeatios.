@@ -1,0 +1,40 @@
+{
+  "id": "app.bitchord.confih",
+  "name": "BitChord Confih Studio",
+  "version": "2.0.0",
+  "description": "Official BitChord Confih Hi-Res Master Streaming & Discovery Add-on",
+  "resources": [
+    "search",
+    "stream"
+  ],
+  "bitchordAuth": true,
+  "allowDownloads": true,
+  "checkValidLossless": false,
+  "quality": [
+    {
+      "value": "max",
+      "label": "Hi-Res & Dolby Atmos (24-bit / 192 kHz FLAC)"
+    },
+    {
+      "value": "lossless",
+      "label": "CD Lossless (16-bit / 44.1 kHz FLAC)"
+    },
+    {
+      "value": "high",
+      "label": "High Fidelity (320 kbps AAC / MP3)"
+    },
+    {
+      "value": "low",
+      "label": "Data Saver (96–128 kbps)"
+    }
+  ],
+  "settings": [
+    {
+      "key": "atmos",
+      "title": "Dolby Atmos Spatial Audio",
+      "type": "select",
+      "options": ["always", "headphones", "off"],
+      "default": "always"
+    }
+  ]
+}
