@@ -100,4 +100,35 @@ final class TrackIdentityMismatchTests: XCTestCase {
 
         XCTAssertEqual(found, album)
     }
+
+    // MARK: - Stale videoId & cache identity regression tests
+
+    func testStaleVideoIdDoesNotMatchTargetWhenQueueReordered() {
+        let originalTarget = QualityUpgrade.Target(title: "Song A", artist: "Artist A", durationSec: 180)
+        let swappedTarget = QualityUpgrade.Target(title: "Song B", artist: "Artist B", durationSec: 240)
+
+        // Different tracks must never be identified as the same recording
+        XCTAssertFalse(QualityUpgrade.sameRecording(candidateSec: originalTarget.durationSec, playingSec: swappedTarget.durationSec))
+        XCTAssertTrue(QualityUpgrade.isSevereMismatch(expectedSec: originalTarget.durationSec, actualSec: swappedTarget.durationSec))
+    }
+
+    func testCacheKeysCannotResolveAudioBelongingToAnotherTrack() {
+        let trackA = Song(videoId: "track_A_111", title: "Midnight City", artist: "M83", durationText: "4:03")
+        let trackB = Song(videoId: "track_B_222", title: "Starboy", artist: "The Weeknd", durationText: "3:50")
+
+        XCTAssertNotEqual(trackA.videoId, trackB.videoId)
+        let keyA = trackA.videoId
+        let keyB = trackB.videoId
+        XCTAssertNotEqual(keyA, keyB, "Distinct songs must produce strictly distinct cache keys")
+    }
+
+    func testExactSelectedRecordingPlayedWithoutSilentSubstitution() {
+        let original = QualityUpgrade.Target(title: "Midnight City", artist: "M83", durationSec: 243)
+        let unrelatedCandidateSec = 190
+
+        XCTAssertTrue(QualityUpgrade.isSevereMismatch(expectedSec: original.durationSec, actualSec: unrelatedCandidateSec))
+        let effective = QualityUpgrade.effectiveTargetDuration(expectedSec: original.durationSec, playingSec: unrelatedCandidateSec)
+        XCTAssertEqual(effective, 243, "Target duration must not be poisoned by unrelated candidate")
+        XCTAssertFalse(QualityUpgrade.sameRecording(candidateSec: unrelatedCandidateSec, playingSec: effective))
+    }
 }

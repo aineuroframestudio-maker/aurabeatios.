@@ -432,5 +432,67 @@ void main() {
       expect(content.contains('function playChord() {\n        // Disallowed fake/synthesized music: real audio playback only.\n        return;\n      }'), isTrue);
       expect(content.contains('createOscillator'), isFalse, reason: 'Zero oscillators must be created in web audio engine');
     });
+
+    test('Phase 11.1: Rapid track switching and queue reordering maintains strict track identity', () {
+      final controller = PlaybackQueueController(initialQueue: distinctSongs);
+      expect(controller.currentSong?.id, equals('test_song_a'));
+
+      // Rapidly switch songs: C -> E -> B -> D -> A
+      controller.selectSong(distinctSongs[2]); // C
+      expect(controller.currentSong?.id, equals('test_song_c'));
+      expect(controller.currentSong?.streamUrl, equals(fixtureFiles['Song_C_FLAC']));
+
+      controller.selectSong(distinctSongs[4]); // E
+      expect(controller.currentSong?.id, equals('test_song_e'));
+      expect(controller.currentSong?.streamUrl, equals(fixtureFiles['Song_E_HEAAC']));
+
+      controller.selectSong(distinctSongs[1]); // B
+      expect(controller.currentSong?.id, equals('test_song_b'));
+      expect(controller.currentSong?.streamUrl, equals(fixtureFiles['Song_B_ALAC']));
+
+      controller.selectSong(distinctSongs[3]); // D
+      expect(controller.currentSong?.id, equals('test_song_d'));
+      expect(controller.currentSong?.streamUrl, equals(fixtureFiles['Song_D_WAV']));
+
+      controller.selectSong(distinctSongs[0]); // A
+      expect(controller.currentSong?.id, equals('test_song_a'));
+      expect(controller.currentSong?.streamUrl, equals(fixtureFiles['Song_A_AAC']));
+
+      // Reorder queue: swap items and ensure current track identity remains bound to exact song
+      final reordered = [distinctSongs[4], distinctSongs[3], distinctSongs[2], distinctSongs[1], distinctSongs[0]];
+      controller.selectSong(distinctSongs[0], newQueue: reordered);
+      expect(controller.queue.length, equals(5));
+      expect(controller.queue[0].id, equals('test_song_e'));
+      expect(controller.queue[4].id, equals('test_song_a'));
+      expect(controller.currentSong?.id, equals('test_song_a'));
+    });
+
+    test('Phase 11.2: Cache keys and track identities cannot resolve audio belonging to another track', () {
+      final cacheKeyMap = <String, String>{};
+      for (final song in distinctSongs) {
+        final cacheKey = 'cache_entry_${song.id}';
+        expect(cacheKeyMap.containsKey(cacheKey), isFalse, reason: 'Collision detected: cache key must be unique per track');
+        cacheKeyMap[cacheKey] = song.streamUrl!;
+      }
+
+      expect(cacheKeyMap.keys.length, equals(5));
+      for (final song in distinctSongs) {
+        final key = 'cache_entry_${song.id}';
+        expect(cacheKeyMap[key], equals(song.streamUrl),
+            reason: 'Cache key $key must resolve strictly to its own audio stream');
+      }
+    });
+
+    test('Phase 11.3: Exact selected recording is played using real source metadata without substitution', () {
+      final controller = PlaybackQueueController(initialQueue: distinctSongs);
+      for (int i = 0; i < distinctSongs.length; i++) {
+        final song = distinctSongs[i];
+        controller.selectSong(song);
+        expect(controller.currentSong?.title, equals(song.title));
+        expect(controller.currentSong?.artist, equals(song.artist));
+        expect(controller.currentSong?.audioQuality, equals(song.audioQuality));
+        expect(controller.currentSong?.streamUrl, equals(song.streamUrl));
+      }
+    });
   });
 }

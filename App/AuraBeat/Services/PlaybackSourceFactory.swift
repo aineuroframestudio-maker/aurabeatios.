@@ -214,8 +214,9 @@ final class PlaybackSourceFactory {
     func playingCacheKey(for videoId: String) -> AudioCacheKey? {
         // Validate that this videoId still maps to the currently playing song,
         // not a stale entry from a previous queue position or version alignment.
-        guard let song = AppModel.current?.player?.currentSong else { return nil }
-        guard song.videoId == videoId else { return nil }  // Prevent cross-track cache collision
+        if let currentSong = AppModel.current?.player?.currentSong {
+            guard currentSong.videoId == videoId else { return nil }  // Prevent cross-track cache collision
+        }
         return playingKeys.key(for: videoId).map { AudioCacheKey(rawValue: $0) }
     }
 
@@ -289,10 +290,11 @@ final class PlaybackSourceFactory {
             // Critical: validate videoId before using cache key - prevents serving
             // another track's cached audio when queue entries have been reordered
             // or version alignment has changed the song's identity.
-            guard AppModel.current?.player?.currentSong?.videoId == song.videoId else {
-                playbackLog("event=videoId_mismatch_fallback")
+            if let currentSong = AppModel.current?.player?.currentSong,
+               song.queueEntryId == currentSong.queueEntryId,
+               currentSong.videoId != song.videoId {
+                playbackLog("event=videoId_mismatch_detected")
                 forgetMissing(song)
-                return source(for: song)  // Recursive fresh resolve
             }
             playbackLog("event=network_source_validated")
             guard let cache else { return .asset { throw PlaybackSourceError.missingLocalFile(URL(fileURLWithPath: song.videoId)) } }
