@@ -45,7 +45,11 @@ public struct SourceEnvironment: Sendable {
         youTubeStreams: StreamResolving?
     ) -> SourceEnvironment {
         SourceEnvironment(
-            dolbyAtmosEnabled: { await (settings.dolbyAtmos || settings.sony360) },
+            dolbyAtmosEnabled: {
+                let atmos = await settings.dolbyAtmos
+                let sony = await settings.sony360
+                return atmos || sony
+            },
             youTubeSearch: youTubeSearch,
             youTubeStreams: youTubeStreams
         )
