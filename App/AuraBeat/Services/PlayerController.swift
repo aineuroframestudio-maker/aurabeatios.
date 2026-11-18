@@ -965,9 +965,16 @@ final class PlayerController {
     /// The queued row whose engine item id is `itemID` — the current track first, then any row
     /// still in the queue. Nil for an engine id no row is on now (a rendition an upgrade replaced).
     private func song(forEngineItemID itemID: String) -> Song? {
+        guard !itemID.isEmpty else { return nil }
         let base = PlaybackSourceFactory.baseItemID(itemID)
-        let idParts = base.split(separator: "|")
-        let itemVideoId = idParts.count > 1 ? String(idParts[1]) : nil
+        let pipeIndex = base.firstIndex(of: "|")
+        let itemVideoId: String?
+        if let pipeIndex {
+            let extracted = String(base[base.index(after: pipeIndex)...])
+            itemVideoId = extracted.isEmpty ? nil : extracted
+        } else {
+            itemVideoId = nil
+        }
 
         // First check if current song matches
         if let current = currentSong, sources.engineItemID(for: current) == itemID {

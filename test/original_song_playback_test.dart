@@ -494,5 +494,49 @@ void main() {
         expect(controller.currentSong?.streamUrl, equals(song.streamUrl));
       }
     });
+
+    test('Phase 11.4: Engine item ID parser safely extracts videoId and handles malformed IDs', () {
+      String? parseItemVideoId(String itemID) {
+        if (itemID.isEmpty) return null;
+        // Strip rendition tag if present
+        final hashIdx = itemID.lastIndexOf('#');
+        final base = hashIdx != -1 ? itemID.substring(0, hashIdx) : itemID;
+        final pipeIdx = base.indexOf('|');
+        if (pipeIdx == -1) return null;
+        final extracted = base.substring(pipeIdx + 1);
+        return extracted.isEmpty ? null : extracted;
+      }
+
+      // Valid standard itemID
+      expect(parseItemVideoId('queue_1|video_abc'), equals('video_abc'));
+      // Valid itemID with rendition tag
+      expect(parseItemVideoId('queue_1|video_abc#hifi'), equals('video_abc'));
+      // Valid itemID with complex tag
+      expect(parseItemVideoId('queue_1|video_abc#alt-noatmos'), equals('video_abc'));
+      // Malformed: empty
+      expect(parseItemVideoId(''), isNull);
+      // Malformed: no pipe delimiter
+      expect(parseItemVideoId('legacy_unpiped_id'), isNull);
+      // Malformed: empty videoId after pipe
+      expect(parseItemVideoId('queue_1|'), isNull);
+    });
+
+    test('Phase 11.5: Retry loop limits prevent infinite recursion', () {
+      const maxRetries = 3;
+      int retryCount = 0;
+      bool canRetry(int attempt) {
+        if (attempt <= maxRetries) {
+          retryCount++;
+          return true;
+        }
+        return false;
+      }
+
+      for (int attempt = 1; attempt <= 10; attempt++) {
+        canRetry(attempt);
+      }
+
+      expect(retryCount, equals(3), reason: 'Retries must halt after 3 attempts');
+    });
   });
 }

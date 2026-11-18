@@ -338,7 +338,11 @@ final class PlaybackSourceFactory {
             let restreamed = source(for: song)
             if case .file(let url) = restreamed, url == gone { return nil }
             return restreamed
-        case .retry(_, let networkFault):
+        case .retry(let attempt, let networkFault):
+            guard attempt <= 3 else {
+                TrackLog.w("PlaybackSourceFactory", "Max recovery attempts (\(attempt)) reached for \(song.videoId); halting retries")
+                return nil
+            }
             await cache?.discard(trackID: song.videoId, keepComplete: networkFault || isOffline())
             // A dead stream read-ahead found is not opened again: the row resolves afresh.
             readAheadStreams.forget(song.videoId)

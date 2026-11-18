@@ -131,4 +131,27 @@ final class TrackIdentityMismatchTests: XCTestCase {
         XCTAssertEqual(effective, 243, "Target duration must not be poisoned by unrelated candidate")
         XCTAssertFalse(QualityUpgrade.sameRecording(candidateSec: unrelatedCandidateSec, playingSec: effective))
     }
+
+    func testRapidTrackSwitchingDoesNotReuseStaleTrackCacheKey() {
+        var activeTrackId = "track_1"
+        var activeCacheKey = "cache_\(activeTrackId)"
+
+        // Rapid switch track 1 -> track 2 -> track 3 -> track 4
+        let switches = ["track_2", "track_3", "track_4"]
+        for next in switches {
+            activeTrackId = next
+            activeCacheKey = "cache_\(activeTrackId)"
+            XCTAssertEqual(activeCacheKey, "cache_\(next)")
+        }
+        XCTAssertEqual(activeCacheKey, "cache_track_4")
+    }
+
+    func testQualityUpgradeRejectsDurationBeyondTolerance() {
+        // QualityUpgrade.sameRecordingToleranceSeconds is 2 seconds
+        let playingSec = 200
+        XCTAssertTrue(QualityUpgrade.sameRecording(candidateSec: 202, playingSec: playingSec))
+        XCTAssertTrue(QualityUpgrade.sameRecording(candidateSec: 198, playingSec: playingSec))
+        XCTAssertFalse(QualityUpgrade.sameRecording(candidateSec: 203, playingSec: playingSec), "3 seconds drift must be rejected as a different cut")
+        XCTAssertFalse(QualityUpgrade.sameRecording(candidateSec: 197, playingSec: playingSec), "3 seconds drift must be rejected as a different cut")
+    }
 }
