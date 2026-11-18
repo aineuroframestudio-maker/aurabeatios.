@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import CryptoKit
 import Foundation
 import ImageIO

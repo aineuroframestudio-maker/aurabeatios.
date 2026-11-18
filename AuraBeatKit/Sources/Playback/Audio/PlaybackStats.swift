@@ -1,4 +1,4 @@
-﻿import AVFoundation
+import AVFoundation
 import AuraBeatCore
 
 /// What is actually playing, measured off the player — the values behind stats for nerds.

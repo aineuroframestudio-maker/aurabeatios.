@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports the decision half of ui/player/PlayerControls.kt: `LosslessOrStats` (the badge between the

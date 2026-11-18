@@ -1,4 +1,4 @@
-﻿import XCTest
+import XCTest
 @testable import PlaybackPolicy
 
 /// How long an upgrade verdict is allowed to stand (ports QualityUpgradeScopeTest).

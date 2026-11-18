@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports playback/ChunkedDataSource.kt, PlayerClient.rangeBytesFor and the refusal hand-back to

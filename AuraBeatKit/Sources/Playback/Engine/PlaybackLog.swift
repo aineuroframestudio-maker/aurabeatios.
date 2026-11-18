@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 
 /// Log lines for the Playback module, filed under the track they are about when there is one.
 enum PlaybackLog {

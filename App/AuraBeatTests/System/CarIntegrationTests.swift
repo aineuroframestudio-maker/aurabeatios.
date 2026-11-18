@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import CarPlay
 import XCTest
 @testable import AuraBeat

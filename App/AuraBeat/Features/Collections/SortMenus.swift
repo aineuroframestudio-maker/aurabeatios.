@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import SwiftUI
 
 // The two sort controls of MainActivity.kt's top bar: the track-list sort on an album or playlist

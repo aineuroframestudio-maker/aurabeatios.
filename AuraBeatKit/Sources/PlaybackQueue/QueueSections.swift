@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports the queue-panel model from ui/player/PlayerQueue.kt (splitQueue, QueueTrack, QueueSection,

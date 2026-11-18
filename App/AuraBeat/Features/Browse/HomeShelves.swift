@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import SwiftUI
 
 // Ports the shelf composables of ui/screens/HomeScreen.kt: SectionHeader, RecentShelf (with its

@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports the public API, writes and stats pings of data/innertube/Innertube.kt.

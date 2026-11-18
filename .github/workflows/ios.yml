@@ -1,6 +1,8 @@
 name: Build AuraBeat IPA
 
 on:
+  push:
+    branches: [ master, main ]
   workflow_dispatch:
 
 permissions:
@@ -9,7 +11,7 @@ permissions:
 jobs:
   build-ios:
     name: Build iOS IPA
-    runs-on: macos-latest   # if Xcode 27 is available, try: xcode-27
+    runs-on: macos-latest
     timeout-minutes: 180
 
     steps:
@@ -25,25 +27,110 @@ jobs:
             -not -path "./.git/*" -not -path "./build/*" \
             -exec perl -i -pe 's/^\xEF\xBB\xBF// if $. == 1; close ARGV if eof' {} +
 
+      - name: Fix file encoding (Windows-1252 to UTF-8)
+        run: |
+          python3 - << 'EOF'
+          import codecs, os
+
+          def handler(e):
+              bad = e.object[e.start:e.end]
+              try:
+                  s = bad.decode("cp1252")
+              except UnicodeDecodeError:
+                  s = bad.decode("latin-1")
+              return (s, e.end)
+
+          codecs.register_error("cp1252_fallback", handler)
+
+          EXT = (".swift", ".sh", ".plist", ".strings", ".xcstrings", ".json", ".h", ".m",
+                 ".mm", ".c", ".cpp", ".hpp", ".entitlements", ".xcconfig", ".pbxproj",
+                 ".xcscheme", ".xctestplan")
+          SKIP = (".git", "/build", ".derived", ".dart_tool", "/.idea")
+          fixed = 0
+          for root, dirs, files in os.walk("."):
+              if any(s in root for s in SKIP):
+                  continue
+              for f in files:
+                  if not f.endswith(EXT):
+                      continue
+                  p = os.path.join(root, f)
+                  b = open(p, "rb").read()
+                  try:
+                      b.decode("utf-8")
+                      continue
+                  except UnicodeDecodeError:
+                      pass
+                  text = b.decode("utf-8", errors="cp1252_fallback")
+                  open(p, "wb").write(text.encode("utf-8"))
+                  fixed += 1
+                  print("fixed:", p)
+          print("total fixed:", fixed)
+          EOF
+
+      - name: Remove self-referencing typealiases
+        run: |
+          find . -name "*.swift" -not -path "./.git/*" -not -path "./build/*" \
+            -exec perl -ni -e 'print unless /^\s*(public\s+)?typealias\s+(\w+)\s*=\s*\2\s*$/' {} +
+          grep -rn "typealias AuraBeatLogging" AuraBeatKit/Sources || echo "alias removed"
+
+      - name: Fix backup error case name
+        run: |
+          perl -pi -e 's/case \.notAAuraBeatBackup:/case .notAnAuraBeatBackup:/; s/look like a AuraBeat backup/look like an AuraBeat backup/' App/AuraBeat/Features/Settings/SettingsData.swift
+          grep -n "notAnAuraBeatBackup" App/AuraBeat/Features/Settings/SettingsData.swift
+
+      - name: List installed Xcode versions
+        run: ls -d /Applications/Xcode*.app
+
       - name: Select newest Xcode
         run: |
-          XC=$(ls -d /Applications/Xcode_2*.app 2>/dev/null | sort -V | tail -1)
-          echo "Using $XC"
-          sudo xcode-select -s "$XC"
-          echo "DEVELOPER_DIR=$XC/Contents/Developer" >> "$GITHUB_ENV"
+          XC=$(ls -d /Applications/Xcode_1*.app /Applications/Xcode.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$XC" ] && [ -d "$XC" ]; then
+            echo "Using $XC"
+            sudo xcode-select -s "$XC"
+            echo "DEVELOPER_DIR=$XC/Contents/Developer" >> "$GITHUB_ENV"
+          fi
           xcodebuild -version
 
-      - name: Build AuraBeat IPA (low memory, auto-retry)
+      - name: Build AuraBeat IPA
         run: |
+          defaults write com.apple.dt.Xcode IDEPackageSupportUseBuiltinSCM NO || true
+          mkdir -p ~/.swiftpm/configuration
+          cat << 'EOF' > ~/.swiftpm/configuration/mirrors.json
+          {
+            "object": [
+              {
+                "original": "https://github.com/microsoft/onnxruntime-swift-package-manager",
+                "mirror": "https://github.com/mobilyze-llc/onnxruntime-swift-package-manager.git"
+              },
+              {
+                "original": "https://github.com/microsoft/onnxruntime-swift-package-manager.git",
+                "mirror": "https://github.com/mobilyze-llc/onnxruntime-swift-package-manager.git"
+              }
+            ],
+            "version": 1
+          }
+          EOF
+          git config --global url."https://github.com/mobilyze-llc/onnxruntime-swift-package-manager.git".insteadOf "https://github.com/microsoft/onnxruntime-swift-package-manager.git" || true
+          git config --global url."https://github.com/mobilyze-llc/onnxruntime-swift-package-manager".insteadOf "https://github.com/microsoft/onnxruntime-swift-package-manager" || true
           chmod +x scripts/*.sh
-          export JOBS=1
-          for i in 1 2 3; do
-            echo "=== Build attempt $i ==="
-            scripts/make-ipa.sh && exit 0
-            echo "Attempt $i failed, retrying..."
-            sleep 10
-          done
-          exit 1
+          export JOBS=3
+          set -o pipefail
+          scripts/make-ipa.sh 2>&1 | tee build.log
+
+      - name: Show real errors
+        if: failure()
+        run: |
+          grep -n -E "error:|Fatal error|Assertion failed|Stack dump|Please submit a bug" build.log | head -40
+          echo "===== last 60 lines ====="
+          tail -60 build.log
+
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4

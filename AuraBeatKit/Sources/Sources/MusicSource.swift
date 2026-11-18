@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports data/sources/MusicSource.kt (the source interface and SourceHealth) and SourceConfig from

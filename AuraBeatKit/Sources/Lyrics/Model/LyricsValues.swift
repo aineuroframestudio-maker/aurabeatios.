@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// The track lyrics are wanted for — the handful of `Song` fields the lookup reads.

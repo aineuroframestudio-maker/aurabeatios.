@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// Lyrics from LRCLIB — a free, key-less, community lyrics database.

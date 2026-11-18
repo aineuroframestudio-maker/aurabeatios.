@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // The companion-object half of data/sources/ModuleSource.kt: rules both module and addon streams

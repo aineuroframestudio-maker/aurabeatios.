@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports data/sources/YouTubeSource.kt. The search and the stream resolver are injected

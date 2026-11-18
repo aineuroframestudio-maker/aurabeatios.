@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import SwiftUI
 
 // Ports ui/theme/Theme.kt. Android shipped SF Pro Display and hand-picked colours to look like

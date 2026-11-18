@@ -1,4 +1,4 @@
-﻿import Canvas
+import Canvas
 import XCTest
 @testable import AuraBeat
 

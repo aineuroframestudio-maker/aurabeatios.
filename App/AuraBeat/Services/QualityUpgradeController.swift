@@ -1,4 +1,4 @@
-﻿import AudioCache
+import AudioCache
 import AVFoundation
 import AuraBeatCore
 import Foundation
@@ -147,10 +147,10 @@ final class QualityUpgradeController {
         var stall: Duration
         var ceiling: Duration
     }
-    static let standardProof = ProofClock(timeout: proveTimeout, check: proveCheck, stall: proveStall, ceiling: proveCeiling)
+    nonisolated static let standardProof = ProofClock(timeout: proveTimeout, check: proveCheck, stall: proveStall, ceiling: proveCeiling)
     /// How much of the track must be left for a swap to be worth its fetch (Android
     /// `UPGRADE_MIN_REMAINING_MS`).
-    static let minRemaining: TimeInterval = 20
+    nonisolated static let minRemaining: TimeInterval = 20
     /// How long a swap can hold the standby deck: the engine's crossover deadline (8 s) and a margin.
     /// A crossfade or Automix due meanwhile is held back by the engine, so it has to start after.
     static let swapHold: TimeInterval = 10

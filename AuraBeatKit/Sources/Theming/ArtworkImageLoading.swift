@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// Fetches and decodes artwork for the colour readers.

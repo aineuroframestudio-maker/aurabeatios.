@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 import Observation
 import Replay
@@ -19,7 +19,7 @@ protocol ReplayDataSource: Sendable {
 struct LiveReplayDataSource: ReplayDataSource {
     let stats: ReplayListeningStats
     /// Runs once a summary is built, which queues the artists on the page for lookup.
-    var onSummary: @MainActor () -> Void = {}
+    var onSummary: @MainActor @Sendable () -> Void = {}
 
     func summary(for period: ReplayPeriod) async -> ReplaySummary {
         // Merging the month files is disk work: off the main thread.

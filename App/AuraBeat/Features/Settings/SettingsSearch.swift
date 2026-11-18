@@ -44,7 +44,7 @@ enum SettingsRowID: String, CaseIterable, Hashable {
     // No header: the account and the party.
     case account, listenTogether
     // Audio quality
-    case source, onWifi, onMobileData, dolbyAtmos, directSourceStream
+    case source, onWifi, onMobileData, dolbyAtmos, sony360, directSourceStream
     // Downloads
     case downloadQuality, downloadWifiOnly
     // Playback
@@ -165,6 +165,7 @@ enum SettingsCatalog {
                 row(.onWifi, L10n.onWifi, "wi-fi", "streaming quality"),
                 row(.onMobileData, L10n.onMobileData, "cellular", "streaming quality"),
                 row(.dolbyAtmos, L10n.dolbyAtmos, "surround", "e-ac-3"),
+                row(.sony360, L10n.sony360, L10n.sony360Subtitle, "spatial", "360", "atmos", "youtube", "fallback"),
                 row(.directSourceStream, L10n.directSourceStream, L10n.directSourceStreamSubtitle, "addon", "lossless", "atmos", "youtube", "fallback"),
             ]),
             SettingsGroupSpec(id: "downloads", header: L10n.downloads, rows: [

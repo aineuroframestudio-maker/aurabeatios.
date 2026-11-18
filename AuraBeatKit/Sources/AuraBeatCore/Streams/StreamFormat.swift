@@ -40,16 +40,23 @@ public struct StreamFormat: Codable, Hashable, Sendable {
         return Self.dolbyAtmosCodecs.contains(codec)
     }
 
+    /// Sony 360 Reality Audio carried in ATRAC-Spatial or MPEG-H 3D.
+    public var isSony360: Bool {
+        guard let codec else { return false }
+        return Self.sony360Codecs.contains(codec)
+    }
+
     /// Hi-Res: lossless above CD resolution (more than 16 bits or more than 48 kHz).
     public var isHiRes: Bool {
         guard isLossless == true else { return false }
         return (bitDepth ?? 0) > 16 || (sampleRateHz ?? 0) > 48_000
     }
 
-    /// "FLAC · 24-bit · 192 kHz", "MP3 · 44.1 kHz · 320 kbps", "Dolby Atmos" — whichever parts are
+    /// "FLAC · 24-bit · 192 kHz", "MP3 · 44.1 kHz · 320 kbps", "Dolby Atmos", "Sony 360 Reality Audio" — whichever parts are
     /// known; bitrate is dropped for lossless streams. "Unknown format" when nothing is.
     public var summary: String {
         if isDolbyAtmos { return "Dolby Atmos" }
+        if isSony360 { return "Sony 360 Reality Audio" }
         var parts: [String] = []
         if let codec { parts.append(codec.uppercased()) }
         if let bitDepth { parts.append("\(bitDepth)-bit") }
@@ -65,4 +72,5 @@ public struct StreamFormat: Codable, Hashable, Sendable {
 
     public static let losslessCodecs: Set<String> = ["flac", "alac", "wav", "aiff", "ape", "wv", "dsf", "dff"]
     public static let dolbyAtmosCodecs: Set<String> = ["eac3-joc", "ec3-joc", "dolby-atmos"]
+    public static let sony360Codecs: Set<String> = ["mpegh", "mpegh-3da", "mha1", "mhm1", "atrac-spatial", "sony360", "360ra"]
 }

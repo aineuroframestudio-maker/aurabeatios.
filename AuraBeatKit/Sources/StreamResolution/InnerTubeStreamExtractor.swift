@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// A stream one client offered, and the identity its media fetch has to wear.

@@ -1,4 +1,4 @@
-﻿import SwiftUI
+import SwiftUI
 import UIKit
 
 // Ports MainActivity.kt's entry point and AuraBeatApplication.kt's process start.

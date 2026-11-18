@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// Turns a YouTube videoId into a URL AVPlayer can actually stream. Port of `StreamResolver.kt`.

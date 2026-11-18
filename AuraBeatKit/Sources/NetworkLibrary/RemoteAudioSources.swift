@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 
 // What AudioCache's pluggable data-source protocol needs from a remote file:
 // a length, a type and ranged reads. NetworkLibrary can't import AudioCache

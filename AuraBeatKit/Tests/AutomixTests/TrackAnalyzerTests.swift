@@ -1,4 +1,4 @@
-﻿import XCTest
+import XCTest
 @testable import Automix
 
 /// The analysis orchestrator end to end: files on disk in, ``TrackAnalysis`` out.

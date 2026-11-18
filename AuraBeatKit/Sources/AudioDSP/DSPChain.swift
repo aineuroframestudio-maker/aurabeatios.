@@ -1,5 +1,6 @@
 import CoreAudio
 import os
+import AuraBeatCore
 
 /// AuraBeat's audio processors in their canonical order, run in place on Float32 PCM:
 ///
@@ -7,7 +8,7 @@ import os
 ///
 /// Transition filtering comes last of the three filters: widening is a property
 /// of the track, and a bass swap that ran before it would have its own low end
-/// fed back in by the cross-feed — or by whatever the listener's low band was
+/// fed back in by the cross-feed â€” or by whatever the listener's low band was
 /// set to. The equaliser sits between them for the same reason: it belongs to
 /// the listener and the whole session, while the transition filter belongs to
 /// one handoff and has to have the last word on it.
@@ -26,7 +27,7 @@ import os
 /// ## Use from a processing tap
 ///
 /// `configure` from the tap's prepare callback, `process(bufferList:...)` from
-/// its process callback, `reset` from unprepare — or let
+/// its process callback, `reset` from unprepare â€” or let
 /// `makeAudioProcessingTap()` do that wiring. Settings (`apply`, and each
 /// stage's own setters) are safe from any thread at any time.
 public final class DSPChain: FloatAudioProcessor, @unchecked Sendable {
@@ -80,6 +81,12 @@ public final class DSPChain: FloatAudioProcessor, @unchecked Sendable {
     public func apply(_ settings: AudioDSPSettings) {
         equalizer.apply(settings.equalizer)
         spatial.isEnabled = settings.spatialAudio
+        spatial.setParameters(
+            intensity: settings.spatialIntensity,
+            width: settings.spatialWidth,
+            depth: settings.spatialDepth,
+            preset: settings.spatialPreset
+        )
         loudness.setEnabled(settings.loudnessNormalization)
         silenceDetector.isEnabled = settings.skipSilence
     }
@@ -149,7 +156,7 @@ public final class DSPChain: FloatAudioProcessor, @unchecked Sendable {
         loudness.process(channels)
     }
 
-    /// Runs the chain over Float32 samples in an `AudioBufferList` — what an
+    /// Runs the chain over Float32 samples in an `AudioBufferList` â€” what an
     /// `MTAudioProcessingTap` delivers. Returns false, leaving the audio
     /// untouched, when the layout isn't one `DSPChannels` understands.
     @discardableResult
@@ -194,7 +201,7 @@ public final class DSPChain: FloatAudioProcessor, @unchecked Sendable {
     }
 }
 
-/// The listener settings the chain renders — Android's `AppSettings` fields
+/// The listener settings the chain renders â€” Android's `AppSettings` fields
 /// for the equaliser, spatial audio, loudness normalization and skip silence,
 /// with Android's defaults.
 public struct AudioDSPSettings: Equatable, Sendable {
@@ -204,6 +211,12 @@ public struct AudioDSPSettings: Equatable, Sendable {
     /// active track is Dolby Atmos; that decision belongs to whoever builds this.
     public var spatialAudio: Bool
 
+    /// Configurable spatial audio parameters.
+    public var spatialIntensity: Float
+    public var spatialWidth: Float
+    public var spatialDepth: Float
+    public var spatialPreset: SpatialAudioPreset
+
     /// On by default, as on Android.
     public var loudnessNormalization: Bool
 
@@ -211,10 +224,18 @@ public struct AudioDSPSettings: Equatable, Sendable {
 
     public init(equalizer: EqualizerSettings = EqualizerSettings(),
                 spatialAudio: Bool = false,
+                spatialIntensity: Float = 0.75,
+                spatialWidth: Float = 1.5,
+                spatialDepth: Float = 0.4,
+                spatialPreset: SpatialAudioPreset = .natural,
                 loudnessNormalization: Bool = true,
                 skipSilence: Bool = false) {
         self.equalizer = equalizer
         self.spatialAudio = spatialAudio
+        self.spatialIntensity = spatialIntensity
+        self.spatialWidth = spatialWidth
+        self.spatialDepth = spatialDepth
+        self.spatialPreset = spatialPreset
         self.loudnessNormalization = loudnessNormalization
         self.skipSilence = skipSilence
     }
@@ -229,11 +250,11 @@ public enum DSPStage: String, CaseIterable, Sendable {
 }
 
 /// Whether decoded samples reach the output unaltered, and what is altering
-/// them when they aren't — the verdict row of the audio pipeline readout.
+/// them when they aren't â€” the verdict row of the audio pipeline readout.
 ///
 /// Every stage is a filter or a gain, and none of them can run and leave the
 /// output bit-exact. Stages are listed in the order Android's readout names
-/// them — loudness normalization, then the equaliser, then spatial audio — so
+/// them â€” loudness normalization, then the equaliser, then spatial audio â€” so
 /// `primaryStage` is the one the readout should name, which is also the first
 /// thing a listener chasing an untouched signal would switch off. The
 /// transition filter, which Android's readout doesn't mention because it only

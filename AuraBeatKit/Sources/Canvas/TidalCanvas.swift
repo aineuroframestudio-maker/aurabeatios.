@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// Tidal's "video cover" — a square looping clip some albums ship instead of a still sleeve

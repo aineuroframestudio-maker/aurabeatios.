@@ -1,4 +1,4 @@
-﻿#if canImport(WebKit)
+#if canImport(WebKit)
 import Foundation
 import WebKit
 import AuraBeatCore

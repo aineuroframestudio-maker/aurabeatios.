@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import SwiftUI
 import Theming
 import XCTest

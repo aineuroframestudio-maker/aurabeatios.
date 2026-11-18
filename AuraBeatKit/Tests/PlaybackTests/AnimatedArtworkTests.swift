@@ -1,4 +1,4 @@
-﻿import MediaPlayer
+import MediaPlayer
 import AuraBeatTestSupport
 #if canImport(UIKit)
 import UIKit

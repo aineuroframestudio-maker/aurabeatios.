@@ -1,4 +1,4 @@
-﻿#!/bin/zsh
+#!/bin/zsh
 # Run tests on the "iPhone 16" simulator (AURABEAT_SIM_NAME picks another one, e.g. a second
 # simulator kept for tests so the app on your everyday one isn't replaced). Extra arguments go to xcodebuild, e.g.
 #   scripts/sim-test.sh -only-testing:AuraBeatTests
@@ -9,6 +9,8 @@ set -euo pipefail
 # Parallel compile jobs are capped at 3 so the machine stays usable during a build (JOBS=n overrides).
 export DEVELOPER_DIR=${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}
 cd "$(dirname "$0")/.."
+git config --global url."https://github.com/mobilyze-llc/onnxruntime-swift-package-manager.git".insteadOf "https://github.com/microsoft/onnxruntime-swift-package-manager.git" || true
+git config --global url."https://github.com/mobilyze-llc/onnxruntime-swift-package-manager".insteadOf "https://github.com/microsoft/onnxruntime-swift-package-manager" || true
 DEST="platform=iOS Simulator,name=${AURABEAT_SIM_NAME:-iPhone 16}"
 LOCK="${AURABEAT_SIM_LOCK:-${TMPDIR:-/tmp}/aurabeat-sim.lock}"
 xcodebuild build-for-testing -workspace AuraBeat.xcworkspace -scheme AuraBeat \

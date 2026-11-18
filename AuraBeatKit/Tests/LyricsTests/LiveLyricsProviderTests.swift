@@ -1,4 +1,4 @@
-﻿import XCTest
+import XCTest
 @testable import Lyrics
 
 /// Every provider against the real service, with a well-known song. Skipped unless

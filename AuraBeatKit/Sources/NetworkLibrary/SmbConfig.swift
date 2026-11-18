@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 // Ports data/smb/SmbConfig.kt: SMB file-share music library configuration and

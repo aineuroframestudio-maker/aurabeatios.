@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports data/sources/SourceResolver.kt, plus the playback race Android ran in
@@ -660,9 +660,10 @@ public final class SourceResolver: StreamResolving, @unchecked Sendable {
         var request = URLRequest(url: stream.url)
         for (name, value) in stream.headers { request.setValue(value, forHTTPHeaderField: name) }
         request.setValue("bytes=0-\(Self.firstBytesRange - 1)", forHTTPHeaderField: "Range")
+        let probeRequest = request
         let session = environment.session
         let sounded = try? await withDeadline(Self.firstBytesTimeout) { @Sendable () async throws -> Bool in
-            let (bytes, response) = try await session.bytes(for: request)
+            let (bytes, response) = try await session.bytes(for: probeRequest)
             guard let status = (response as? HTTPURLResponse)?.statusCode, (200..<300).contains(status) else { return false }
             for try await _ in bytes { return true }
             return false

@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Lyrics
 import Replay
 import Sources
@@ -23,6 +23,7 @@ struct SettingsScreen: View {
     @Environment(PlayerController.self) private var player
 
     @State private var query = ""
+    @State private var selectedCategory = "all"
     @State private var metered: Bool?
     @State private var picking: QualityTarget?
     @State private var pickingDownloadQuality = false
@@ -43,49 +44,84 @@ struct SettingsScreen: View {
 
     var body: some View {
         let search = SettingsSearch(query)
-        let groups = SettingsCatalog.groups(visibility: visibility, search: search)
-        ScrollViewReader { proxy in
-            List {
-                ForEach(groups) { group in
-                    SettingsGroup(header: group.header) {
-                        ForEach(Array(group.rows.enumerated()), id: \.element.id) { index, spec in
-                            let nextIsSub = index + 1 < group.rows.count && group.rows[index + 1].isSubRow
-                            rowView(spec.id)
-                                .id(spec.id)
-                                .listRowSeparator(nextIsSub ? .hidden : .automatic, edges: .bottom)
-                                .listRowSeparator(spec.isSubRow && index > 0 ? .hidden : .automatic, edges: .top)
+        let allGroups = SettingsCatalog.groups(visibility: visibility, search: search)
+        let groups = allGroups.filter { group in
+            guard search.isBlank else { return true }
+            return selectedCategory == "all" || group.id == selectedCategory
+        }
+
+        VStack(spacing: 0) {
+            if search.isBlank {
+                categorySelectorBar
+            }
+
+            ScrollViewReader { proxy in
+                List {
+                    ForEach(groups) { group in
+                        let meta = categoryMeta(for: group.id)
+                        SettingsGroup(header: group.header, symbol: meta?.symbol, symbolColor: meta?.color) {
+                            ForEach(Array(group.rows.enumerated()), id: \.element.id) { index, spec in
+                                let nextIsSub = index + 1 < group.rows.count && group.rows[index + 1].isSubRow
+                                rowView(spec.id)
+                                    .id(spec.id)
+                                    .listRowSeparator(nextIsSub ? .hidden : .automatic, edges: .bottom)
+                                    .listRowSeparator(spec.isSubRow && index > 0 ? .hidden : .automatic, edges: .top)
+                            }
+                        }
+                        .id(group.id)
+                    }
+
+                    if selectedCategory != "all" && search.isBlank {
+                        Section {
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    selectedCategory = "all"
+                                }
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "square.grid.2x2.fill")
+                                    Text("Show All Categories")
+                                }
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Color.accentColor)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 6)
+                            }
+                            .listRowBackground(Color.clear)
                         }
                     }
-                    .id(group.id)
-                }
 
-                // Read after every group has had its turn at the query, which is what makes this
-                // an accurate "nothing here" rather than a guess.
-                if groups.isEmpty {
-                    Section {
-                        Text(L10n.settingsSearchEmpty(query))
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity)
-                            .multilineTextAlignment(.center)
-                            .padding(.vertical, 24)
-                            .listRowBackground(Color.clear)
+                    // Read after every group has had its turn at the query, which is what makes this
+                    // an accurate "nothing here" rather than a guess.
+                    if groups.isEmpty {
+                        Section {
+                            Text(L10n.settingsSearchEmpty(query))
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity)
+                                .multilineTextAlignment(.center)
+                                .padding(.vertical, 24)
+                                .listRowBackground(Color.clear)
+                        }
+                    }
+
+                    // The version line is the page's colophon, not a setting: it goes when the list is
+                    // narrowed to a few rows.
+                    if search.isBlank {
+                        Section {
+                            SettingsColophon()
+                                .listRowBackground(Color.clear)
+                        }
                     }
                 }
-
-                // The version line is the page's colophon, not a setting: it goes when the list is
-                // narrowed to a few rows.
-                if search.isBlank {
-                    Section {
-                        SettingsColophon()
-                            .listRowBackground(Color.clear)
-                    }
+                .settingsGroupList()
+                // What is left after a keystroke is a different list, and the offset the last one was
+                // scrolled to means nothing in it.
+                .onChange(of: query) { _, _ in
+                    if let first = groups.first { proxy.scrollTo(first.id, anchor: .top) }
                 }
-            }
-            .settingsGroupList()
-            // What is left after a keystroke is a different list, and the offset the last one was
-            // scrolled to means nothing in it.
-            .onChange(of: query) { _, _ in
-                if let first = groups.first { proxy.scrollTo(first.id, anchor: .top) }
+                .onChange(of: selectedCategory) { _, _ in
+                    if let first = groups.first { proxy.scrollTo(first.id, anchor: .top) }
+                }
             }
         }
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: L10n.settingsSearchHint)
@@ -194,6 +230,17 @@ struct SettingsScreen: View {
                               subtitle: supported ? L10n.dolbyAtmosSubtitle : L10n.dolbyAtmosUnavailable,
                               enabled: supported,
                               isOn: Binding(get: { settings.dolbyAtmos && supported }, set: { settings.dolbyAtmos = $0 }))
+        case .sony360:
+            // Greyed rather than hidden where the device can't decode Sony 360: a missing row reads as
+            // a feature the app doesn't have; a disabled one says the phone has no Sony 360 decoder. The
+            // stored preference is left untouched either way.
+            let supported = DeviceCodecs.shared.playsSony360
+            SettingsToggleRow(symbol: "hifispeaker.2.fill", title: L10n.sony360,
+                              subtitle: supported ? L10n.sony360Subtitle : L10n.sony360Unavailable,
+                              enabled: supported,
+                              isOn: Binding(get: { settings.sony360 && supported }, set: { settings.sony360 = $0 })) {
+                router.open(.sony360)
+            }
         case .directSourceStream:
             SettingsRow(symbol: "arrow.triangle.branch", title: L10n.directSourceStream,
                         subtitle: L10n.directSourceStreamSubtitle,
@@ -235,11 +282,19 @@ struct SettingsScreen: View {
             SettingsToggleRow(symbol: "speaker.slash.fill", title: L10n.skipSilence,
                               subtitle: L10n.skipSilenceSubtitle, isOn: $settings.skipSilence)
         case .spatialAudio:
-            // Held off for the length of an Atmos track (the object mix is spatialized already);
-            // said on the row because the switch stays where the listener left it.
-            SettingsToggleRow(symbol: "dot.radiowaves.left.and.right", title: L10n.spatialAudio,
-                              subtitle: player.signalPath == .spatialPassthrough ? L10n.spatialAudioAtmosSubtitle : L10n.spatialAudioSubtitle,
-                              isOn: $settings.spatialAudio)
+            SettingsToggleRow(
+                symbol: "dot.radiowaves.left.and.right",
+                title: L10n.spatialAudio,
+                subtitle: player.signalPath == .spatialPassthrough
+                    ? L10n.spatialAudioAtmosSubtitle
+                    : (settings.spatialAudio ? "\(settings.spatialAudioPreset.title) (\(Int(settings.spatialAudioWidth * 100))%)" : L10n.spatialAudioSubtitle),
+                isOn: $settings.spatialAudio
+            )
+            if settings.spatialAudio {
+                SettingsRow(symbol: nil, title: "Spatial Audio Tuning", subtitle: "\(settings.spatialAudioPreset.title) · \(Int(settings.spatialAudioWidth * 100))% width") {
+                    router.open(.spatialAudio)
+                }
+            }
         case .equalizer:
             SettingsRow(symbol: "slider.vertical.3", title: L10n.equalizer, subtitle: L10n.equalizerSubtitle) {
                 router.open(.equalizer)
@@ -468,6 +523,95 @@ struct SettingsScreen: View {
             },
             selected: settings.automixPerformanceMode
         ) { settings.automixPerformanceMode = $0 }
+    }
+
+    // MARK: - Category Navigation
+
+    private struct CategoryItem: Identifiable, Hashable {
+        let id: String
+        let title: String
+        let symbol: String
+        let color: Color
+    }
+
+    private var categories: [CategoryItem] {
+        [
+            CategoryItem(id: "all", title: L10n.showAll, symbol: "square.grid.2x2.fill", color: .accentColor),
+            CategoryItem(id: "audioQuality", title: L10n.audioQuality, symbol: "waveform.path", color: .purple),
+            CategoryItem(id: "playback", title: L10n.playback, symbol: "play.circle.fill", color: .orange),
+            CategoryItem(id: "appearance", title: L10n.appearance, symbol: "paintpalette.fill", color: .pink),
+            CategoryItem(id: "downloads", title: L10n.downloads, symbol: "arrow.down.circle.fill", color: .green),
+            CategoryItem(id: "storage", title: L10n.storage, symbol: "internaldrive.fill", color: .blue),
+            CategoryItem(id: "yourData", title: L10n.yourData, symbol: "chart.bar.xaxis", color: .indigo),
+            CategoryItem(id: "miscellaneous", title: L10n.miscellaneous, symbol: "slider.horizontal.3", color: .teal),
+            CategoryItem(id: "language", title: L10n.language, symbol: "globe", color: .cyan),
+            CategoryItem(id: "advanced", title: L10n.advancedOptions, symbol: "gearshape.2.fill", color: .red),
+            CategoryItem(id: "account", title: L10n.accountIntegrations, symbol: "person.crop.circle.fill", color: .gray),
+        ]
+    }
+
+    @ViewBuilder
+    private func categoryPill(_ item: CategoryItem) -> some View {
+        let isSelected = selectedCategory == item.id
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                selectedCategory = item.id
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: item.symbol)
+                    .font(.system(size: 11, weight: .bold))
+                Text(item.title)
+                    .font(.system(size: 13, weight: isSelected ? .bold : .medium))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(
+                isSelected
+                    ? item.color.opacity(0.18)
+                    : Color(uiColor: .secondarySystemGroupedBackground),
+                in: Capsule()
+            )
+            .foregroundStyle(
+                isSelected
+                    ? item.color
+                    : .secondary
+            )
+            .overlay(
+                Capsule()
+                    .strokeBorder(isSelected ? item.color.opacity(0.4) : Color.secondary.opacity(0.2), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var categorySelectorBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(categories, id: \.id) { item in
+                    categoryPill(item)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        }
+        .background(Color(uiColor: .systemGroupedBackground))
+    }
+
+    private func categoryMeta(for id: String) -> (symbol: String, color: Color)? {
+        switch id {
+        case "account": return ("person.crop.circle.fill", .gray)
+        case "audioQuality": return ("waveform.path", .purple)
+        case "downloads": return ("arrow.down.circle.fill", .green)
+        case "playback": return ("play.circle.fill", .orange)
+        case "appearance": return ("paintpalette.fill", .pink)
+        case "storage": return ("internaldrive.fill", .blue)
+        case "yourData": return ("chart.bar.xaxis", .indigo)
+        case "miscellaneous": return ("slider.horizontal.3", .teal)
+        case "language": return ("globe", .cyan)
+        case "advanced": return ("gearshape.2.fill", .red)
+        default: return nil
+        }
     }
 }
 

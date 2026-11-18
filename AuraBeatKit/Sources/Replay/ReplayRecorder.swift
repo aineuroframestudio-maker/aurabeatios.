@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports data/stats/ListeningRecorder.kt: turns the player's ticking into the numbers

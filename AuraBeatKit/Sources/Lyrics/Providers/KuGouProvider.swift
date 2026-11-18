@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// Line-synced lyrics from KuGou's public mobile/lyrics endpoints — a Chinese catalogue,

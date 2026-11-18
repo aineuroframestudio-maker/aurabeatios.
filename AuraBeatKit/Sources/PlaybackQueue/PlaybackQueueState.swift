@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 /// The queue as the UI and the playback engine see it: an immutable value, republished by

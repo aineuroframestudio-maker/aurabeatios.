@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Modeled on Orchard's own TrackAnalyzer (https://github.com/SFG5453/Orchard).
  * Phase 1 is the DSP-only pass (AutomixAnalyzer/analyzer/audio_analysis.cpp);
  * Phase 2 adds the Beat This! ONNX model (see BeatTracker) and Phase 3 the

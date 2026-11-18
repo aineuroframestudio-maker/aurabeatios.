@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import SwiftUI
 
 // Ports ui/components/Skeletons.kt and the empty/error states of Common.kt.

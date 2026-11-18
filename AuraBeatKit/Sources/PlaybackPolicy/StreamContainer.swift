@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 
 // Ports playback/StreamContainer.kt.
 

@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports playback/QualityUpgrade.kt, with the pieces of data/sources/SourceResolver.kt and

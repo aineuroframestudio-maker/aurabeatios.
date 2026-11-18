@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import SwiftUI
 
 /// Where a track goes: one of the account's playlists, or a new one (ports

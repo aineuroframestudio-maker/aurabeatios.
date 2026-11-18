@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import SwiftUI
 
 // Ports the scaffold of MainActivity.kt: four tabs (FloatingBottomBar), each with its own page
@@ -199,6 +199,10 @@ struct RouteDestination: View {
             SettingsScreen()
         case .equalizer:
             EqualizerScreen()
+        case .spatialAudio:
+            SpatialAudioScreen()
+        case .sony360:
+            Sony360Screen()
         case .sources:
             SourcesScreen()
         case .account:

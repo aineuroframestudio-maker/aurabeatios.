@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports data/stats/ArtistFacts.kt: what the Replay knows about an artist beyond their name —

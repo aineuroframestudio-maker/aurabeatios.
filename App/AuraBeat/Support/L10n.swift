@@ -52,7 +52,7 @@ enum L10n {
     static var addToQueue: String { tr("add_to_queue") }
     /// Added to %1$lld playlist
     static func addedToPlaylistsNotice(_ count: Int) -> String { String(format: tr("added_to_playlists_notice"), locale: LanguageBundle.locale, count) }
-    /// Paste the addon’s URL — either its root or its manifest.json. Aura Beat reads what it can search and 
+    /// Paste the addonï¿½s URL ï¿½ either its root or its manifest.json. Aura Beat reads what it can search and 
     static var addonUrlDescription: String { tr("addon_url_description") }
     /// Advanced & experimental options
     static var advancedOptions: String { tr("advanced_options") }
@@ -72,9 +72,9 @@ enum L10n {
     static var alwaysOn: String { tr("always_on") }
     /// analysed
     static var analysisComplete: String { tr("analysis_complete") }
-    /// analysing…
+    /// analysingï¿½
     static var analysisInProgress: String { tr("analysis_in_progress") }
-    /// analysed, refining…
+    /// analysed, refiningï¿½
     static var analysisRefining: String { tr("analysis_refining") }
     /// Animated cover art
     static var animatedCoverArt: String { tr("animated_cover_art") }
@@ -158,7 +158,7 @@ enum L10n {
     static var autoUnavailableTitle: String { tr("auto_unavailable_title") }
     /// Automix [BETA]
     static var automix: String { tr("automix") }
-    /// Automix · this song: %1$s · next: %2$s
+    /// Automix ï¿½ this song: %1$s ï¿½ next: %2$s
     static func automixAnalysisStatus(_ a1: String, _ a2: String) -> String { String(format: tr("automix_analysis_status"), locale: LanguageBundle.locale, a1, a2) }
     /// Times and blends transitions automatically, without a slider. Performance may vary on slower devices
     static var automixDisabledSubtitle: String { tr("automix_disabled_subtitle") }
@@ -166,15 +166,15 @@ enum L10n {
     static var automixEnabledSubtitle: String { tr("automix_enabled_subtitle") }
     /// Balanced
     static var automixModeBalanced: String { tr("automix_mode_balanced") }
-    /// 2 threads · recommended balance of speed, heat and battery
+    /// 2 threads ï¿½ recommended balance of speed, heat and battery
     static var automixModeBalancedSubtitle: String { tr("automix_mode_balanced_subtitle") }
     /// Efficient
     static var automixModeEfficient: String { tr("automix_mode_efficient") }
-    /// 1 thread · lowest heat and battery use · analysis may take longer
+    /// 1 thread ï¿½ lowest heat and battery use ï¿½ analysis may take longer
     static var automixModeEfficientSubtitle: String { tr("automix_mode_efficient_subtitle") }
     /// Performance
     static var automixModePerformance: String { tr("automix_mode_performance") }
-    /// 4 threads · fastest analysis · higher heat and battery use
+    /// 4 threads ï¿½ fastest analysis ï¿½ higher heat and battery use
     static var automixModePerformanceSubtitle: String { tr("automix_mode_performance_subtitle") }
     /// Automix not supported on video songs
     static var automixNotSupportedVideo: String { tr("automix_not_supported_video") }
@@ -230,11 +230,11 @@ enum L10n {
     static var changeLyricsProvider: String { tr("change_lyrics_provider") }
     /// %1$d ch
     static func channelCount(_ a1: Int) -> String { String(format: tr("channel_count"), locale: LanguageBundle.locale, a1) }
-    /// No session on this page yet — open YouTube Music first
+    /// No session on this page yet ï¿½ open YouTube Music first
     static var channelSessionUnavailable: String { tr("channel_session_unavailable") }
     /// Switch with the avatar, then tap Use this channel
     static var channelSwitchInstructions: String { tr("channel_switch_instructions") }
-    /// Checking…
+    /// Checkingï¿½
     static var checking: String { tr("checking") }
     /// Chinese (Simplified)
     static var chinese: String { tr("chinese") }
@@ -278,7 +278,7 @@ enum L10n {
     static var convertToAudio: String { tr("convert_to_audio") }
     /// Convert to video
     static var convertToVideo: String { tr("convert_to_video") }
-    /// Converting to audio…
+    /// Converting to audioï¿½
     static var convertingToAudio: String { tr("converting_to_audio") }
     /// Copy code
     static var copyCode: String { tr("copy_code") }
@@ -322,11 +322,11 @@ enum L10n {
     static var delete: String { tr("delete") }
     /// Delete download
     static var deleteDownload: String { tr("delete_download") }
-    /// Remove “%1$s” from this device? Tap again to confirm.
+    /// Remove ï¿½%1$sï¿½ from this device? Tap again to confirm.
     static func deleteDownloadConfirmation(_ a1: String) -> String { String(format: tr("delete_download_confirmation"), locale: LanguageBundle.locale, a1) }
     /// Delete playlist
     static var deletePlaylist: String { tr("delete_playlist") }
-    /// Delete “%1$s”? Tap again to confirm.
+    /// Delete ï¿½%1$sï¿½? Tap again to confirm.
     static func deletePlaylistConfirmation(_ a1: String) -> String { String(format: tr("delete_playlist_confirmation"), locale: LanguageBundle.locale, a1) }
     /// Different albums
     static var differentAlbums: String { tr("different_albums") }
@@ -374,7 +374,7 @@ enum L10n {
     static var dislike: String { tr("dislike") }
     /// Dolby Atmos
     static var dolbyAtmos: String { tr("dolby_atmos") }
-    /// Couldn’t open Dolby Atmos settings
+    /// Couldnï¿½t open Dolby Atmos settings
     static var dolbyAtmosOpenFailed: String { tr("dolby_atmos_open_failed") }
     /// Play the more immersive, surround version of a song when there is one.
     static var dolbyAtmosSubtitle: String { tr("dolby_atmos_subtitle") }
@@ -382,9 +382,9 @@ enum L10n {
     static var dolbyAtmosUnavailable: String { tr("dolby_atmos_unavailable") }
     /// Done
     static var done: String { tr("done") }
-    /// Don’t repeat songs in current session
+    /// Donï¿½t repeat songs in current session
     static var dontRepeatSongs: String { tr("dont_repeat_songs") }
-    /// AutoPlay won’t suggest a song already played or suggested this session
+    /// AutoPlay wonï¿½t suggest a song already played or suggested this session
     static var dontRepeatSongsSubtitle: String { tr("dont_repeat_songs_subtitle") }
     /// ? from %1$s
     static func downgradedFrom(_ a1: String) -> String { String(format: tr("downgraded_from"), locale: LanguageBundle.locale, a1) }
@@ -396,7 +396,7 @@ enum L10n {
     static var downloadChannelDescription: String { tr("download_channel_description") }
     /// Downloads
     static var downloadChannelName: String { tr("download_channel_name") }
-    /// %1$s · %2$d more queued
+    /// %1$s ï¿½ %2$d more queued
     static func downloadNotificationQueued(_ a1: String, _ a2: Int) -> String { String(format: tr("download_notification_queued"), locale: LanguageBundle.locale, a1, a2) }
     /// Starting
     static var downloadNotificationStarting: String { tr("download_notification_starting") }
@@ -422,13 +422,13 @@ enum L10n {
     static var downloadedSongs: String { tr("downloaded_songs") }
     /// Downloading
     static var downloading: String { tr("downloading") }
-    /// Downloading · %1$d%%
+    /// Downloading ï¿½ %1$d%%
     static func downloadingProgress(_ a1: Int) -> String { String(format: tr("downloading_progress"), locale: LanguageBundle.locale, a1) }
     /// Downloads
     static var downloads: String { tr("downloads") }
-    /// Downloads · finished
+    /// Downloads ï¿½ finished
     static var downloadsFinished: String { tr("downloads_finished") }
-    /// Downloads · %1$d%%
+    /// Downloads ï¿½ %1$d%%
     static func downloadsProgress(_ a1: Int) -> String { String(format: tr("downloads_progress"), locale: LanguageBundle.locale, a1) }
     /// Drag to reorder
     static var dragToReorder: String { tr("drag_to_reorder") }
@@ -574,7 +574,7 @@ enum L10n {
     static var hiResLossless: String { tr("hi_res_lossless") }
     /// Hide Song Status
     static var hideSongStatus: String { tr("hide_song_status") }
-    /// Hides the “Playing from” or “Played by” text in the main player
+    /// Hides the ï¿½Playing fromï¿½ or ï¿½Played byï¿½ text in the main player
     static var hideSongStatusSubtitle: String { tr("hide_song_status_subtitle") }
     /// Hide volume bar
     static var hideVolumeBar: String { tr("hide_volume_bar") }
@@ -630,7 +630,7 @@ enum L10n {
     static var imageCacheCleared: String { tr("image_cache_cleared") }
     /// Import a backup?
     static var importBackupTitle: String { tr("import_backup_title") }
-    /// This replaces this device’s settings and listening history with the contents of the file. Export the
+    /// This replaces this deviceï¿½s settings and listening history with the contents of the file. Export the
     static var importBackupWarning: String { tr("import_backup_warning") }
     /// Import data
     static var importData: String { tr("import_data") }
@@ -712,7 +712,7 @@ enum L10n {
     static var listenTogetherActivityChangedSize: String { tr("listen_together_activity_changed_size") }
     /// Cleared upcoming tracks
     static var listenTogetherActivityCleared: String { tr("listen_together_activity_cleared") }
-    /// This session only · latest first · up to 100 actions
+    /// This session only ï¿½ latest first ï¿½ up to 100 actions
     static var listenTogetherActivityFooter: String { tr("listen_together_activity_footer") }
     /// Paused playback
     static var listenTogetherActivityPaused: String { tr("listen_together_activity_paused") }
@@ -732,11 +732,11 @@ enum L10n {
     static var listenTogetherActivityUpdated: String { tr("listen_together_activity_updated") }
     /// Went back
     static var listenTogetherActivityWentBack: String { tr("listen_together_activity_went_back") }
-    /// Away — their slot is held
+    /// Away ï¿½ their slot is held
     static var listenTogetherAway: String { tr("listen_together_away") }
     /// Party code
     static var listenTogetherCode: String { tr("listen_together_code") }
-    /// Read it out or send it. O and I aren’t used, so an “oh” is always a zero.
+    /// Read it out or send it. O and I arenï¿½t used, so an ï¿½ohï¿½ is always a zero.
     static var listenTogetherCodeFooter: String { tr("listen_together_code_footer") }
     /// Six letters or digits
     static var listenTogetherCodeHint: String { tr("listen_together_code_hint") }
@@ -746,11 +746,11 @@ enum L10n {
     static var listenTogetherCreateAction: String { tr("listen_together_create_action") }
     /// You get a six-character code. Anyone who has it can join, up to %1$d devices including yours.
     static func listenTogetherCreateFooter(_ a1: Int) -> String { String(format: tr("listen_together_create_footer"), locale: LanguageBundle.locale, a1) }
-    /// Pick how you’ll show up, and how many can join.
+    /// Pick how youï¿½ll show up, and how many can join.
     static var listenTogetherCreateSheetSubtitle: String { tr("listen_together_create_sheet_subtitle") }
     /// Get a code to share with friends
     static var listenTogetherCreateSubtitle: String { tr("listen_together_create_subtitle") }
-    /// Creating…
+    /// Creatingï¿½
     static var listenTogetherCreating: String { tr("listen_together_creating") }
     /// Use your own server
     static var listenTogetherCustomServer: String { tr("listen_together_custom_server") }
@@ -792,9 +792,9 @@ enum L10n {
     static var listenTogetherHostOnlyNotice: String { tr("listen_together_host_only_notice") }
     /// Everyone else listens along and can pause on their own device
     static var listenTogetherHostOnlySubtitle: String { tr("listen_together_host_only_subtitle") }
-    /// In a party · %1$s
+    /// In a party ï¿½ %1$s
     static func listenTogetherInParty(_ a1: String) -> String { String(format: tr("listen_together_in_party"), locale: LanguageBundle.locale, a1) }
-    /// In sync · %1$d ms round trip
+    /// In sync ï¿½ %1$d ms round trip
     static func listenTogetherInSync(_ a1: Int) -> String { String(format: tr("listen_together_in_sync"), locale: LanguageBundle.locale, a1) }
     /// Invalid server URL. Please enter a valid address (e.g. https://your-server.com)
     static var listenTogetherInvalidServerUrl: String { tr("listen_together_invalid_server_url") }
@@ -802,7 +802,7 @@ enum L10n {
     static var listenTogetherInvite: String { tr("listen_together_invite") }
     /// Invite friends to your party
     static var listenTogetherInviteTitle: String { tr("listen_together_invite_title") }
-    /// %1$s’s Jam
+    /// %1$sï¿½s Jam
     static func listenTogetherJam(_ a1: String) -> String { String(format: tr("listen_together_jam"), locale: LanguageBundle.locale, a1) }
     /// Listening together
     static var listenTogetherJamUnnamed: String { tr("listen_together_jam_unnamed") }
@@ -812,11 +812,11 @@ enum L10n {
     static var listenTogetherJoinAction: String { tr("listen_together_join_action") }
     /// Join existing
     static var listenTogetherJoinExisting: String { tr("listen_together_join_existing") }
-    /// Join %1$s’s party?
+    /// Join %1$sï¿½s party?
     static func listenTogetherJoinQuestion(_ a1: String) -> String { String(format: tr("listen_together_join_question"), locale: LanguageBundle.locale, a1) }
     /// Join this party?
     static var listenTogetherJoinQuestionUnnamed: String { tr("listen_together_join_question_unnamed") }
-    /// Joining…
+    /// Joiningï¿½
     static var listenTogetherJoining: String { tr("listen_together_joining") }
     /// Because music sounds better together. Invite friends to listen and add songs in real time, wherever 
     static var listenTogetherLandingSubtitle: String { tr("listen_together_landing_subtitle") }
@@ -826,7 +826,7 @@ enum L10n {
     static var listenTogetherLeave: String { tr("listen_together_leave") }
     /// The others carry on listening
     static var listenTogetherLeaveSubtitle: String { tr("listen_together_leave_subtitle") }
-    /// Listening · %1$d of %2$d
+    /// Listening ï¿½ %1$d of %2$d
     static func listenTogetherListening(_ a1: Int, _ a2: Int) -> String { String(format: tr("listen_together_listening"), locale: LanguageBundle.locale, a1, a2) }
     /// Manage
     static var listenTogetherManage: String { tr("listen_together_manage") }
@@ -846,11 +846,11 @@ enum L10n {
     static var listenTogetherOfficialServerDialogTitle: String { tr("listen_together_official_server_dialog_title") }
     /// Listen together
     static var listenTogetherOpen: String { tr("listen_together_open") }
-    /// Listening together · %1$d
+    /// Listening together ï¿½ %1$d
     static func listenTogetherOpenCount(_ a1: Int) -> String { String(format: tr("listen_together_open_count"), locale: LanguageBundle.locale, a1) }
     /// Party size
     static var listenTogetherPartySize: String { tr("listen_together_party_size") }
-    /// Choose 2–10 listeners
+    /// Choose 2ï¿½10 listeners
     static var listenTogetherPartySizeSubtitle: String { tr("listen_together_party_size_subtitle") }
     /// %1$d ms
     static func listenTogetherPing(_ a1: Int) -> String { String(format: tr("listen_together_ping"), locale: LanguageBundle.locale, a1) }
@@ -858,7 +858,7 @@ enum L10n {
     static var listenTogetherPreviewFooter: String { tr("listen_together_preview_footer") }
     /// Your party profile
     static var listenTogetherProfile: String { tr("listen_together_profile") }
-    /// Reconnecting…
+    /// Reconnectingï¿½
     static var listenTogetherReconnecting: String { tr("listen_together_reconnecting") }
     /// Remove
     static var listenTogetherRemove: String { tr("listen_together_remove") }
@@ -870,41 +870,41 @@ enum L10n {
     static var listenTogetherScanQrSubtitle: String { tr("listen_together_scan_qr_subtitle") }
     /// Party server
     static var listenTogetherServer: String { tr("listen_together_server") }
-    /// Checking…
+    /// Checkingï¿½
     static var listenTogetherServerChecking: String { tr("listen_together_server_checking") }
-    /// Can’t be reached right now
+    /// Canï¿½t be reached right now
     static var listenTogetherServerOffline: String { tr("listen_together_server_offline") }
-    /// —
+    /// ï¿½
     static var listenTogetherServerOfflineDash: String { tr("listen_together_server_offline_dash") }
-    /// Online · %1$d ms
+    /// Online ï¿½ %1$d ms
     static func listenTogetherServerOnline(_ a1: Int) -> String { String(format: tr("listen_together_server_online"), locale: LanguageBundle.locale, a1) }
-    /// Online (default fallback) · %1$d ms
+    /// Online (default fallback) ï¿½ %1$d ms
     static func listenTogetherServerOnlineFallback(_ a1: Int) -> String { String(format: tr("listen_together_server_online_fallback"), locale: LanguageBundle.locale, a1) }
     /// Tap to check
     static var listenTogetherServerUnknown: String { tr("listen_together_server_unknown") }
     /// Share link
     static var listenTogetherShareLink: String { tr("listen_together_share_link") }
-    /// Listen with me on Aura Beat — party code %1$s
+    /// Listen with me on Aura Beat ï¿½ party code %1$s
     static func listenTogetherShareText(_ a1: String) -> String { String(format: tr("listen_together_share_text"), locale: LanguageBundle.locale, a1) }
     /// Listening together needs an account, so everyone in the party can see who else is in it.
     static var listenTogetherSignInFooter: String { tr("listen_together_sign_in_footer") }
     /// Both custom server and default server are offline
     static var listenTogetherStatusAllOffline: String { tr("listen_together_status_all_offline") }
-    /// Custom server unreachable · Using default fallback (%1$d ms)
+    /// Custom server unreachable ï¿½ Using default fallback (%1$d ms)
     static func listenTogetherStatusCustomFallback(_ a1: Int) -> String { String(format: tr("listen_together_status_custom_fallback"), locale: LanguageBundle.locale, a1) }
-    /// Connected to custom server · %1$d ms
+    /// Connected to custom server ï¿½ %1$d ms
     static func listenTogetherStatusCustomOnline(_ a1: Int) -> String { String(format: tr("listen_together_status_custom_online"), locale: LanguageBundle.locale, a1) }
     /// Share a code and play the same music, in time
     static var listenTogetherSubtitle: String { tr("listen_together_subtitle") }
-    /// Couldn’t join party: %1$s.
+    /// Couldnï¿½t join party: %1$s.
     static func listenTogetherSwitchFailed(_ a1: String) -> String { String(format: tr("listen_together_switch_failed"), locale: LanguageBundle.locale, a1) }
-    /// Couldn’t join party: %1$s. Remaining in party %2$s.
+    /// Couldnï¿½t join party: %1$s. Remaining in party %2$s.
     static func listenTogetherSwitchFailedStayedInParty(_ a1: String, _ a2: String) -> String { String(format: tr("listen_together_switch_failed_stayed_in_party"), locale: LanguageBundle.locale, a1, a2) }
     /// Switched to default server
     static var listenTogetherSwitchedToDefault: String { tr("listen_together_switched_to_default") }
-    /// Measuring the clock…
+    /// Measuring the clockï¿½
     static var listenTogetherSyncingClock: String { tr("listen_together_syncing_clock") }
-    /// Fallback · %1$s
+    /// Fallback ï¿½ %1$s
     static func listenTogetherTopBarFallback(_ a1: String) -> String { String(format: tr("listen_together_top_bar_fallback"), locale: LanguageBundle.locale, a1) }
     /// Using default server
     static var listenTogetherUsingDefault: String { tr("listen_together_using_default") }
@@ -922,7 +922,7 @@ enum L10n {
     static var localMusic: String { tr("local_music") }
     /// Local music folder
     static var localMusicFolder: String { tr("local_music_folder") }
-    /// Log copied · %1$d lines
+    /// Log copied ï¿½ %1$d lines
     static func logCopied(_ a1: Int) -> String { String(format: tr("log_copied"), locale: LanguageBundle.locale, a1) }
     /// Login failed
     static var loginFailed: String { tr("login_failed") }
@@ -938,7 +938,7 @@ enum L10n {
     static func loudnessGainDb(_ a1: String) -> String { String(format: tr("loudness_gain_db"), locale: LanguageBundle.locale, a1) }
     /// %1$s LUFS
     static func loudnessLufs(_ a1: String) -> String { String(format: tr("loudness_lufs"), locale: LanguageBundle.locale, a1) }
-    /// Measuring…
+    /// Measuringï¿½
     static var loudnessMeasuring: String { tr("loudness_measuring") }
     /// Loudness normalization
     static var loudnessNormalization: String { tr("loudness_normalization") }
@@ -972,9 +972,9 @@ enum L10n {
     static var lyricsOffsetReset: String { tr("lyrics_offset_reset") }
     /// Current provider
     static var lyricsProviderCurrent: String { tr("lyrics_provider_current") }
-    /// Fetching lyrics…
+    /// Fetching lyricsï¿½
     static var lyricsProviderFetching: String { tr("lyrics_provider_fetching") }
-    /// Lyrics found · Tap to use
+    /// Lyrics found ï¿½ Tap to use
     static var lyricsProviderFound: String { tr("lyrics_provider_found") }
     /// Tap to fetch
     static var lyricsProviderNotFetched: String { tr("lyrics_provider_not_fetched") }
@@ -1072,6 +1072,37 @@ enum L10n {
     static var noLanguagesMatch: String { tr("no_languages_match") }
     /// no listening history
     static var noListeningHistory: String { tr("no_listening_history") }
+    /// Sony 360 Reality Audio
+    static var sony360: String {
+        let val = tr("sony360")
+        return val == "sony360" ? "Sony 360 Reality Audio" : val
+    }
+    /// Immersive spatial audio experience
+    static var sony360Subtitle: String {
+        let val = tr("sony360_subtitle")
+        return val == "sony360_subtitle" ? "Immersive spatial audio experience" : val
+    }
+    /// This device can't play Sony 360 Reality Audio, so these songs play in their usual version
+    static var sony360Unavailable: String {
+        let val = tr("sony360_unavailable")
+        return val == "sony360_unavailable" ? "This device can't play Sony 360 Reality Audio, so these songs play in their usual version" : val
+    }
+    /// Play the more immersive, spatial audio experience
+    static var sony360RealityAudio: String { sony360 }
+    /// Immersive spatial audio experience
+    static var sony360RealityAudioSubtitle: String { sony360Subtitle }
+    /// This device can't play Sony 360 Reality Audio, so these songs play in their usual version
+    static var sony360RealityAudioUnavailable: String { sony360Unavailable }
+    /// Couldn't open Sony 360 Reality Audio settings
+    static var sony360OpenFailed: String {
+        let val = tr("sony360_open_failed")
+        return val == "sony360_open_failed" ? "Couldn't open Sony 360 Reality Audio settings" : val
+    }
+    /// No Sony 360 Reality Audio panel on this device
+    static var noSony360: String {
+        let val = tr("no_sony360")
+        return val == "no_sony360" ? "No Sony 360 Reality Audio panel on this device" : val
+    }
     /// Nothing here belongs to an album or playlist yet. Download a complete album or playlist and it will 
     static var noLocalAlbums: String { tr("no_local_albums") }
     /// No audio files found on this device
@@ -1102,7 +1133,7 @@ enum L10n {
     static var notYet: String { tr("not_yet") }
     /// Nothing downloading
     static var nothingDownloading: String { tr("nothing_downloading") }
-    /// Nothing here matches “%1$s”
+    /// Nothing here matches ï¿½%1$sï¿½
     static func nothingMatches(_ a1: String) -> String { String(format: tr("nothing_matches"), locale: LanguageBundle.locale, a1) }
     /// Nothing to explore right now
     static var nothingToExplore: String { tr("nothing_to_explore") }
@@ -1150,15 +1181,15 @@ enum L10n {
     static func pauseCountdown(_ a1: String) -> String { String(format: tr("pause_countdown"), locale: LanguageBundle.locale, a1) }
     /// PaxSenix API key
     static var paxsenixApiKey: String { tr("paxsenix_api_key") }
-    /// PaxSenix API key — configured
+    /// PaxSenix API key ï¿½ configured
     static var paxsenixApiKeyConfigured: String { tr("paxsenix_api_key_configured") }
-    /// PaxSenix API key — optional, not configured
+    /// PaxSenix API key ï¿½ optional, not configured
     static var paxsenixApiKeyMissing: String { tr("paxsenix_api_key_missing") }
     /// Performance
     static var performance: String { tr("performance") }
     /// Personal
     static var personal: String { tr("personal") }
-    /// %1$s’s Phone
+    /// %1$sï¿½s Phone
     static func personalPhone(_ a1: String) -> String { String(format: tr("personal_phone"), locale: LanguageBundle.locale, a1) }
     /// Get personalized recommendations for you
     static var personalizedRecommendations: String { tr("personalized_recommendations") }
@@ -1276,9 +1307,9 @@ enum L10n {
     static var profileUnavailable: String { tr("profile_unavailable") }
     /// Profiles
     static var profiles: String { tr("profiles") }
-    /// %1$s · %2$s
+    /// %1$s ï¿½ %2$s
     static func qualityHourly(_ a1: String, _ a2: String) -> String { String(format: tr("quality_hourly"), locale: LanguageBundle.locale, a1, a2) }
-    /// %1$s · %2$s per track
+    /// %1$s ï¿½ %2$s per track
     static func qualityPerTrack(_ a1: String, _ a2: String) -> String { String(format: tr("quality_per_track"), locale: LanguageBundle.locale, a1, a2) }
     /// Queue
     static var queue: String { tr("queue") }
@@ -1286,9 +1317,9 @@ enum L10n {
     static var queued: String { tr("queued") }
     /// %1$s radio started
     static func radioStarted(_ a1: String) -> String { String(format: tr("radio_started"), locale: LanguageBundle.locale, a1) }
-    /// Edit “%1$s”
+    /// Edit ï¿½%1$sï¿½
     static func recentSearchEdit(_ a1: String) -> String { String(format: tr("recent_search_edit"), locale: LanguageBundle.locale, a1) }
-    /// Remove “%1$s” from recent searches
+    /// Remove ï¿½%1$sï¿½ from recent searches
     static func recentSearchRemove(_ a1: String) -> String { String(format: tr("recent_search_remove"), locale: LanguageBundle.locale, a1) }
     /// Recent searches
     static var recentSearches: String { tr("recent_searches") }
@@ -1352,7 +1383,7 @@ enum L10n {
     static var replayGenreStart: String { tr("replay_genre_start") }
     /// The Replay genre chart stays hidden while this is off
     static var replayGenresDisabledSubtitle: String { tr("replay_genres_disabled_subtitle") }
-    /// Asks Last.fm for an artist’s genres. Only the artist name is sent.
+    /// Asks Last.fm for an artistï¿½s genres. Only the artist name is sent.
     static var replayGenresEnabledSubtitle: String { tr("replay_genres_enabled_subtitle") }
     ///  from 
     static var replayHabitsMiddle: String { tr("replay_habits_middle") }
@@ -1398,7 +1429,7 @@ enum L10n {
     static var richPresenceFooter: String { tr("rich_presence_footer") }
     /// Romanize lyrics
     static var romanizeLyrics: String { tr("romanize_lyrics") }
-    /// Romanizing lyrics…
+    /// Romanizing lyricsï¿½
     static var romanizingLyrics: String { tr("romanizing_lyrics") }
     /// Running
     static var running: String { tr("running") }
@@ -1462,7 +1493,7 @@ enum L10n {
     static var selectedAccount: String { tr("selected_account") }
     /// Settings
     static var settings: String { tr("settings") }
-    /// No settings match “%1$s”
+    /// No settings match ï¿½%1$sï¿½
     static func settingsSearchEmpty(_ a1: String) -> String { String(format: tr("settings_search_empty"), locale: LanguageBundle.locale, a1) }
     /// Search settings
     static var settingsSearchHint: String { tr("settings_search_hint") }
@@ -1582,7 +1613,7 @@ enum L10n {
     static var signedIn: String { tr("signed_in") }
     /// Signed in as %1$s
     static func signedInAs(_ a1: String) -> String { String(format: tr("signed_in_as"), locale: LanguageBundle.locale, a1) }
-    /// Signing in…
+    /// Signing inï¿½
     static var signingIn: String { tr("signing_in") }
     /// Skip silence
     static var skipSilence: String { tr("skip_silence") }
@@ -1598,7 +1629,7 @@ enum L10n {
     static var smartVersionAlignmentSubtitle: String { tr("smart_version_alignment_subtitle") }
     /// SMB
     static var smb: String { tr("smb") }
-    /// Point Aura Beat at a shared music folder — a NAS or Windows share speaking SMB.
+    /// Point Aura Beat at a shared music folder ï¿½ a NAS or Windows share speaking SMB.
     static var smbDescription: String { tr("smb_description") }
     /// Disconnect
     static var smbDisconnect: String { tr("smb_disconnect") }
@@ -1614,7 +1645,7 @@ enum L10n {
     static var smbShareHint: String { tr("smb_share_hint") }
     /// Music on a file share
     static var smbSubtitle: String { tr("smb_subtitle") }
-    /// Couldn’t reach it: %1$s
+    /// Couldnï¿½t reach it: %1$s
     static func smbTestFailed(_ a1: String) -> String { String(format: tr("smb_test_failed"), locale: LanguageBundle.locale, a1) }
     /// Software Update
     static var softwareUpdate: String { tr("software_update") }
@@ -1674,9 +1705,9 @@ enum L10n {
     static var sourceMatching: String { tr("source_matching") }
     /// Tap to finish setting up
     static var sourceSetupRequired: String { tr("source_setup_required") }
-    /// Not used on %1$s · quality is set to %2$s
+    /// Not used on %1$s ï¿½ quality is set to %2$s
     static func sourceSkippedByQuality(_ a1: String, _ a2: String) -> String { String(format: tr("source_skipped_by_quality"), locale: LanguageBundle.locale, a1, a2) }
-    /// Can’t reach it right now · %1$s
+    /// Canï¿½t reach it right now ï¿½ %1$s
     static func sourceUnreachable(_ a1: String) -> String { String(format: tr("source_unreachable"), locale: LanguageBundle.locale, a1) }
     /// Aura Beat could not tell what that link is
     static var sourceUnrecognised: String { tr("source_unrecognised") }
@@ -1696,7 +1727,7 @@ enum L10n {
     static var spanish: String { tr("spanish") }
     /// Spatial audio
     static var spatialAudio: String { tr("spatial_audio") }
-    /// Paused for this track — Dolby Atmos is already spatial
+    /// Paused for this track ï¿½ Dolby Atmos is already spatial
     static var spatialAudioAtmosSubtitle: String { tr("spatial_audio_atmos_subtitle") }
     /// Widens stereo tracks for a more immersive feel
     static var spatialAudioSubtitle: String { tr("spatial_audio_subtitle") }
@@ -1768,7 +1799,7 @@ enum L10n {
     static var switchToListView: String { tr("switch_to_list_view") }
     /// Synced lyrics
     static var syncedLyrics: String { tr("synced_lyrics") }
-    /// Lights up the words on the player as they’re sung
+    /// Lights up the words on the player as theyï¿½re sung
     static var syncedLyricsSubtitle: String { tr("synced_lyrics_subtitle") }
     /// System
     static var system: String { tr("system") }
@@ -1790,7 +1821,7 @@ enum L10n {
     static var tapToSignInGoogle: String { tr("tap_to_sign_in_google") }
     /// Test
     static var test: String { tr("test") }
-    /// Testing…
+    /// Testingï¿½
     static var testing: String { tr("testing") }
     /// Thai
     static var thai: String { tr("thai") }
@@ -1822,7 +1853,7 @@ enum L10n {
     static var topSongs: String { tr("top_songs") }
     /// Translate lyrics
     static var translateLyrics: String { tr("translate_lyrics") }
-    /// Translating to %1$s…
+    /// Translating to %1$sï¿½
     static func translatingLyricsTo(_ a1: String) -> String { String(format: tr("translating_lyrics_to"), locale: LanguageBundle.locale, a1) }
     /// Translation language
     static var translationLanguage: String { tr("translation_language") }
@@ -1854,9 +1885,9 @@ enum L10n {
     static func updateAvailable(_ a1: String) -> String { String(format: tr("update_available"), locale: LanguageBundle.locale, a1) }
     /// aurabeat %1$s is available to download.
     static func updateAvailableBody(_ a1: String) -> String { String(format: tr("update_available_body"), locale: LanguageBundle.locale, a1) }
-    /// Downloading aurabeat %1$s…
+    /// Downloading aurabeat %1$sï¿½
     static func updateDownloadingBody(_ a1: String) -> String { String(format: tr("update_downloading_body"), locale: LanguageBundle.locale, a1) }
-    /// Couldn’t download aurabeat %1$s.
+    /// Couldnï¿½t download aurabeat %1$s.
     static func updateFailedBody(_ a1: String) -> String { String(format: tr("update_failed_body"), locale: LanguageBundle.locale, a1) }
     /// aurabeat %1$s is ready to install.
     static func updateReadyBody(_ a1: String) -> String { String(format: tr("update_ready_body"), locale: LanguageBundle.locale, a1) }
@@ -1874,7 +1905,7 @@ enum L10n {
     static var uploadChannelDescription: String { tr("upload_channel_description") }
     /// Uploads
     static var uploadChannelName: String { tr("upload_channel_name") }
-    /// %1$s · %2$d more queued
+    /// %1$s ï¿½ %2$d more queued
     static func uploadNotificationQueued(_ a1: String, _ a2: Int) -> String { String(format: tr("upload_notification_queued"), locale: LanguageBundle.locale, a1, a2) }
     /// Uploading
     static var uploadNotificationTitle: String { tr("upload_notification_title") }
@@ -1900,7 +1931,7 @@ enum L10n {
     static var verbPlaying: String { tr("verb_playing") }
     /// Watching
     static var verbWatching: String { tr("verb_watching") }
-    /// %1$s · %2$s
+    /// %1$s ï¿½ %2$s
     static func versionAlignmentStatus(_ a1: String, _ a2: String) -> String { String(format: tr("version_alignment_status"), locale: LanguageBundle.locale, a1, a2) }
     /// aligned
     static var versionCutAligned: String { tr("version_cut_aligned") }
@@ -1920,9 +1951,9 @@ enum L10n {
     static var webdavApplyToAll: String { tr("webdav_apply_to_all") }
     /// Overwrite it, or keep both copies?
     static var webdavConflictMessage: String { tr("webdav_conflict_message") }
-    /// “%1$s” is already on the server
+    /// ï¿½%1$sï¿½ is already on the server
     static func webdavConflictTitle(_ a1: String) -> String { String(format: tr("webdav_conflict_title"), locale: LanguageBundle.locale, a1) }
-    /// Point Aura Beat at a WebDAV music folder — your Nextcloud Music directory or any server speaking WebD
+    /// Point Aura Beat at a WebDAV music folder ï¿½ your Nextcloud Music directory or any server speaking WebD
     static var webdavDescription: String { tr("webdav_description") }
     /// Disconnect
     static var webdavDisconnect: String { tr("webdav_disconnect") }
@@ -1942,11 +1973,11 @@ enum L10n {
     static var webdavSkip: String { tr("webdav_skip") }
     /// Music on your server
     static var webdavSubtitle: String { tr("webdav_subtitle") }
-    /// Couldn’t reach it: %1$s
+    /// Couldnï¿½t reach it: %1$s
     static func webdavTestFailed(_ a1: String) -> String { String(format: tr("webdav_test_failed"), locale: LanguageBundle.locale, a1) }
-    /// %1$d uploaded · %2$d skipped · %3$d failed
+    /// %1$d uploaded ï¿½ %2$d skipped ï¿½ %3$d failed
     static func webdavUploadSummary(_ a1: Int, _ a2: Int, _ a3: Int) -> String { String(format: tr("webdav_upload_summary"), locale: LanguageBundle.locale, a1, a2, a3) }
-    /// What’s new
+    /// Whatï¿½s new
     static var whatsNew: String { tr("whats_new") }
     /// When you listen most
     static var whenYouListenMost: String { tr("when_you_listen_most") }
@@ -1964,7 +1995,7 @@ enum L10n {
     static var widgetPause: String { tr("widget_pause") }
     /// The track with Like, Shuffle and playback controls, in a single row.
     static var widgetPillDescription: String { tr("widget_pill_description") }
-    /// Now playing 4×1
+    /// Now playing 4ï¿½1
     static var widgetPillLabel: String { tr("widget_pill_label") }
     /// Play
     static var widgetPlay: String { tr("widget_play") }
@@ -1978,11 +2009,11 @@ enum L10n {
     static var widgetPrevious: String { tr("widget_previous") }
     /// Album art with playback controls, in a square.
     static var widgetSquareDescription: String { tr("widget_square_description") }
-    /// Now playing 2×2
+    /// Now playing 2ï¿½2
     static var widgetSquareLabel: String { tr("widget_square_label") }
     /// Album art with the track and playback controls, full width.
     static var widgetWideDescription: String { tr("widget_wide_description") }
-    /// Now playing 4×2
+    /// Now playing 4ï¿½2
     static var widgetWideLabel: String { tr("widget_wide_label") }
     /// Wi-Fi
     static var wifi: String { tr("wifi") }
@@ -2020,13 +2051,13 @@ enum L10n {
     static func downloadWaitingCount(_ count: Int) -> String { String(format: tr("download_waiting_count"), locale: LanguageBundle.locale, count) }
     /// Downloading %1$d songs
     static func downloadingSongCount(_ count: Int) -> String { String(format: tr("downloading_song_count"), locale: LanguageBundle.locale, count) }
-    /// Downloads · %1$d failed
+    /// Downloads ï¿½ %1$d failed
     static func downloadsFailedCount(_ count: Int) -> String { String(format: tr("downloads_failed_count"), locale: LanguageBundle.locale, count) }
     /// %1$d hours
     static func hourCount(_ count: Int) -> String { String(format: tr("hour_count"), locale: LanguageBundle.locale, count) }
     /// %1$d months of listening
     static func listeningMonthCount(_ count: Int) -> String { String(format: tr("listening_month_count"), locale: LanguageBundle.locale, count) }
-    /// Log copied · %1$d lines
+    /// Log copied ï¿½ %1$d lines
     static func logCopiedLineCount(_ count: Int) -> String { String(format: tr("log_copied_line_count"), locale: LanguageBundle.locale, count) }
     /// %1$d minutes
     static func minuteCount(_ count: Int) -> String { String(format: tr("minute_count"), locale: LanguageBundle.locale, count) }

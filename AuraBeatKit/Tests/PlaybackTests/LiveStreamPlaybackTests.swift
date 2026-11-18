@@ -1,4 +1,4 @@
-﻿import AVFoundation
+import AVFoundation
 import AuraBeatCore
 import XCTest
 @testable import Playback

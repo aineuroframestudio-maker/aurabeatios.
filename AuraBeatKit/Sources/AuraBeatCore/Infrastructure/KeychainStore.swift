@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import Security
 
 // Replaces Android's EncryptedSharedPreferences / AuthStore (PORTING §4: Keychain for secrets).

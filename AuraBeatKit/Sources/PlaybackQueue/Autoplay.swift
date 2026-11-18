@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports playback/Autoplay.kt and the AutoPlay constants of PlaybackService.kt.

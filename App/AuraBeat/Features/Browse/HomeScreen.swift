@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import InnerTube
 import PlaybackQueue
 import SwiftUI
@@ -28,6 +28,9 @@ struct HomeScreen: View {
         GeometryReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
+                    personalizedHeader
+                    quickAccessSection
+
                     if !model.accounts.isSignedIn {
                         SignInBanner { model.router.present(.googleSignIn) }
                             .padding(.bottom, 8)
@@ -139,8 +142,109 @@ struct HomeScreen: View {
         }
     }
 
+    private var timeOfDayGreeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5..<12: return "Good Morning"
+        case 12..<17: return "Good Afternoon"
+        case 17..<22: return "Good Evening"
+        default: return "Good Night"
+        }
+    }
+
+    private var personalizedHeader: some View {
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(timeOfDayGreeting)
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .foregroundStyle(.primary)
+                Text("Your music, your mood.")
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            HStack(spacing: 8) {
+                HStack(spacing: 4) {
+                    Image(systemName: "waveform")
+                        .font(.system(size: 10, weight: .bold))
+                    Text("24-BIT")
+                        .font(.system(size: 10, weight: .black, design: .monospaced))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color(red: 0.99, green: 0.86, blue: 0.70).opacity(0.15))
+                .foregroundStyle(Color(red: 0.99, green: 0.86, blue: 0.70))
+                .clipShape(Capsule())
+
+                Button {
+                    model.router.select(.search)
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .frame(width: 32, height: 32)
+                        .background(Color.secondary.opacity(0.12), in: Circle())
+                }
+                .accessibilityIdentifier("home.searchShortcut")
+            }
+        }
+        .padding(.horizontal, BrowseMetrics.gutter)
+        .padding(.top, 4)
+        .padding(.bottom, 10)
+    }
+
+    private var quickAccessSection: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                quickCard(title: "Liked Songs", icon: "heart.fill", color: Color(red: 0.95, green: 0.40, blue: 0.50)) {
+                    model.router.open(.playlist(browseId: "LM", seed: nil))
+                }
+                quickCard(title: "Recents", icon: "clock.arrow.circlepath", color: Color(red: 0.99, green: 0.86, blue: 0.70)) {
+                    model.router.open(.history)
+                }
+                quickCard(title: "Playlists", icon: "music.note.list", color: Color(red: 0.45, green: 0.75, blue: 0.98)) {
+                    model.router.select(.library)
+                }
+                quickCard(title: "Artists", icon: "person.2.fill", color: Color(red: 0.98, green: 0.70, blue: 0.40)) {
+                    model.router.select(.explore)
+                }
+                quickCard(title: "Downloads", icon: "arrow.down.circle.fill", color: Color(red: 0.45, green: 0.88, blue: 0.65)) {
+                    model.router.open(.offlineBackup)
+                }
+                quickCard(title: "Albums", icon: "square.stack.fill", color: Color(red: 0.80, green: 0.55, blue: 0.98)) {
+                    model.router.select(.library)
+                }
+            }
+            .padding(.horizontal, BrowseMetrics.gutter)
+        }
+        .padding(.bottom, 12)
+    }
+
+    private func quickCard(title: String, icon: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(color)
+                Text(title)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(Color(uiColor: .secondarySystemBackground).opacity(0.8), in: Capsule())
+            .overlay(
+                Capsule()
+                    .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
     /// The Recents shelf's title as the repository names it (HomeScreen.kt's `RECENTS_TITLE`).
     static let recentsTitle = "Recents"
+
 
     private func reload() {
         let catalog = model.repository

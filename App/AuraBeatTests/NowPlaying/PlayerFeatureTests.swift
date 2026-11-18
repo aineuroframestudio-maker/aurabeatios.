@@ -1,4 +1,4 @@
-﻿import AVKit
+import AVKit
 import AuraBeatCore
 import MediaPlayer
 import Canvas

@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Lyrics
 import PlaybackQueue
 import SwiftUI

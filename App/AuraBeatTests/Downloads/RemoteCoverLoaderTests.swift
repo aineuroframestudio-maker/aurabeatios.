@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import NetworkLibrary
 import SwiftUI
 import XCTest

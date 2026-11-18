@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// The cipher tier: turns web clients' `signatureCipher` formats into URLs googlevideo serves,

@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// Explore's categories (ports `loadExplore` / `fetchExplore` / `loadMoodGenreArtwork` from

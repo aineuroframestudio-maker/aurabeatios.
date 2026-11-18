@@ -1,4 +1,4 @@
-﻿import XCTest
+import XCTest
 @testable import StreamResolution
 
 /// The remote player-config table and its security locks (zemer's `PlayerConfigParser`).

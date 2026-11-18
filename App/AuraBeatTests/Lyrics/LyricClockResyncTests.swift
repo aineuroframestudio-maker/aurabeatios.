@@ -1,4 +1,4 @@
-﻿import Lyrics
+import Lyrics
 import QuartzCore
 import XCTest
 @testable import AuraBeat

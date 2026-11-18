@@ -1,4 +1,4 @@
-﻿import AudioCache
+import AudioCache
 import AuraBeatCore
 import Playback
 import XCTest

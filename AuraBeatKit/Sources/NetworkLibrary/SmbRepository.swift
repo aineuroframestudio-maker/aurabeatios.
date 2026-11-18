@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 // Ports data/smb/SmbRepository.kt: the SMB library as Song rows, shaped like

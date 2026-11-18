@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 
 /// Plain and "enhanced" (A2) LRC: the reader every line-synced source shares (Android:
 /// `LrcLib.parseLrc`) and the writer the download path embeds with (Android: `LrcWriter.kt`).

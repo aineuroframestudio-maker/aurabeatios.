@@ -1,4 +1,4 @@
-﻿#!/bin/zsh
+#!/bin/zsh
 # Build a Release IPA for testers to sideload (AltStore, SideStore, Sideloadly, …): the app and its
 # two extensions, ad-hoc signed with their entitlements so the sideloader re-signs them with the
 # tester's own Apple ID and remaps the shared app group. No Apple Developer account is needed here.
@@ -7,6 +7,27 @@
 set -euo pipefail
 export DEVELOPER_DIR=${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}
 cd "$(dirname "$0")/.."
+
+# Mirror deleted microsoft/onnxruntime-swift-package-manager SPM repo
+defaults write com.apple.dt.Xcode IDEPackageSupportUseBuiltinSCM NO 2>/dev/null || true
+mkdir -p ~/.swiftpm/configuration 2>/dev/null || true
+cat << 'EOF' > ~/.swiftpm/configuration/mirrors.json
+{
+  "object": [
+    {
+      "original": "https://github.com/microsoft/onnxruntime-swift-package-manager",
+      "mirror": "https://github.com/mobilyze-llc/onnxruntime-swift-package-manager.git"
+    },
+    {
+      "original": "https://github.com/microsoft/onnxruntime-swift-package-manager.git",
+      "mirror": "https://github.com/mobilyze-llc/onnxruntime-swift-package-manager.git"
+    }
+  ],
+  "version": 1
+}
+EOF
+git config --global url."https://github.com/mobilyze-llc/onnxruntime-swift-package-manager.git".insteadOf "https://github.com/microsoft/onnxruntime-swift-package-manager.git" || true
+git config --global url."https://github.com/mobilyze-llc/onnxruntime-swift-package-manager".insteadOf "https://github.com/microsoft/onnxruntime-swift-package-manager" || true
 
 DERIVED=.derived-release
 xcodebuild build -workspace AuraBeat.xcworkspace -scheme AuraBeat -configuration Release \

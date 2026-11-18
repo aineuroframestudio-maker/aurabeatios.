@@ -1,4 +1,4 @@
-﻿import InnerTube
+import InnerTube
 import SwiftUI
 import WebKit
 import XCTest

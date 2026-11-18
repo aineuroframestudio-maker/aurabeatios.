@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import CarPlay
 import PlaybackPolicy
 import PlaybackQueue

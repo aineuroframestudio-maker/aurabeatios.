@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Canvas
 import InnerTube
 import PlaybackQueue

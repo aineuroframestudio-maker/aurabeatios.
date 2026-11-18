@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import SwiftUI
 
 // Ports the song row of ui/components/Common.kt (SongRow, ExplicitSongTitle) and the swipe-to-

@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports data/innertube/Innertube.kt: the session and request plumbing. Endpoints live in

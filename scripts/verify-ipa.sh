@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 # Check a sideload IPA the way a sideloader will read it: the signature verifies, and the app and
 # each extension carry the app-group entitlement (the sideloader remaps it; without it the widget
 # and share extension can't see the app's data). Prints the signature and entitlements for the log.

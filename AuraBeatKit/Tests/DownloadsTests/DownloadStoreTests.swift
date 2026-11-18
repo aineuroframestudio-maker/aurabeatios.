@@ -1,4 +1,4 @@
-﻿import XCTest
+import XCTest
 import AuraBeatCore
 import AuraBeatTestSupport
 @testable import Downloads

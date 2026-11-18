@@ -21,12 +21,17 @@ extension AppSettings {
         case skipSilence = "skip_silence"
         case loudnessNormalization = "loudness_normalization"
         case dolbyAtmos = "dolby_atmos"
+        case sony360 = "sony360"
         /// Android's on/off switch for "Direct source stream" (on is Always). Still written beside
         /// ``directSourceStream`` so a backup restores on Android and older builds; read only
         /// when the three-way choice was never stored.
         case directSourceStreamLegacy = "direct_source_stream"
         case directSourceStream = "direct_source_stream_mode"
         case spatialAudio = "spatial_audio"
+        case spatialAudioIntensity = "spatial_audio_intensity"
+        case spatialAudioWidth = "spatial_audio_width"
+        case spatialAudioDepth = "spatial_audio_depth"
+        case spatialAudioPreset = "spatial_audio_preset"
         case playbackSpeed = "playback_speed"
         case autoplay = "autoplay"
         case shuffleEnabled = "shuffle_enabled"
@@ -136,11 +141,12 @@ extension AppSettings {
             switch self {
             case .upgradeLengthSlackSeconds, .crossfadeSeconds, .repeatMode, .equalizerToneX,
                  .equalizerToneY, .lyricsOffsetMs, .scrobbleMinDuration, .scrobbleDelaySeconds,
-                 .lastVersionCode:
+                 .lastVersionCode, .spatialAudioPreset:
                 return .int
             case .audioCacheLimitBytes:
                 return .long
-            case .playbackSpeed, .equalizerBalance, .scrobbleDelayPercent:
+            case .playbackSpeed, .equalizerBalance, .scrobbleDelayPercent,
+                 .spatialAudioIntensity, .spatialAudioWidth, .spatialAudioDepth:
                 return .float
             case .audioQualityLegacy, .audioQualityWifi, .audioQualityCellular, .downloadQuality,
                  .directSourceStream, .automixPerformanceMode, .equalizerMode, .equalizerBands, .themeMode,

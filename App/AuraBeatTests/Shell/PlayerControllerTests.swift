@@ -1,4 +1,4 @@
-﻿import AudioCache
+import AudioCache
 import AudioDSP
 import AuraBeatCore
 import Playback

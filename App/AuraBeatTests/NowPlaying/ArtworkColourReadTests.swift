@@ -1,4 +1,4 @@
-﻿import Theming
+import Theming
 import UIKit
 import XCTest
 @testable import AuraBeat

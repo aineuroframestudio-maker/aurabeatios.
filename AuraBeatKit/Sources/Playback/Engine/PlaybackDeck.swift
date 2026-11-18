@@ -1,4 +1,4 @@
-﻿import AVFoundation
+import AVFoundation
 import AudioCache
 import AuraBeatCore
 

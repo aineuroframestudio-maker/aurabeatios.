@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Downloads
 import InnerTube
 import PlaybackQueue

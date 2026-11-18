@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// The facts this module reads out of the signed-out music.youtube.com shell (`ytcfg`).

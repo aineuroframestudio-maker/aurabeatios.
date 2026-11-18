@@ -1,4 +1,4 @@
-﻿import SwiftUI
+import SwiftUI
 import WidgetKit
 
 // Ports widget/MediaWidget.kt (MediaWidgetSquare, MediaWidgetWide) and widget/MediaWidgetPill.kt:

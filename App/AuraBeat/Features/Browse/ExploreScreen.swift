@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import SwiftUI
 
 /// Explore (ports ui/screens/ExploreScreen.kt and its place on the Explore tab in MainActivity.kt).

@@ -1,4 +1,4 @@
-﻿import Observation
+import Observation
 import XCTest
 import AuraBeatCore
 @testable import PlaybackQueue

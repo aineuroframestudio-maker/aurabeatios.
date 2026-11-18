@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports data/sources/ModuleSource.kt. Legacy (PORTING Q4): configs from before addons keep working;

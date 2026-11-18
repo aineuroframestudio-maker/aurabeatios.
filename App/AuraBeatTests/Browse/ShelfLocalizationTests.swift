@@ -1,4 +1,4 @@
-﻿import XCTest
+import XCTest
 @testable import AuraBeat
 
 /// HomeScreen.kt's shelf-title, strapline and card-subtitle translations (part of "Home feed").

@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import XCTest
 
 /// Package test bundles run without entitlements, so they can't reach the Keychain on the

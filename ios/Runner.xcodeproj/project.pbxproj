@@ -12,10 +12,26 @@
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */; };
+		7884E8702EC3CC0700C636F2 /* AuraBeatAudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E86F2EC3CC0400C636F2 /* AuraBeatAudioManager.swift */; };
+		7884E8722EC3CC0700C636F2 /* AtmosPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8712EC3CC0400C636F2 /* AtmosPlayer.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		BC1080020000000000000001 /* NativeCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC1080010000000000000001 /* NativeCore.swift */; };
+		BC1080020000000000000002 /* PlatformSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC1080010000000000000002 /* PlatformSettings.swift */; };
+		BC1080020000000000000003 /* PlaybackCodecCapabilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC1080010000000000000003 /* PlaybackCodecCapabilities.swift */; };
+		BC1080020000000000000004 /* AppleDolbyRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC1080010000000000000004 /* AppleDolbyRenderer.swift */; };
+		BC1080020000000000000005 /* AudioSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC1080010000000000000005 /* AudioSessionManager.swift */; };
+		BC1080020000000000000006 /* AudioSessionReadiness.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC1080010000000000000006 /* AudioSessionReadiness.swift */; };
+		BC1080020000000000000007 /* AudioRouteState.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC1080010000000000000007 /* AudioRouteState.swift */; };
+		BC1080020000000000000008 /* HeadphoneRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC1080010000000000000008 /* HeadphoneRouting.swift */; };
+		BC1080020000000000000009 /* LosslessRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC1080010000000000000009 /* LosslessRoute.swift */; };
+		BC1080020000000000000010 /* PCMTranscode.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC1080010000000000000010 /* PCMTranscode.swift */; };
+		BC1080020000000000000011 /* PlaybackDebugLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC1080010000000000000011 /* PlaybackDebugLog.swift */; };
+		BC1080020000000000000012 /* HeadTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC1080010000000000000012 /* HeadTracker.swift */; };
+		BC1080020000000000000020 /* NativeCoreFFI.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = BC1080010000000000000020 /* NativeCoreFFI.xcframework */; };
+		BC1080020000000000000021 /* NativeCoreFFI.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BC1080010000000000000020 /* NativeCoreFFI.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -35,6 +51,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				BC1080020000000000000021 /* NativeCoreFFI.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -50,6 +67,8 @@
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		7884E86F2EC3CC0400C636F2 /* AuraBeatAudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuraBeatAudioManager.swift; sourceTree = "<group>"; };
+		7884E8712EC3CC0400C636F2 /* AtmosPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AtmosPlayer.swift; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
@@ -59,6 +78,19 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		BC1080010000000000000001 /* NativeCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCore.swift; sourceTree = "<group>"; };
+		BC1080010000000000000002 /* PlatformSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformSettings.swift; sourceTree = "<group>"; };
+		BC1080010000000000000003 /* PlaybackCodecCapabilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackCodecCapabilities.swift; sourceTree = "<group>"; };
+		BC1080010000000000000004 /* AppleDolbyRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleDolbyRenderer.swift; sourceTree = "<group>"; };
+		BC1080010000000000000005 /* AudioSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSessionManager.swift; sourceTree = "<group>"; };
+		BC1080010000000000000006 /* AudioSessionReadiness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSessionReadiness.swift; sourceTree = "<group>"; };
+		BC1080010000000000000007 /* AudioRouteState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRouteState.swift; sourceTree = "<group>"; };
+		BC1080010000000000000008 /* HeadphoneRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeadphoneRouting.swift; sourceTree = "<group>"; };
+		BC1080010000000000000009 /* LosslessRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LosslessRoute.swift; sourceTree = "<group>"; };
+		BC1080010000000000000010 /* PCMTranscode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCMTranscode.swift; sourceTree = "<group>"; };
+		BC1080010000000000000011 /* PlaybackDebugLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackDebugLog.swift; sourceTree = "<group>"; };
+		BC1080010000000000000012 /* HeadTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeadTracker.swift; sourceTree = "<group>"; };
+		BC1080010000000000000020 /* NativeCoreFFI.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = NativeCoreFFI.xcframework; path = Frameworks/NativeCoreFFI.xcframework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,6 +99,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */,
+				BC1080020000000000000020 /* NativeCoreFFI.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -98,6 +131,7 @@
 			children = (
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
+				BC1080030000000000000005 /* Frameworks */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
 			);
@@ -115,6 +149,7 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
+				BC1080030000000000000001 /* AudioEngine */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
 				97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */,
@@ -123,9 +158,62 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
+				7884E86F2EC3CC0400C636F2 /* AuraBeatAudioManager.swift */,
+				7884E8712EC3CC0400C636F2 /* AtmosPlayer.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		BC1080030000000000000001 /* AudioEngine */ = {
+			isa = PBXGroup;
+			children = (
+				BC1080030000000000000002 /* BitChord */,
+			);
+			path = AudioEngine;
+			sourceTree = "<group>";
+		};
+		BC1080030000000000000002 /* BitChord */ = {
+			isa = PBXGroup;
+			children = (
+				BC1080010000000000000001 /* NativeCore.swift */,
+				BC1080010000000000000002 /* PlatformSettings.swift */,
+				BC1080010000000000000003 /* PlaybackCodecCapabilities.swift */,
+				BC1080030000000000000003 /* PlaybackSession */,
+				BC1080030000000000000004 /* SpatialAudio */,
+			);
+			path = BitChord;
+			sourceTree = "<group>";
+		};
+		BC1080030000000000000003 /* PlaybackSession */ = {
+			isa = PBXGroup;
+			children = (
+				BC1080010000000000000004 /* AppleDolbyRenderer.swift */,
+				BC1080010000000000000005 /* AudioSessionManager.swift */,
+				BC1080010000000000000006 /* AudioSessionReadiness.swift */,
+				BC1080010000000000000007 /* AudioRouteState.swift */,
+				BC1080010000000000000008 /* HeadphoneRouting.swift */,
+				BC1080010000000000000009 /* LosslessRoute.swift */,
+				BC1080010000000000000010 /* PCMTranscode.swift */,
+				BC1080010000000000000011 /* PlaybackDebugLog.swift */,
+			);
+			path = PlaybackSession;
+			sourceTree = "<group>";
+		};
+		BC1080030000000000000004 /* SpatialAudio */ = {
+			isa = PBXGroup;
+			children = (
+				BC1080010000000000000012 /* HeadTracker.swift */,
+			);
+			path = SpatialAudio;
+			sourceTree = "<group>";
+		};
+		BC1080030000000000000005 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				BC1080010000000000000020 /* NativeCoreFFI.xcframework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -284,6 +372,20 @@
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
+				7884E8702EC3CC0700C636F2 /* AuraBeatAudioManager.swift in Sources */,
+				7884E8722EC3CC0700C636F2 /* AtmosPlayer.swift in Sources */,
+				BC1080020000000000000001 /* NativeCore.swift in Sources */,
+				BC1080020000000000000002 /* PlatformSettings.swift in Sources */,
+				BC1080020000000000000003 /* PlaybackCodecCapabilities.swift in Sources */,
+				BC1080020000000000000004 /* AppleDolbyRenderer.swift in Sources */,
+				BC1080020000000000000005 /* AudioSessionManager.swift in Sources */,
+				BC1080020000000000000006 /* AudioSessionReadiness.swift in Sources */,
+				BC1080020000000000000007 /* AudioRouteState.swift in Sources */,
+				BC1080020000000000000008 /* HeadphoneRouting.swift in Sources */,
+				BC1080020000000000000009 /* LosslessRoute.swift in Sources */,
+				BC1080020000000000000010 /* PCMTranscode.swift in Sources */,
+				BC1080020000000000000011 /* PlaybackDebugLog.swift in Sources */,
+				BC1080020000000000000012 /* HeadTracker.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -378,6 +480,10 @@
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				ENABLE_BITCODE = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Frameworks",
+				);
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -559,6 +665,10 @@
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				ENABLE_BITCODE = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Frameworks",
+				);
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -581,6 +691,10 @@
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				ENABLE_BITCODE = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Frameworks",
+				);
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

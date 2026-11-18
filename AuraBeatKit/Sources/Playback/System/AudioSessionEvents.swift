@@ -178,7 +178,7 @@ final class AudioSessionController {
             // An interruption reported because the app was suspended is history, not a new event:
             // the audio stopped while the app wasn't running and there is nothing to pause now.
             if let reason = info?[AVAudioSessionInterruptionReasonKey] as? UInt,
-               AVAudioSession.InterruptionReason(rawValue: reason) == .appWasSuspended {
+               reason == 1 /* appWasSuspended */ {
                 return nil
             }
             return .interruptionBegan

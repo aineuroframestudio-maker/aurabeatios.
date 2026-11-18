@@ -1,4 +1,4 @@
-﻿import AudioDSP
+import AudioDSP
 import AVFoundation
 import AuraBeatCore
 import os
@@ -103,6 +103,10 @@ extension AudioDSPSettings {
                 bandsDb: settings.equalizerBands
             ),
             spatialAudio: settings.spatialAudio,
+            spatialIntensity: settings.spatialAudioIntensity,
+            spatialWidth: settings.spatialAudioWidth,
+            spatialDepth: settings.spatialAudioDepth,
+            spatialPreset: settings.spatialAudioPreset,
             loudnessNormalization: settings.loudnessNormalization,
             skipSilence: false
         )

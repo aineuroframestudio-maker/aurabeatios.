@@ -1,4 +1,4 @@
-﻿import AMSMB2
+import AMSMB2
 import Foundation
 import os
 

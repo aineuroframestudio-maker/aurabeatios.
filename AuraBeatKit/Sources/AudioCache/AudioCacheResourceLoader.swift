@@ -1,4 +1,4 @@
-﻿@preconcurrency import AVFoundation
+@preconcurrency import AVFoundation
 import Foundation
 import AuraBeatCore
 

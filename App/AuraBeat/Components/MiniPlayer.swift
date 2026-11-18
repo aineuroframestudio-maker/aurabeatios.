@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import SwiftUI
 
 // Ports ui/components/MiniPlayer.kt: the frosted bar above the tab bar. Play/pause, next, a

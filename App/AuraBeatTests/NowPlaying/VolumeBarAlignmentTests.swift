@@ -1,4 +1,4 @@
-﻿import MediaPlayer
+import MediaPlayer
 import UIKit
 import XCTest
 @testable import AuraBeat

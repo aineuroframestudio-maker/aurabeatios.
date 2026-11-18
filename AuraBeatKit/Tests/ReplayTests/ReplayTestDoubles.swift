@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatTestSupport
 import AuraBeatCore
 @testable import Replay

@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import SwiftUI
 
 // The rows of ui/screens/SearchScreen.kt: SearchFilterTabs, SuggestionRow, TypeaheadSongRow,

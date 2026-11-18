@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import SwiftUI
 
 // Ports ui/screens/SpotifyCanvasAuthScreen.kt, opened from Settings › Appearance › "Set up Spotify

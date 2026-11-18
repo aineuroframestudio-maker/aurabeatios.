@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import SwiftUI
 
 /// The window's root: builds the app once and hands it to every view through the environment.

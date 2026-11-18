@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Canvas
 import MediaPlayer
 import Observation
@@ -97,7 +97,7 @@ final class PlayerArtworkLoader {
 @MainActor
 final class PlayerArtworkWarmer {
     /// Skipping through several tracks in a row warms only where it comes to rest.
-    static let settleDelay: Duration = .seconds(1.5)
+    nonisolated static let settleDelay: Duration = .seconds(1.5)
 
     private let images: ArtworkImageCache
     private let palettes: ArtworkPaletteCache

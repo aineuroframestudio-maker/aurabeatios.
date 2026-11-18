@@ -1,4 +1,4 @@
-﻿import CommonCrypto
+import CommonCrypto
 import Foundation
 import AuraBeatCore
 

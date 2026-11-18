@@ -1,4 +1,4 @@
-﻿import CryptoKit
+import CryptoKit
 import Foundation
 import AuraBeatCore
 
@@ -159,7 +159,7 @@ actor AudioCacheStore {
     private var flushTask: Task<Void, Never>?
     /// The index load, started in ``init`` so construction never blocks on entry files. Every
     /// public method awaits it before touching state, so nobody sees a half-loaded index.
-    private var loadTask: Task<Void, Never>? = nil
+    private var loadTask: Task<Void, Never>?
 
     nonisolated var unownedExecutor: UnownedSerialExecutor {
         executorQueue.asUnownedSerialExecutor()
@@ -179,7 +179,7 @@ actor AudioCacheStore {
         // Reconcile the index off the caller's thread. Every public method awaits ``ensureLoaded``
         // before touching cache state, so nobody sees a half-loaded index, and a read, write or
         // eviction issued right after ``init`` waits for the load rather than racing it.
-        loadTask = Task { await loadIndex() }
+        self.loadTask = Task { await loadIndex() }
     }
 
     /// The rest of what ``init`` used to do synchronously: walk the directory, decode each index

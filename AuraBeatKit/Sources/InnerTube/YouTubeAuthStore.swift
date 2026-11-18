@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports auth/AuthStore.kt (the YouTube Music part) onto the Keychain. Android kept these in

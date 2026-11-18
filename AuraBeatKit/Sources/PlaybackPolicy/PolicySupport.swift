@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import Observation
 
 // Small pieces the rest of the module leans on. Nothing here is public: each is a detail of how the

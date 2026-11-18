@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 // Ports data/remote/RemoteSong.kt: what every remote file library (SMB, WebDAV)

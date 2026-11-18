@@ -1,4 +1,4 @@
-﻿import XCTest
+import XCTest
 @testable import PlaybackPolicy
 
 /// Whether a stream URL is audio or an index of it (ports StreamContainerTest, plus the declared and

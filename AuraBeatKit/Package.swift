@@ -37,7 +37,7 @@ let modules: [(name: String, dependencies: [Target.Dependency])] = [
     ("InnerTube", [core]),
     ("StreamResolution", [core]),
     ("PlaybackQueue", [core]),
-    ("AudioDSP", []),
+    ("AudioDSP", [core]),
     ("AudioCache", [core, "StreamResolution"]),
     ("PlaybackPolicy", [core]),
     ("Playback", [core, "PlaybackQueue", "AudioDSP", "AudioCache", "PlaybackPolicy"]),
@@ -84,7 +84,7 @@ let package = Package(
     // every other module stays dependency-free.
     dependencies: [
         .package(url: "https://github.com/amosavian/AMSMB2.git", from: "4.0.0"),
-        .package(url: "https://github.com/microsoft/onnxruntime-swift-package-manager", exact: "1.24.2"),
+        .package(url: "https://github.com/mobilyze-llc/onnxruntime-swift-package-manager.git", exact: "1.24.2"),
     ],
     targets: modules.map { module in
         .target(name: module.name, dependencies: module.dependencies, resources: moduleResources[module.name])

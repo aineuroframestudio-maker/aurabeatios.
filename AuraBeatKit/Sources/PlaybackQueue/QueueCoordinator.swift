@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports playback/QueueCoordinator.kt, the queue-jump rule of PlaybackService's SessionPlayer.seekTo,

@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// When a track becomes eligible for scrobbling (ports the timing rules in

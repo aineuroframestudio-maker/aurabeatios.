@@ -1,4 +1,4 @@
-﻿import AVFoundation
+import AVFoundation
 import AuraBeatCore
 import Canvas
 import CoreImage

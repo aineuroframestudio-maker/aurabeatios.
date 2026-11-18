@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports the list logic of ui/screens/LocalMusicScreen.kt (sortedForLibrary, matchesSearch, the

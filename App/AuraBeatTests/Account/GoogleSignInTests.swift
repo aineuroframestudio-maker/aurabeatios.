@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import InnerTube
 import SwiftUI
 import XCTest

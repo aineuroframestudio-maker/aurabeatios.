@@ -1,4 +1,4 @@
-﻿#if DEBUG
+#if DEBUG
 import AuraBeatCore
 import Downloads
 import Foundation

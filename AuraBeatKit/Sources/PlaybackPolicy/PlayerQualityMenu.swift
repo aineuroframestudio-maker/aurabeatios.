@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports the quality rows of the player's song menu: MainActivity.kt's `onRollbackToOriginal` /

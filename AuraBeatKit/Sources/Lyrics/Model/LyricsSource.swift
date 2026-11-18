@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// The databases `LyricsRepository` can ask, in the order it asks them.

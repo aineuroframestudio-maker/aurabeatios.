@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import SwiftUI
 
 // Ports the app's chrome: ui/components/{FrostedTopBar, TopFadeBlur, BottomFadeScrim,

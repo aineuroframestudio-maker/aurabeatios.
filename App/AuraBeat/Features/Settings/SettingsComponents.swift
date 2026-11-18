@@ -165,7 +165,8 @@ extension SettingsRow where Trailing == EmptyView {
 }
 
 /// A row that is a switch: tapping anywhere on it flips the switch (Android's `onClick` toggling
-/// the same setting its `Switch` shows). One accessibility element that reads as a switch.
+/// the same setting its `Switch` shows). When an optional `action` is provided, tapping the row
+/// executes the action (such as opening detailed settings), while the toggle controls state.
 struct SettingsToggleRow: View {
     var symbol: String?
     let title: String
@@ -173,22 +174,50 @@ struct SettingsToggleRow: View {
     var badge: String?
     var enabled = true
     @Binding var isOn: Bool
+    var action: (() -> Void)? = nil
 
     var body: some View {
-        Toggle(isOn: $isOn) {
+        if let action {
             HStack(spacing: 0) {
-                if let symbol {
-                    SettingsIcon(symbol: symbol)
-                    Spacer().frame(width: SettingsMetrics.iconGap)
+                Button(action: action) {
+                    HStack(spacing: 0) {
+                        if let symbol {
+                            SettingsIcon(symbol: symbol)
+                            Spacer().frame(width: SettingsMetrics.iconGap)
+                        }
+                        SettingsRowText(title: title, subtitle: subtitle, badge: badge)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.tertiary)
+                            .padding(.trailing, 6)
+                    }
                 }
-                SettingsRowText(title: title, subtitle: subtitle, badge: badge)
+                .buttonStyle(.plain)
+                Toggle("", isOn: $isOn)
+                    .labelsHidden()
+                    .tint(Color.accentColor)
+                    .disabled(!enabled)
+                    .opacity(enabled ? 1 : 0.45)
+                    .sensoryFeedback(.selection, trigger: isOn)
             }
+            .frame(minHeight: 28)
+        } else {
+            Toggle(isOn: $isOn) {
+                HStack(spacing: 0) {
+                    if let symbol {
+                        SettingsIcon(symbol: symbol)
+                        Spacer().frame(width: SettingsMetrics.iconGap)
+                    }
+                    SettingsRowText(title: title, subtitle: subtitle, badge: badge)
+                }
+            }
+            .tint(Color.accentColor)
+            .disabled(!enabled)
+            .opacity(enabled ? 1 : 0.45)
+            .frame(minHeight: 28)
+            .sensoryFeedback(.selection, trigger: isOn)
         }
-        .tint(Color.accentColor)
-        .disabled(!enabled)
-        .opacity(enabled ? 1 : 0.45)
-        .frame(minHeight: 28)
-        .sensoryFeedback(.selection, trigger: isOn)
     }
 }
 
@@ -394,6 +423,8 @@ private struct SettingsSheetRowStyle: ButtonStyle {
 struct SettingsGroup<Content: View>: View {
     var header: String?
     var footer: String?
+    var symbol: String? = nil
+    var symbolColor: Color? = nil
     /// Room above a card with no header (Android `topSpacing`).
     var topSpacing: CGFloat = 26
     @ViewBuilder var content: () -> Content
@@ -406,11 +437,18 @@ struct SettingsGroup<Content: View>: View {
         } header: {
             Group {
                 if let header {
-                    Text(header.uppercased(with: LanguageBundle.locale))
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .textCase(nil)
-                        .accessibilityAddTraits(.isHeader)
+                    HStack(spacing: 6) {
+                        if let symbol {
+                            Image(systemName: symbol)
+                                .font(.caption2.weight(.bold))
+                                .foregroundStyle(symbolColor ?? .secondary)
+                        }
+                        Text(header.uppercased(with: LanguageBundle.locale))
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .textCase(nil)
+                            .accessibilityAddTraits(.isHeader)
+                    }
                 } else {
                     Color.clear.frame(height: 0)
                 }

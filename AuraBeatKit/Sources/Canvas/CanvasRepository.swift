@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// Whether canvas lookups may run at all, mirroring `AppSettings.animatedCanvasAllowed(on:)`

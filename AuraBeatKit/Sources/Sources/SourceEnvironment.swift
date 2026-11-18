@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 /// YouTube Music search, as the ``YouTubeSource`` needs it. Implemented by the InnerTube module's
@@ -38,14 +38,14 @@ public struct SourceEnvironment: Sendable {
         self.youTubeStreams = youTubeStreams
     }
 
-    /// The app's wiring: the shared session, this device's decoders, and `settings.dolbyAtmos`.
+    /// The app's wiring: the shared session, this device's decoders, and `settings.dolbyAtmos` / `settings.sony360`.
     public static func live(
         settings: AppSettings,
         youTubeSearch: YouTubeSongSearching?,
         youTubeStreams: StreamResolving?
     ) -> SourceEnvironment {
         SourceEnvironment(
-            dolbyAtmosEnabled: { await settings.dolbyAtmos },
+            dolbyAtmosEnabled: { await (settings.dolbyAtmos || settings.sony360) },
             youTubeSearch: youTubeSearch,
             youTubeStreams: youTubeStreams
         )
@@ -56,7 +56,8 @@ public struct SourceEnvironment: Sendable {
     /// `dolbyAtmos` setting, ``ModuleSource/unplayable(_:atmosAllowed:)`` and
     /// ``SourceResolver/preferred(_:target:wantsLossless:atmosWanted:)`` all ask.
     public func atmosWanted() async -> Bool {
-        guard deviceCodecs.playsDolbyAtmos else { return false }
+        let hasDecoder = deviceCodecs.playsDolbyAtmos || deviceCodecs.playsSony360
+        guard hasDecoder else { return false }
         return await dolbyAtmosEnabled()
     }
 }

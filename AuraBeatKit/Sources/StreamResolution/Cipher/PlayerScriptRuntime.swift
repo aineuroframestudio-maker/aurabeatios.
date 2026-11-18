@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import JavaScriptCore
 
 /// YouTube's player script, running in JavaScriptCore with the two functions this module needs

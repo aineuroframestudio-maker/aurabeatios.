@@ -1,4 +1,4 @@
-﻿import CarPlay
+import CarPlay
 import UIKit
 
 /// CarPlay entry point named in Info.plist's scene manifest (ports Android Auto's

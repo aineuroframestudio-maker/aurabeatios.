@@ -17,6 +17,9 @@ public enum AudioQuality: String, Codable, Hashable, Sendable, CaseIterable, Ide
     case high = "HIGH"
     case lossless = "LOSSLESS"
 
+    /// Normal quality streaming alias (128 kbps default streaming)
+    public static var normal: AudioQuality { .medium }
+
     public var id: String { rawValue }
 
     /// The bitrate ceiling on the YouTube path; nil means uncapped.

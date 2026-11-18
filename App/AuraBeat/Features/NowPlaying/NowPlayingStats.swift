@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 import Playback
 import PlaybackPolicy
@@ -240,6 +240,8 @@ enum PlayerPipelineWording {
             equalizerEnabled: settings.equalizerEnabled && tapped,
             equalizerDescription: settings.equalizerEnabled ? L10n.equalizer : nil,
             spatialAudio: settings.spatialAudio && tapped,
+            spatialWidth: settings.spatialAudioWidth,
+            spatialPreset: settings.spatialAudioPreset.title,
             loudnessNormalization: settings.loudnessNormalization && tapped,
             playbackSpeed: settings.playbackSpeed,
             tapped: tapped

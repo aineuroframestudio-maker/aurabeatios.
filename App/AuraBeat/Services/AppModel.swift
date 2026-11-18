@@ -304,7 +304,7 @@ final class AppModel {
             cache: audioCache,
             facts: facts,
             request: { ceiling.currentRequest },
-            atmosAllowed: { DeviceCodecs.shared.playsDolbyAtmos && Self.atmosSetting.value },
+            atmosAllowed: { (DeviceCodecs.shared.playsDolbyAtmos && Self.atmosSetting.value) || (DeviceCodecs.shared.playsSony360 && Self.sony360Setting.value) },
             onRefused: { url, status in Task { await resolver.onPlaybackRefused(url: url, statusCode: status) } }
         )
         sources.isOffline = { [network] in !network.status.isOnline }
@@ -442,7 +442,9 @@ final class AppModel {
         guard !started else { return }
         started = true
         Self.atmosSetting.value = settings.dolbyAtmos
+        Self.sony360Setting.value = settings.sony360
         trackers.append(ChangeTracker.track({ [settings] in settings.dolbyAtmos }) { on in Self.atmosSetting.value = on })
+        trackers.append(ChangeTracker.track({ [settings] in settings.sony360 }) { on in Self.sony360Setting.value = on })
         if let audioCache { _ = audioCache.followLimit(of: settings) }
         // The settings switch: off deletes the log file, on starts a fresh one.
         trackers.append(ChangeTracker.track({ [settings] in settings.keepDiagnosticLog }, initial: false) { on in
@@ -618,6 +620,8 @@ final class AppModel {
 
     /// The Dolby Atmos switch, readable from the stream factory's background closures.
     nonisolated static let atmosSetting = AtomicFlag(true)
+    /// The Sony 360 Reality Audio switch, readable from the stream factory's background closures.
+    nonisolated static let sony360Setting = AtomicFlag(true)
 }
 
 /// A Bool readable from any thread.
@@ -647,7 +651,7 @@ final class LockedValue<Value: Sendable>: @unchecked Sendable {
 }
 
 /// NetworkLibrary's SMB and WebDAV byte sources behind AudioCache's protocol ("the app adapts in
-/// one line" — NetworkLibrary report): the module can't import AudioCache, so the shapes meet here.
+/// one line" Â— NetworkLibrary report): the module can't import AudioCache, so the shapes meet here.
 struct NetworkShareAudioSource: AudioRangeDataSource {
     let contentInfoProvider: @Sendable () async throws -> RemoteContentInfo
     let reader: @Sendable (Range<Int64>) async throws -> Data

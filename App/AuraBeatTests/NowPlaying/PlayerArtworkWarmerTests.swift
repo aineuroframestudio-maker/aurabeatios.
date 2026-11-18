@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import PlaybackQueue
 import Theming
 import XCTest

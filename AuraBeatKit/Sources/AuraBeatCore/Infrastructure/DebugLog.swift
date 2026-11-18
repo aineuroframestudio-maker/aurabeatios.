@@ -7,7 +7,7 @@ import os
 public enum AuraBeatLogging {
     public static let subsystem = "com.music.aurabeat"
 
-    /// A logger for `category` (use your module name: "Lyrics", "Downloads", …).
+    /// A logger for `category` (use your module name: "Lyrics", "Downloads", â€¦).
     public static func logger(_ category: String) -> Logger {
         Logger(subsystem: subsystem, category: category)
     }
@@ -18,7 +18,7 @@ public enum AuraBeatLogging {
 ///
 /// Only the log file (``DiagnosticLog``) takes `d` and `i` in a release build; they skip the
 /// unified log there, and cost nothing but a flag check while the file is off. Warnings and errors
-/// reach the unified log too (as `.public`, since they carry no user data by convention — don't log
+/// reach the unified log too (as `.public`, since they carry no user data by convention â€” don't log
 /// tokens or cookies; the file scrubs the obvious ones, but that is a net, not a licence).
 ///
 /// Every line is filed against the track the current task is working on, as ``TrackLog`` does.
@@ -68,4 +68,4 @@ public enum DebugLog {
     }
 }
 
-public typealias AuraBeatLogging = AuraBeatLogging
+public typealias BitChordLogging = AuraBeatLogging

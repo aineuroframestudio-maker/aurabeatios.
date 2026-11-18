@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import os
 
 /// Logging for the whole module: subsystem `com.music.aurabeat`, category `Lyrics`.

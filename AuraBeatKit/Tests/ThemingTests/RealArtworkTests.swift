@@ -1,4 +1,4 @@
-﻿import ImageIO
+import ImageIO
 import XCTest
 @testable import Theming
 

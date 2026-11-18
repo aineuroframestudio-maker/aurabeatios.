@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports QueueSource / ContextQueueResult from playback/QueueCoordinator.kt, the "Playing from"

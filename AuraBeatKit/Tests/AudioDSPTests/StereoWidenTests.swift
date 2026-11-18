@@ -1,8 +1,9 @@
 import XCTest
+import AuraBeatCore
 @testable import AudioDSP
 
-/// The spatial-audio toggle: mid/side widening plus a delayed, dulled cross-feed.
-/// PORTING.md's done-test is "the toggle audibly widens the stereo image".
+/// The spatial-audio processor: mid/side stereo widening plus binaural acoustic head-shadow crossfeed.
+/// Supports adjustable intensity, soundstage width, ambience depth, presets, and headroom protection.
 final class StereoWidenTests: XCTestCase {
 
     private let sampleRate = 44_100.0
@@ -98,10 +99,36 @@ final class StereoWidenTests: XCTestCase {
         XCTAssertNotEqual(DSPTestSignals.run(spatial, input, sampleRate: sampleRate, configure: false), input)
     }
 
+    func testPresetsConfigureExpectedSoundstageWidthAndDepth() {
+        for preset in SpatialAudioPreset.allCases {
+            XCTAssertGreaterThanOrEqual(preset.defaultWidth, 1.0)
+            XCTAssertLessThanOrEqual(preset.defaultWidth, 2.5)
+            XCTAssertGreaterThanOrEqual(preset.defaultDepth, 0.0)
+            XCTAssertLessThanOrEqual(preset.defaultDepth, 1.0)
+            XCTAssertGreaterThanOrEqual(preset.defaultIntensity, 0.0)
+            XCTAssertLessThanOrEqual(preset.defaultIntensity, 1.0)
+        }
+    }
+
+    func testHeadroomLimiterPreventsDigitalClipping() {
+        let spatial = enabledSpatial()
+        let frames = 512
+        var input = [Float](repeating: 0, count: frames * 2)
+        for frame in 0..<frames {
+            input[frame * 2] = 0.98
+            input[frame * 2 + 1] = -0.98
+        }
+        let output = DSPTestSignals.run(spatial, input, sampleRate: sampleRate, configure: false)
+        for sample in output {
+            XCTAssertLessThanOrEqual(abs(sample), 1.0, "Sample should never exceed 1.0")
+        }
+    }
+
     private func enabledSpatial() -> SpatialAudioProcessor {
         let spatial = SpatialAudioProcessor()
         spatial.configure(sampleRate: sampleRate, channelCount: 2)
         spatial.isEnabled = true
+        spatial.setParameters(intensity: 1.0, width: 2.5, depth: 1.0, preset: .natural)
         XCTAssertTrue(spatial.appliesToConfiguredFormat)
         return spatial
     }

@@ -8,8 +8,13 @@ import 'sources/services/addon_discovery_service.dart';
 import 'sources/models/audio_quality_models.dart';
 import 'sources/services/addon_quality_manager.dart';
 import 'sources/services/addon_search_service.dart';
+import 'sources/services/addon_stream_resolver.dart';
 import 'sources/services/lossless_output_manager.dart';
 import 'sources/services/addon_logger.dart';
+import 'dolby_atmos/atmos_badge.dart';
+import 'dolby_atmos/atmos_streaming_manager.dart';
+import 'dolby_atmos/atmos_diagnostic_screen.dart';
+import 'audio_engine/audio_engine.dart';
 
 void main() {
   runApp(const AuraBeatApp());
@@ -34,6 +39,10 @@ class SongItem {
   final int popularity;
   final bool isExplicit;
   final bool isDolbyAtmos;
+  final bool isHiRes;
+  final String sourceId;
+  final String sourceName;
+  final String? streamUrl;
 
   const SongItem({
     required this.id,
@@ -54,7 +63,61 @@ class SongItem {
     this.popularity = 85,
     this.isExplicit = false,
     this.isDolbyAtmos = false,
+    this.isHiRes = true,
+    this.sourceId = 'app.bitchord.confih',
+    this.sourceName = 'BitChord Confih Studio',
+    this.streamUrl,
   });
+
+  SongItem copyWith({
+    String? id,
+    String? title,
+    String? artist,
+    String? album,
+    String? duration,
+    int? durationSec,
+    String? coverUrl,
+    List<String>? lyrics,
+    String? genre,
+    List<String>? subgenres,
+    int? year,
+    int? bpm,
+    String? mood,
+    String? language,
+    String? audioQuality,
+    int? popularity,
+    bool? isExplicit,
+    bool? isDolbyAtmos,
+    bool? isHiRes,
+    String? sourceId,
+    String? sourceName,
+    String? streamUrl,
+  }) {
+    return SongItem(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      artist: artist ?? this.artist,
+      album: album ?? this.album,
+      duration: duration ?? this.duration,
+      durationSec: durationSec ?? this.durationSec,
+      coverUrl: coverUrl ?? this.coverUrl,
+      lyrics: lyrics ?? this.lyrics,
+      genre: genre ?? this.genre,
+      subgenres: subgenres ?? this.subgenres,
+      year: year ?? this.year,
+      bpm: bpm ?? this.bpm,
+      mood: mood ?? this.mood,
+      language: language ?? this.language,
+      audioQuality: audioQuality ?? this.audioQuality,
+      popularity: popularity ?? this.popularity,
+      isExplicit: isExplicit ?? this.isExplicit,
+      isDolbyAtmos: isDolbyAtmos ?? this.isDolbyAtmos,
+      isHiRes: isHiRes ?? this.isHiRes,
+      sourceId: sourceId ?? this.sourceId,
+      sourceName: sourceName ?? this.sourceName,
+      streamUrl: streamUrl ?? this.streamUrl,
+    );
+  }
 }
 
 class AlbumItem {
@@ -260,12 +323,9 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
   bool _showLyrics = false;
   Timer? _playbackTimer;
 
-  // Spatial Audio State
+  // Desktop Spatial Audio & Dolby Atmos State
   bool _isSpatialAudio = false;
-  String _spatialPreset = 'Natural';
-  double _spatialWidth = 1.3;
-  double _spatialDepth = 0.25;
-  double _spatialIntensity = 0.75;
+  final AtmosStreamingManager _atmosStreamingManager = AtmosStreamingManager();
 
   // Settings Category & Search State ("All Categories Way")
   int _selectedSettingsCategory = 0; // 0: All, 1: Audio Quality, 2: Playback & DSP, 3: Appearance, 4: Downloads & Storage, 5: Your Data & Backup, 6: About
@@ -278,15 +338,15 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
   final Set<String> _likedSongIds = {'1', '3'};
 
   // Audio Quality & AuraBeat Master Engine Settings (Phase 5, 11)
-  GlobalQualityProfile _globalStreamingProfile = GlobalQualityProfile.hires;
+  GlobalQualityProfile _globalStreamingProfile = GlobalQualityProfile.ultraHiRes;
   String _preferredAudioFormat = 'Auto';
   bool _preferHiRes = true;
   bool _preferLossless = true;
   bool _strictLossless = false;
   bool _allowLossyFallback = true;
-  String _wifiStreamingQuality = 'Lossless FLAC (24-bit/96kHz)';
-  String _cellularStreamingQuality = 'High AAC (256kbps)';
-  bool _dolbyAtmosEnabled = true;
+  String _wifiStreamingQuality = 'Ultra Hi-Res FLAC (24-bit/192kHz · 9216 kbps)';
+  String _cellularStreamingQuality = 'Hi-Res Audio (24-bit/96kHz · 4608 kbps)';
+  bool _dolbyAtmosEnabled = false;
   String _directSourceStreamMode = 'Always';
   bool _smartVersionAlignment = true;
 
@@ -294,25 +354,28 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
   AudioMetadata _currentAudioMetadata = const AudioMetadata(
     codec: 'FLAC',
     container: 'flac',
-    bitrateKbps: 4608,
-    sampleRateHz: 96000,
+    bitrateKbps: 9216,
+    sampleRateHz: 192000,
     bitDepth: 24,
     channels: 2,
     isLossless: true,
     isHiRes: true,
     isDolbyAtmos: false,
-    sourceId: 'dev.akira.bitchord-hires',
-    sourceName: 'BitChord Hi-Res Add-on',
-    streamType: 'Direct HTTP Bitstream',
+    sourceId: 'app.bitchord.confih',
+    sourceName: 'Confih Hi-Res',
+    streamType: 'Direct Bit-Perfect Bitstream (24-bit / 192 kHz FLAC)',
   );
 
   // Playback & DSP Settings
   bool _loudnessNormalization = true;
   bool _skipSilence = false;
+  double _playbackSpeed = 1.0;
   double _crossfadeDuration = 3.5;
   bool _automixEnabled = true;
-  List<double> _equalizerBands = [0.0, 1.5, 2.0, 0.5, -0.5, 1.0, 2.5]; // 32Hz, 64Hz, 250Hz, 1kHz, 4kHz, 8kHz, 16kHz
-  String _equalizerPreset = 'Aura Signature';
+  bool _bassBoostEnabled = true;
+  double _bassBoostGain = 10.0;
+  List<double> _equalizerBands = [4.5, 3.5, 1.0, 1.5, 2.0, 2.5, 3.0]; // 32Hz, 64Hz, 250Hz, 1kHz, 4kHz, 8kHz, 16kHz (Audiophile Clear)
+  String _equalizerPreset = 'Audiophile Clear';
 
   // Appearance Settings
   bool _syncedLyricsKaraoke = true;
@@ -340,6 +403,60 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
 
   final List<SongItem> _songs = [
     const SongItem(
+      id: 'dolby_8f31',
+      title: 'Midnight Signal',
+      artist: 'Example Artist',
+      album: 'Night Drive',
+      duration: '4:02',
+      durationSec: 242,
+      coverUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&q=80',
+      genre: 'Synthwave / Spatial',
+      subgenres: ['Dolby Atmos', 'Electronic', 'Retrowave'],
+      year: 2024,
+      bpm: 118,
+      mood: 'Immersive',
+      popularity: 95,
+      audioQuality: 'Dolby Atmos Spatial Audio (E-AC-3 JOC)',
+      isDolbyAtmos: true,
+      sourceId: 'app.bitchord.confih',
+      sourceName: 'Confih Hi-Res',
+      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/dolby_8f31.mp4?tier=atmos',
+      lyrics: [
+        'Static in the midnight sky',
+        'Signals moving through the dark',
+        'Surround the room, surround the mind',
+        'Electric waves leaving their mark',
+        'Hear the space between the sound',
+        'Seven channels off the ground',
+      ],
+    ),
+    const SongItem(
+      id: 'apple_atmos_ref',
+      title: 'Apple Developer Dolby Atmos Reference Stream',
+      artist: 'Apple Developer / Dolby',
+      album: 'HLS Spatial Audio Test Suite',
+      duration: '1:44',
+      durationSec: 104,
+      coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80',
+      genre: 'Spatial Audio Benchmark',
+      subgenres: ['Dolby Atmos', 'E-AC-3 JOC', 'Reference'],
+      year: 2024,
+      bpm: 120,
+      mood: 'Spatial Immersive',
+      popularity: 99,
+      audioQuality: 'Dolby Atmos E-AC-3 JOC (16/JOC · 768 kbps · 48 kHz)',
+      isDolbyAtmos: true,
+      sourceId: 'app.bitchord.confih',
+      sourceName: 'Confih Hi-Res',
+      streamUrl: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/adv_dv_atmos/main.m3u8',
+      lyrics: [
+        'Official Apple Developer Reference Stream',
+        'Enhanced AC-3 with Joint Object Coding (E-AC-3 JOC)',
+        'Signalled via CHANNELS="16/JOC" and CODECS="ec-3"',
+        'Decoded natively via AVPlayer & AVAudioSession (.moviePlayback)',
+      ],
+    ),
+    const SongItem(
       id: '1',
       title: 'Midnight City',
       artist: 'M83',
@@ -353,6 +470,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 105,
       mood: 'Energetic',
       popularity: 94,
+      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/confih_track_003.flac?tier=max',
       lyrics: [
         'Waiting in a car',
         'Waiting for a ride in the dark',
@@ -380,6 +498,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       popularity: 96,
       audioQuality: 'Dolby Atmos Spatial Audio (E-AC-3 JOC)',
       isDolbyAtmos: true,
+      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/confih_track_001.flac?tier=max',
       lyrics: [
         'I\'m tryna put you in the worst mood, ah',
         'P1 cleaner than your church shoes, ah',
@@ -403,6 +522,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 116,
       mood: 'Party',
       popularity: 92,
+      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/confih_track_006.flac?tier=max',
       lyrics: [
         'Like the legend of the phoenix',
         'All ends with beginnings',
@@ -432,6 +552,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       popularity: 98,
       audioQuality: 'Dolby Atmos Spatial Audio (E-AC-3 JOC)',
       isDolbyAtmos: true,
+      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/confih_track_002.flac?tier=max',
       lyrics: [
         'Yeah',
         'I\'ve been tryna call',
@@ -457,6 +578,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 110,
       mood: 'Late Night',
       popularity: 88,
+      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/confih_track_007.flac?tier=max',
       lyrics: [
         'I didn\'t want to be the one to forget',
         'I thought of everything I\'d never regret',
@@ -1432,87 +1554,238 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     WebAudioBridge.setVolume(_volume);
     AddonSourceRegistry.instance.initialize();
     _updateMetadataForSong(_currentSong);
+    _synchronizeWithNativeDSP();
   }
 
-  void _updateMetadataForSong(SongItem song) {
-    final isAtmos = _dolbyAtmosEnabled && (
-      song.isDolbyAtmos ||
-      song.title.toLowerCase().contains('atmos') ||
-      song.audioQuality.toLowerCase().contains('atmos') ||
-      _isSpatialAudio
-    );
-    bool isHiRes = song.audioQuality.contains('24-bit') || song.audioQuality.contains('96kHz') || song.audioQuality.contains('192kHz');
-    bool isLossless = isHiRes || song.audioQuality.toLowerCase().contains('flac') || song.audioQuality.toLowerCase().contains('lossless');
+  Future<void> _synchronizeWithNativeDSP() async {
+    final nativeConfig = await WebAudioBridge.getDSPConfiguration();
+    if (nativeConfig != null) {
+      if (mounted) {
+        setState(() {
+          if (nativeConfig['spatialAudioEnabled'] is bool) {
+            _isSpatialAudio = nativeConfig['spatialAudioEnabled'] as bool;
+            AuraBeatAudioEngine.instance.setSpatialAudio(_isSpatialAudio);
+          }
+          if (nativeConfig['presetName'] is String && (nativeConfig['presetName'] as String).isNotEmpty) {
+            _equalizerPreset = nativeConfig['presetName'] as String;
+          }
+          if (nativeConfig['manualBands'] is List && (nativeConfig['manualBands'] as List).length >= 7) {
+            _equalizerBands = (nativeConfig['manualBands'] as List)
+                .take(7)
+                .map((e) => (e as num).toDouble())
+                .toList();
+            AuraBeatAudioEngine.instance.setManualBands(_equalizerBands);
+          }
+          if (nativeConfig['playbackSpeed'] is num) {
+            _playbackSpeed = (nativeConfig['playbackSpeed'] as num).toDouble();
+            AuraBeatAudioEngine.instance.setPlaybackSpeed(_playbackSpeed);
+          }
+          if (nativeConfig['silenceSkippingEnabled'] is bool) {
+            _skipSilence = nativeConfig['silenceSkippingEnabled'] as bool;
+            AuraBeatAudioEngine.instance.setSilenceSkipping(_skipSilence);
+          }
+          if (nativeConfig['bassBoostEnabled'] is bool) {
+            _bassBoostEnabled = nativeConfig['bassBoostEnabled'] as bool;
+          }
+          if (nativeConfig['bassBoostGain'] is num) {
+            _bassBoostGain = (nativeConfig['bassBoostGain'] as num).toDouble();
+          }
+        });
+      }
+    } else {
+      // Fallback only if no native config returned (e.g. Web or headless test environment):
+      WebAudioBridge.setPlaybackSpeed(_playbackSpeed);
+      WebAudioBridge.setSilenceSkipping(_skipSilence);
+      WebAudioBridge.setBassBoost(_bassBoostEnabled, _bassBoostGain);
+      WebAudioBridge.setSpatialAudio(_isSpatialAudio);
+      WebAudioBridge.setEqualizer(_equalizerBands);
+      AuraBeatAudioEngine.instance.setSpatialAudio(_isSpatialAudio);
+      AuraBeatAudioEngine.instance.setManualBands(_equalizerBands);
+      AuraBeatAudioEngine.instance.setPlaybackSpeed(_playbackSpeed);
+      AuraBeatAudioEngine.instance.setSilenceSkipping(_skipSilence);
+    }
+  }
 
-    String codec = 'FLAC';
-    int sampleRate = 96000;
-    int bitDepth = 24;
-    int bitrate = 4608;
-    int channels = 2;
+  void _updateMetadataForSong(SongItem song, {String? sourceId, String? requestedTier}) {
+    final allSources = AddonSourceRegistry.instance.allSources;
+    AddonSourceConfig activeSource;
+    if (sourceId != null) {
+      activeSource = AddonSourceRegistry.instance.getSourceById(sourceId) ??
+          (allSources.isNotEmpty ? allSources.first : AddonSourceRegistry.instance.defaultSources.first);
+    } else {
+      final matching = allSources.where((s) => song.id.contains(s.id) || song.album.contains(s.name)).toList();
+      if (matching.isNotEmpty) {
+        activeSource = matching.first;
+      } else {
+        activeSource = AddonSourceRegistry.instance.enabledSources.firstWhere(
+          (s) => s.id == 'app.bitchord.confih' || s.id == 'dev.akira.bitchord-hires',
+          orElse: () => allSources.isNotEmpty ? allSources.first : AddonSourceRegistry.instance.defaultSources.first,
+        );
+      }
+    }
+
+    String activeOption = (requestedTier ?? '').trim().toLowerCase();
+    if (activeOption.isEmpty || activeOption == 'auto') {
+      if (song.streamUrl != null && song.streamUrl!.isNotEmpty) {
+        final uri = Uri.tryParse(song.streamUrl!);
+        if (uri != null && uri.queryParameters.containsKey('tier')) {
+          activeOption = uri.queryParameters['tier']!.trim().toLowerCase();
+        }
+      }
+    }
+    if (activeOption.isEmpty || activeOption == 'auto') {
+      activeOption = (activeSource.selectedQualityOption ?? '').trim().toLowerCase();
+    }
+    if (activeOption.isEmpty || activeOption == 'auto') {
+      activeOption = _globalStreamingProfile.value.trim().toLowerCase();
+    }
+    if (activeOption.isEmpty || activeOption == 'auto') {
+      activeOption = activeSource.effectiveQualityOption.trim().toLowerCase();
+    }
+
+    final isExplicitAtmosTrack = song.isDolbyAtmos || song.id == 'dolby_8f31' || activeOption.contains('atmos');
+    bool isAtmos = isExplicitAtmosTrack || (_dolbyAtmosEnabled && (song.title.toLowerCase().contains('atmos') || song.album.toLowerCase().contains('atmos')));
+
+    // If user explicitly picked a non-Atmos quality tier on a regular non-Atmos track, honour that selection
+    if (!isExplicitAtmosTrack && (activeOption == 'max' || activeOption == 'ultra' || activeOption == 'lossless' ||
+        activeOption == 'high' || activeOption == 'low' || activeOption == 'very_high' ||
+        activeOption == '320' || activeOption == '256' || activeOption == 'normal' ||
+        activeOption == '128' || activeOption == '64' || activeOption == 'hires_lossless' ||
+        activeOption == 'hires')) {
+      isAtmos = false;
+    }
 
     if (isAtmos) {
+      _dolbyAtmosEnabled = true;
+      _isSpatialAudio = true;
+    }
+
+    String codec = 'FLAC';
+    int sampleRate = 192000;
+    int bitDepth = 24;
+    int bitrate = 9216;
+    int channels = 2;
+    bool isLossless = true;
+    bool isHiRes = true;
+
+    if (isAtmos || activeOption == 'atmos' || activeOption.contains('atmos')) {
+      // Dolby Atmos Spatial Audio (7.1.4 Matrix, 48 kHz, 16-bit E-AC-3 JOC)
       codec = 'E-AC-3 JOC';
       sampleRate = 48000;
       bitDepth = 16;
       bitrate = 768;
       channels = 8;
-    } else if (isHiRes) {
+      isLossless = false;
+      isHiRes = false;
+      isAtmos = true;
+    } else if (activeOption == 'max' || activeOption == 'ultra' || activeOption.contains('192') || activeOption.contains('ultra')) {
+      // 1. Ultra Hi-Res (24-bit / 192 kHz FLAC Master, ~9216 kbps)
+      codec = 'FLAC';
+      sampleRate = 192000;
+      bitDepth = 24;
+      bitrate = 9216;
+      channels = isAtmos ? 8 : 2;
+      isLossless = true;
+      isHiRes = true;
+    } else if (activeOption == 'hires' || activeOption.contains('96')) {
+      // 2. Hi-Res Audio (24-bit / 96 kHz FLAC Studio, ~4608 kbps)
       codec = 'FLAC';
       sampleRate = 96000;
       bitDepth = 24;
       bitrate = 4608;
+      channels = isAtmos ? 8 : 2;
+      isLossless = true;
+      isHiRes = true;
+    } else if (activeOption == 'hires_lossless' || activeOption.contains('48') || activeOption.contains('studio')) {
+      // 3. Hi-Res Lossless (24-bit / 48 kHz FLAC Studio, ~2304 kbps)
+      codec = 'FLAC';
+      sampleRate = 48000;
+      bitDepth = 24;
+      bitrate = 2304;
       channels = 2;
-    } else if (isLossless) {
+      isLossless = true;
+      isHiRes = true;
+      isAtmos = false;
+    } else if (activeOption == 'lossless' || activeOption.contains('cd') || activeOption.contains('16-bit') || activeOption.contains('1411')) {
+      // 4. CD Lossless (16-bit / 44.1 kHz FLAC/ALAC, ~1411 kbps)
       codec = 'FLAC';
       sampleRate = 44100;
       bitDepth = 16;
       bitrate = 1411;
       channels = 2;
-    } else {
-      codec = 'AAC';
-      sampleRate = 44100;
+      isLossless = true;
+      isHiRes = false;
+      isAtmos = false;
+    } else if (activeOption == 'very_high' || activeOption == '320' || activeOption.contains('very_high')) {
+      // 5. Very High (320 kbps MP3, 48 kHz, 16-bit)
+      codec = 'MP3';
+      sampleRate = 48000;
       bitDepth = 16;
       bitrate = 320;
       channels = 2;
-    }
-
-    final allSources = AddonSourceRegistry.instance.allSources;
-    AddonSourceConfig activeSource;
-    final matching = allSources.where((s) => song.id.contains(s.id) || song.album.contains(s.name)).toList();
-    if (matching.isNotEmpty) {
-      activeSource = matching.first;
+      isLossless = false;
+      isHiRes = false;
+      isAtmos = false;
+    } else if (activeOption == 'high' || activeOption.contains('256')) {
+      // 6. High (256 kbps AAC, 48 kHz, 16-bit)
+      codec = 'AAC';
+      sampleRate = 48000;
+      bitDepth = 16;
+      bitrate = 256;
+      channels = 2;
+      isLossless = false;
+      isHiRes = false;
+      isAtmos = false;
+    } else if (activeOption == 'normal' || activeOption.contains('128') || activeOption.contains('medium')) {
+      // 7. Normal (128 kbps AAC, 44.1 kHz, 16-bit)
+      codec = 'AAC';
+      sampleRate = 44100;
+      bitDepth = 16;
+      bitrate = 128;
+      channels = 2;
+      isLossless = false;
+      isHiRes = false;
+      isAtmos = false;
+    } else if (activeOption == 'low' || activeOption.contains('64') || activeOption.contains('data')) {
+      // 8. Low Data Saver (64 kbps AAC/MP3, 44.1 kHz, 16-bit)
+      codec = 'AAC';
+      sampleRate = 44100;
+      bitDepth = 16;
+      bitrate = 64;
+      channels = 2;
+      isLossless = false;
+      isHiRes = false;
+      isAtmos = false;
+    } else if (activeOption == 'atmos' || activeOption.contains('atmos')) {
+      // 9. Dolby Atmos Spatial Audio (7.1.4 Matrix, 48 kHz, 16-bit)
+      codec = 'E-AC-3 JOC';
+      sampleRate = 48000;
+      bitDepth = 16;
+      bitrate = 768;
+      channels = 8;
+      isLossless = false;
+      isHiRes = false;
+      isAtmos = true;
+    } else if (activeOption == 'sony360' || activeOption.contains('360')) {
+      // 10. Sony 360° Reality Audio (360° Spatial Audio, 96 kHz, 24-bit)
+      codec = 'ATRAC Spatial';
+      sampleRate = 96000;
+      bitDepth = 24;
+      bitrate = 1536;
+      channels = 8;
+      isLossless = false;
+      isHiRes = true;
+      isAtmos = true;
     } else {
-      activeSource = AddonSourceRegistry.instance.enabledSources.firstWhere(
-        (s) => s.id == 'dev.akira.bitchord-hires' || s.id == 'app.bitchord.confih',
-        orElse: () => allSources.isNotEmpty ? allSources.first : AddonSourceRegistry.instance.defaultSources.first,
-      );
-    }
-
-    // Adapt fidelity to active source's selected quality option
-    final activeOption = activeSource.effectiveQualityOption.toLowerCase();
-    if (!isAtmos) {
-      if (activeOption == 'high' || activeOption.contains('320')) {
-        codec = 'AAC';
-        sampleRate = 44100;
-        bitDepth = 16;
-        bitrate = 320;
-        isLossless = false;
-        isHiRes = false;
-      } else if (activeOption == 'low' || activeOption.contains('data') || activeOption.contains('128') || activeOption.contains('96')) {
-        codec = 'AAC';
-        sampleRate = 44100;
-        bitDepth = 16;
-        bitrate = 128;
-        isLossless = false;
-        isHiRes = false;
-      } else if (activeOption == 'lossless' || activeOption.contains('cd') || activeOption.contains('16-bit')) {
-        codec = 'FLAC';
-        sampleRate = 44100;
-        bitDepth = 16;
-        bitrate = 1411;
-        isLossless = true;
-        isHiRes = false;
-      }
+      // Default: Ultra Hi-Res 24-bit / 192 kHz Master FLAC
+      codec = 'FLAC';
+      sampleRate = 192000;
+      bitDepth = 24;
+      bitrate = 9216;
+      channels = _dolbyAtmosEnabled ? 8 : 2;
+      isLossless = true;
+      isHiRes = true;
+      isAtmos = _dolbyAtmosEnabled;
     }
 
     AddonLogger.playbackInitialized(song.id, song.title, activeSource.name, codec);
@@ -1520,7 +1793,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     setState(() {
       _currentAudioMetadata = AudioMetadata(
         codec: codec,
-        container: isAtmos ? 'mp4' : 'flac',
+        container: isAtmos ? 'mp4' : (codec == 'MP3' ? 'mp3' : (codec == 'AAC' ? 'm4a' : 'flac')),
         bitrateKbps: bitrate,
         sampleRateHz: sampleRate,
         bitDepth: bitDepth,
@@ -1530,17 +1803,50 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
         isDolbyAtmos: isAtmos,
         sourceId: activeSource.id,
         sourceName: activeSource.name,
-        streamType: isAtmos ? 'MPEG-DASH Bitstream' : 'Direct HTTP Bitstream',
+        streamType: isAtmos ? 'Dolby Atmos Spatial Matrix Bitstream' : 'Direct HTTP Bitstream',
+      );
+      _currentSong = song.copyWith(
+        audioQuality: (isAtmos && isHiRes)
+            ? 'Dolby Atmos · $bitDepth-bit / ${sampleRate ~/ 1000} kHz FLAC ($bitrate kbps)'
+            : (isAtmos
+                ? 'Dolby Atmos Spatial Audio ($bitrate kbps)'
+                : (isHiRes
+                    ? '$bitDepth-bit / ${sampleRate ~/ 1000} kHz Master FLAC ($bitrate kbps)'
+                    : (isLossless ? 'CD Lossless (16-bit / 44.1 kHz FLAC · $bitrate kbps)' : 'High Fidelity ($bitrate kbps)'))),
+        isDolbyAtmos: isAtmos,
+        isHiRes: isHiRes,
+        sourceId: activeSource.id,
+        sourceName: activeSource.name,
       );
     });
 
-    final effectiveSpatial = _isSpatialAudio || isAtmos;
-    WebAudioBridge.setSpatial(
-      effectiveSpatial,
-      isAtmos ? 2.2 : _spatialWidth,
-      isAtmos ? 0.65 : _spatialDepth,
-      isAtmos ? 1.0 : _spatialIntensity,
+    final effectiveSpatial = _isSpatialAudio;
+    WebAudioBridge.setSpatialAudio(effectiveSpatial);
+    WebAudioBridge.setBassBoost(_bassBoostEnabled, _bassBoostGain);
+    WebAudioBridge.setEqualizer(_equalizerBands);
+
+    // Negotiate 6-layer audio pipeline output
+    final sourceDesc = SourceDescriptor(
+      codec: codec,
+      sampleRateHz: sampleRate,
+      channelCount: channels,
+      bitDepth: bitDepth,
+      bitrateKbps: bitrate,
     );
+    final routeDesc = RouteDescriptor(
+      kind: (isAtmos || effectiveSpatial) ? AudioRouteKind.headphones : AudioRouteKind.builtInSpeaker,
+      deviceName: (isAtmos || effectiveSpatial) ? 'AirPods Pro (Spatial Audio)' : 'iOS Device Output',
+      isDirectCapable: true,
+      advertisedSampleRates: const [44100, 48000, 96000, 192000],
+      advertisedBitDepths: const [16, 24],
+      isSpatialAudioEnabled: isAtmos || effectiveSpatial,
+    );
+    AuraBeatAudioEngine.instance.negotiate(
+      source: sourceDesc,
+      route: routeDesc,
+      decoderName: isAtmos ? 'AtmosPlayer E-AC-3 JOC' : 'AuraBeat CoreAudio Lossless',
+    );
+    AuraBeatAudioEngine.instance.setSpatialAudio(effectiveSpatial);
   }
 
   void _togglePlayPause() {
@@ -1549,15 +1855,24 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     });
 
     if (_isPlaying) {
-      WebAudioBridge.play(_currentSong.title);
+      WebAudioBridge.play(_currentSong.title, _currentSong.streamUrl, (_currentAudioMetadata.sampleRateHz ?? 192000).toDouble());
       WebAudioBridge.setVolume(_volume);
-      final effectiveSpatial = _isSpatialAudio || _currentAudioMetadata.isDolbyAtmos;
-      WebAudioBridge.setSpatial(
-        effectiveSpatial,
-        _currentAudioMetadata.isDolbyAtmos ? 2.2 : _spatialWidth,
-        _currentAudioMetadata.isDolbyAtmos ? 0.65 : _spatialDepth,
-        _currentAudioMetadata.isDolbyAtmos ? 1.0 : _spatialIntensity,
-      );
+      WebAudioBridge.setBassBoost(_bassBoostEnabled, _bassBoostGain);
+      WebAudioBridge.setEqualizer(_equalizerBands);
+      final effectiveSpatial = _isSpatialAudio;
+      WebAudioBridge.setSpatialAudio(effectiveSpatial);
+      AuraBeatAudioEngine.instance.setSpatialAudio(effectiveSpatial);
+      if ((_currentAudioMetadata.isDolbyAtmos || _currentSong.isDolbyAtmos) && _currentSong.streamUrl != null) {
+        _atmosStreamingManager.player.load(
+          _currentSong.streamUrl!,
+          title: _currentSong.title,
+          artist: _currentSong.artist,
+          album: _currentSong.album,
+          durationSeconds: _currentSong.durationSec.toDouble(),
+        ).then((_) {
+          if (_isPlaying) _atmosStreamingManager.player.play();
+        }).catchError((_) {});
+      }
       _playbackTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (_currentPosition < _currentSong.durationSec) {
           setState(() {
@@ -1569,6 +1884,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       });
     } else {
       WebAudioBridge.pause();
+      _atmosStreamingManager.player.pause();
       _playbackTimer?.cancel();
     }
   }
@@ -1611,24 +1927,192 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     });
     _updateMetadataForSong(targetSong);
     if (_isPlaying) {
-      WebAudioBridge.play(_currentSong.title);
+      WebAudioBridge.play(_currentSong.title, _currentSong.streamUrl, (_currentAudioMetadata.sampleRateHz ?? 192000).toDouble());
       WebAudioBridge.setVolume(_volume);
-      WebAudioBridge.setSpatial(_isSpatialAudio, _spatialWidth, _spatialDepth, _spatialIntensity);
+      WebAudioBridge.setBassBoost(_bassBoostEnabled, _bassBoostGain);
+      WebAudioBridge.setEqualizer(_equalizerBands);
+      final effectiveSpatial = _isSpatialAudio;
+      WebAudioBridge.setSpatialAudio(effectiveSpatial);
+      AuraBeatAudioEngine.instance.setSpatialAudio(effectiveSpatial);
+      if ((_currentAudioMetadata.isDolbyAtmos || targetSong.isDolbyAtmos) && _currentSong.streamUrl != null) {
+        _atmosStreamingManager.player.load(
+          _currentSong.streamUrl!,
+          title: _currentSong.title,
+          artist: _currentSong.artist,
+          album: _currentSong.album,
+          durationSeconds: _currentSong.durationSec.toDouble(),
+        ).then((_) {
+          if (_isPlaying) _atmosStreamingManager.player.play();
+        }).catchError((_) {});
+      }
     }
+  }
+
+  String? _resolveStreamUrlForQuality(String? originalUrl, String tier) {
+    if (originalUrl == null || originalUrl.isEmpty) return originalUrl;
+    final uri = Uri.tryParse(originalUrl);
+    if (uri == null) return originalUrl;
+    final queryParams = Map<String, String>.from(uri.queryParameters);
+    queryParams['tier'] = tier;
+    queryParams['quality'] = tier;
+    return uri.replace(queryParameters: queryParams).toString();
+  }
+
+  GlobalQualityProfile _mapStringToGlobalQualityProfile(String tier) {
+    final t = tier.toLowerCase();
+    if (t == 'max' || t == 'ultra' || t.contains('192') || t.contains('ultra')) {
+      return GlobalQualityProfile.ultraHiRes;
+    } else if (t == 'hires' || t.contains('96')) {
+      return GlobalQualityProfile.hiResAudio;
+    } else if (t == 'hires_lossless' || t.contains('48') || t.contains('studio')) {
+      return GlobalQualityProfile.hiResLossless;
+    } else if (t == 'lossless' || t.contains('cd') || t.contains('1411')) {
+      return GlobalQualityProfile.lossless;
+    } else if (t == 'very_high' || t == '320' || t.contains('very')) {
+      return GlobalQualityProfile.veryHigh;
+    } else if (t == 'high' || t == '256') {
+      return GlobalQualityProfile.high;
+    } else if (t == 'normal' || t == '128' || t == 'medium') {
+      return GlobalQualityProfile.normal;
+    } else if (t == 'low' || t == '64' || t.contains('data')) {
+      return GlobalQualityProfile.low;
+    } else if (t == 'atmos' || t.contains('atmos')) {
+      return GlobalQualityProfile.dolbyAtmos;
+    } else if (t == 'sony360' || t.contains('360')) {
+      return GlobalQualityProfile.sony360;
+    }
+    return GlobalQualityProfile.auto;
+  }
+
+  void _switchAudioQuality(String qualityTier, {String? sourceId}) {
+    final profile = _mapStringToGlobalQualityProfile(qualityTier);
+    _globalStreamingProfile = profile;
+    AddonQualityManager.instance.preferences.streamingQuality = profile;
+
+    final registry = AddonSourceRegistry.instance;
+    final targetSourceId = sourceId ?? _currentAudioMetadata.sourceId;
+    if (targetSourceId.isNotEmpty) {
+      registry.setQualityOption(targetSourceId, qualityTier);
+    }
+    for (final s in registry.allSources) {
+      registry.setQualityOption(s.id, qualityTier);
+    }
+
+    final qLower = qualityTier.toLowerCase();
+    final isAtmosTarget = qLower.contains('atmos') || profile == GlobalQualityProfile.dolbyAtmos;
+    if (isAtmosTarget) {
+      _dolbyAtmosEnabled = true;
+      _isSpatialAudio = true;
+    } else if (qLower == 'lossless' || qLower == 'hires' || qLower == 'hires_lossless' ||
+        qLower == 'max' || qLower == 'ultra' || qLower == 'very_high' || qLower == 'high' ||
+        qLower == 'normal' || qLower == 'low') {
+      _dolbyAtmosEnabled = false;
+      _isSpatialAudio = false;
+    }
+
+    final updatedUrl = _resolveStreamUrlForQuality(_currentSong.streamUrl, qualityTier);
+    if (updatedUrl != null && updatedUrl.isNotEmpty) {
+      _currentSong = _currentSong.copyWith(streamUrl: updatedUrl);
+    }
+
+    _updateMetadataForSong(_currentSong, sourceId: targetSourceId, requestedTier: qualityTier);
+
+    if (updatedUrl != null && updatedUrl.isNotEmpty) {
+      if (_isPlaying) {
+        WebAudioBridge.play(_currentSong.title, updatedUrl, (_currentAudioMetadata.sampleRateHz ?? 192000).toDouble());
+      }
+    } else if (_currentSong.streamUrl == null) {
+      AddonStreamResolver.instance.resolveTrackStream(
+        trackId: _currentSong.id,
+        title: _currentSong.title,
+        artist: _currentSong.artist,
+        qualityProfile: profile,
+      ).then((res) {
+        if (res != null && res.url.isNotEmpty && _isPlaying) {
+          setState(() {
+            _currentSong = _currentSong.copyWith(streamUrl: res.url);
+          });
+          WebAudioBridge.play(_currentSong.title, res.url, (_currentAudioMetadata.sampleRateHz ?? 192000).toDouble());
+        }
+      });
+    }
+
+    WebAudioBridge.setVolume(_volume);
+    WebAudioBridge.setPlaybackSpeed(_playbackSpeed);
+    WebAudioBridge.setSilenceSkipping(_skipSilence);
+    WebAudioBridge.setBassBoost(_bassBoostEnabled, _bassBoostGain);
+    WebAudioBridge.setEqualizer(_equalizerBands);
+    final effectiveSpatial = _isSpatialAudio;
+    WebAudioBridge.setSpatialAudio(effectiveSpatial);
+    AuraBeatAudioEngine.instance.setSpatialAudio(effectiveSpatial);
   }
 
   void _selectSong(SongItem song) {
     _sessionHistory.add(song.id);
     _recEngine.recordPlay(song, 0, false);
+
+    final allSources = AddonSourceRegistry.instance.allSources;
+    final activeSource = AddonSourceRegistry.instance.getSourceById(_currentAudioMetadata.sourceId) ??
+        (allSources.isNotEmpty ? allSources.first : null);
+    final activeTier = activeSource?.effectiveQualityOption ?? _globalStreamingProfile.value;
+    final streamUrl = _resolveStreamUrlForQuality(song.streamUrl, activeTier);
+    final songToPlay = song.copyWith(streamUrl: streamUrl);
+
     setState(() {
-      _currentSong = song;
+      _currentSong = songToPlay;
       _currentPosition = 0;
       _isPlaying = true;
     });
-    _updateMetadataForSong(song);
-    WebAudioBridge.play(song.title);
+    _updateMetadataForSong(songToPlay, sourceId: activeSource?.id, requestedTier: activeTier);
+    WebAudioBridge.play(songToPlay.title, songToPlay.streamUrl, (_currentAudioMetadata.sampleRateHz ?? 192000).toDouble());
     WebAudioBridge.setVolume(_volume);
-    WebAudioBridge.setSpatial(_isSpatialAudio, _spatialWidth, _spatialDepth, _spatialIntensity);
+    WebAudioBridge.setPlaybackSpeed(_playbackSpeed);
+    WebAudioBridge.setSilenceSkipping(_skipSilence);
+    WebAudioBridge.setBassBoost(_bassBoostEnabled, _bassBoostGain);
+    WebAudioBridge.setEqualizer(_equalizerBands);
+    final effectiveSpatial = _isSpatialAudio;
+    WebAudioBridge.setSpatialAudio(effectiveSpatial);
+    AuraBeatAudioEngine.instance.setSpatialAudio(effectiveSpatial);
+    if ((_currentAudioMetadata.isDolbyAtmos || songToPlay.isDolbyAtmos) && songToPlay.streamUrl != null) {
+      _atmosStreamingManager.player.load(
+        songToPlay.streamUrl!,
+        title: songToPlay.title,
+        artist: songToPlay.artist,
+        album: songToPlay.album,
+        durationSeconds: songToPlay.durationSec.toDouble(),
+      ).then((_) {
+        if (_isPlaying) _atmosStreamingManager.player.play();
+      }).catchError((_) {});
+    }
+
+    // If track doesn't have an explicit streamUrl (e.g. from remote add-on search), resolve asynchronously
+    if (songToPlay.streamUrl == null) {
+      AddonStreamResolver.instance.resolveTrackStream(
+        trackId: songToPlay.id,
+        title: songToPlay.title,
+        artist: songToPlay.artist,
+        qualityProfile: _globalStreamingProfile,
+      ).then((res) {
+        if (res != null && res.url.isNotEmpty && _currentSong.id == songToPlay.id && _isPlaying) {
+          setState(() {
+            _currentSong = _currentSong.copyWith(streamUrl: res.url);
+          });
+          WebAudioBridge.play(songToPlay.title, res.url, (_currentAudioMetadata.sampleRateHz ?? 192000).toDouble());
+          if (_currentAudioMetadata.isDolbyAtmos || songToPlay.isDolbyAtmos) {
+            _atmosStreamingManager.player.load(
+              res.url,
+              title: songToPlay.title,
+              artist: songToPlay.artist,
+              album: songToPlay.album,
+              durationSeconds: songToPlay.durationSec.toDouble(),
+            ).then((_) {
+              if (_isPlaying) _atmosStreamingManager.player.play();
+            }).catchError((_) {});
+          }
+        }
+      });
+    }
+
     _playbackTimer?.cancel();
     _playbackTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_currentPosition < _currentSong.durationSec) {
@@ -1650,6 +2134,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
   @override
   void dispose() {
     _playbackTimer?.cancel();
+    _atmosStreamingManager.dispose();
     super.dispose();
   }
 
@@ -1910,28 +2395,82 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
           ),
           const SizedBox(width: 20),
 
-          // Audio Quality Indicator Pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF2E2622) : Colors.black,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.graphic_eq_rounded, color: Color(0xFFFEDBB3), size: 16),
-                const SizedBox(width: 8),
-                const Text(
-                  'Lossless 24-bit',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFFEDBB3),
-                  ),
+          // Audio Quality Indicator Pill (Interactive & Live Stream Telemetry)
+          InkWell(
+            onTap: () => _showDetailedAudioInfoModal(context, isDark),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF2E2622) : Colors.black,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _currentAudioMetadata.isDolbyAtmos
+                      ? Colors.deepPurpleAccent
+                      : (_currentAudioMetadata.isHiRes
+                          ? const Color(0xFFFEDBB3)
+                          : (_currentAudioMetadata.isLossless
+                              ? Colors.cyanAccent
+                              : Colors.white24)),
+                  width: 1.2,
                 ),
-              ],
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _currentAudioMetadata.isDolbyAtmos
+                        ? Icons.spatial_audio_rounded
+                        : (_currentAudioMetadata.isHiRes
+                            ? Icons.album_rounded
+                            : Icons.graphic_eq_rounded),
+                    color: _currentAudioMetadata.isDolbyAtmos
+                        ? Colors.deepPurpleAccent
+                        : (_currentAudioMetadata.isHiRes
+                            ? const Color(0xFFFEDBB3)
+                            : (_currentAudioMetadata.isLossless
+                                ? Colors.cyanAccent
+                                : Colors.white70)),
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _currentAudioMetadata.isDolbyAtmos
+                        ? (_currentAudioMetadata.isHiRes
+                            ? 'Dolby Atmos · ${_currentAudioMetadata.bitDepth}b/${(_currentAudioMetadata.sampleRateHz ?? 192000) ~/ 1000}k · ${_currentAudioMetadata.bitrateKbps ?? 9216} kbps'
+                            : 'Dolby Atmos · ${_currentAudioMetadata.bitrateKbps ?? 768} kbps')
+                        : (_currentAudioMetadata.isHiRes
+                            ? 'Hi-Res ${_currentAudioMetadata.bitDepth}b/${(_currentAudioMetadata.sampleRateHz ?? 96000) ~/ 1000}k · ${_currentAudioMetadata.bitrateKbps ?? 4608} kbps'
+                            : (_currentAudioMetadata.isLossless
+                                ? 'Lossless 16b/44.1k · ${_currentAudioMetadata.bitrateKbps ?? 1411} kbps'
+                                : '${_currentAudioMetadata.codec} · ${_currentAudioMetadata.bitrateKbps ?? 320} kbps')),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: _currentAudioMetadata.isDolbyAtmos
+                          ? Colors.deepPurpleAccent
+                          : (_currentAudioMetadata.isHiRes
+                              ? const Color(0xFFFEDBB3)
+                              : (_currentAudioMetadata.isLossless
+                                  ? Colors.cyanAccent
+                                  : Colors.white70)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
+          if (_currentAudioMetadata.isDolbyAtmos || _currentSong.isDolbyAtmos) ...[
+            const SizedBox(width: 8),
+            AtmosBadge(
+              isAtmosSource: true,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AtmosDiagnosticScreen(streamingManager: _atmosStreamingManager),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(width: 12),
 
           // Notifications Bell Icon
@@ -2216,14 +2755,14 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
               backgroundColor: dialogBg,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
+                constraints: const BoxConstraints(maxWidth: 440),
                 child: Padding(
                   padding: const EdgeInsets.all(24.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header
+                      // Header matching BitChord Desktop (DesktopStrings["spatial_audio", "Spatial audio"])
                       Row(
                         children: [
                           Container(
@@ -2244,7 +2783,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Spatial Audio DSP',
+                                  'Spatial audio',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -2252,7 +2791,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                                   ),
                                 ),
                                 Text(
-                                  _isSpatialAudio ? 'Binaural Stereo Image Active' : 'Bypassed (Original Stereo)',
+                                  'Widens stereo tracks for a more immersive feel',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: _isSpatialAudio ? const Color(0xFFD47A46) : Colors.grey,
@@ -2268,14 +2807,62 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                             onChanged: (val) {
                               setState(() {
                                 _isSpatialAudio = val;
-                                _updateMetadataForSong(_currentSong);
+                                WebAudioBridge.setSpatialAudio(val);
+                                AuraBeatAudioEngine.instance.setSpatialAudio(val);
                               });
                               setDialogState(() => _isSpatialAudio = val);
                             },
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
+
+                      // Engine Specification Card
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.black26 : Colors.black.withOpacity(0.04),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: _isSpatialAudio ? const Color(0xFFD47A46).withOpacity(0.3) : Colors.transparent,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline_rounded,
+                                  size: 16,
+                                  color: _isSpatialAudio ? const Color(0xFFD47A46) : Colors.grey,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'BitChord Desktop Audio Engine',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: fg,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              _isSpatialAudio
+                                  ? (_currentAudioMetadata.isDolbyAtmos
+                                      ? 'Bypassed: Dolby Atmos spatial stream active (discrete multi-channel passthrough preserved).'
+                                      : 'Active: Mid/Side expansion (2.5x) with 15ms acoustic delay and crossfeed.')
+                                  : 'Bypassed: Pure bit-perfect stereo pass-through.',
+                              style: const TextStyle(fontSize: 11, color: Colors.grey, height: 1.4),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Dolby Atmos Passthrough State
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
@@ -2302,7 +2889,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Dolby Atmos Surround Passthrough',
+                                    'Dolby Atmos Passthrough',
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
@@ -2313,7 +2900,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                                     _dolbyAtmosEnabled
                                         ? '7.1.4 Multi-Channel Spatial Bed Active'
                                         : 'Disabled (Standard Stereo Downmix)',
-                                    style: TextStyle(fontSize: 10, color: Colors.grey),
+                                    style: const TextStyle(fontSize: 10, color: Colors.grey),
                                   ),
                                 ],
                               ),
@@ -2335,146 +2922,12 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 14),
-
-                      // Soundstage Visualizer Canvas
-                      Container(
-                        height: 120,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.black38 : const Color(0xFFF6E8D7),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: CustomPaint(
-                          painter: _SoundstagePainter(
-                            isEnabled: _isSpatialAudio || _currentAudioMetadata.isDolbyAtmos,
-                            intensity: _spatialIntensity,
-                            width: _spatialWidth,
-                            depth: _spatialDepth,
-                            accentColor: isDark ? peach : Colors.black,
-                          ),
-                        ),
-                      ),
                       const SizedBox(height: 18),
 
-                      if (_isSpatialAudio || _currentAudioMetadata.isDolbyAtmos) ...[
-                        // Preset Selector
-                        Text('Acoustic Presets', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: fg)),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 6,
-                          children: [
-                            _buildPresetChip('Natural', 1.8, 0.40, 0.90, setDialogState),
-                            _buildPresetChip('Wide', 2.2, 0.55, 1.0, setDialogState),
-                            _buildPresetChip('Concert', 2.5, 0.75, 1.0, setDialogState),
-                            _buildPresetChip('Studio', 1.4, 0.20, 0.75, setDialogState),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-
-                        // Intensity Slider
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Spatial Intensity: ${(_spatialIntensity * 100).toInt()}%', style: TextStyle(fontSize: 12, color: fg)),
-                            Text('Master DSP Mix', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                          ],
-                        ),
-                        Slider(
-                          value: _spatialIntensity,
-                          min: 0.0,
-                          max: 1.0,
-                          activeColor: isDark ? peach : Colors.black,
-                          onChanged: (val) {
-                            setState(() {
-                              _spatialIntensity = val;
-                              _spatialPreset = 'Custom';
-                            });
-                            setDialogState(() {
-                              _spatialIntensity = val;
-                              _spatialPreset = 'Custom';
-                            });
-                            WebAudioBridge.setSpatial(_isSpatialAudio, _spatialWidth, _spatialDepth, val);
-                          },
-                        ),
-
-                        // Width Slider
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Soundstage Width: ${(_spatialWidth * 100).toInt()}%', style: TextStyle(fontSize: 12, color: fg)),
-                            Text('Headroom Protected', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                          ],
-                        ),
-                        Slider(
-                          value: _spatialWidth,
-                          min: 1.0,
-                          max: 2.5,
-                          activeColor: isDark ? peach : Colors.black,
-                          onChanged: (val) {
-                            setState(() {
-                              _spatialWidth = val;
-                              _spatialPreset = 'Custom';
-                            });
-                            setDialogState(() {
-                              _spatialWidth = val;
-                              _spatialPreset = 'Custom';
-                            });
-                            WebAudioBridge.setSpatial(_isSpatialAudio, val, _spatialDepth, _spatialIntensity);
-                          },
-                        ),
-
-                        // Depth Slider
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Acoustic Depth: ${(_spatialDepth * 100).toInt()}%', style: TextStyle(fontSize: 12, color: fg)),
-                            Text('ITD Crossfeed', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                          ],
-                        ),
-                        Slider(
-                          value: _spatialDepth,
-                          min: 0.0,
-                          max: 1.0,
-                          activeColor: isDark ? peach : Colors.black,
-                          onChanged: (val) {
-                            setState(() {
-                              _spatialDepth = val;
-                              _spatialPreset = 'Custom';
-                            });
-                            setDialogState(() {
-                              _spatialDepth = val;
-                              _spatialPreset = 'Custom';
-                            });
-                            WebAudioBridge.setSpatial(_isSpatialAudio, _spatialWidth, val, _spatialIntensity);
-                          },
-                        ),
-                      ],
-
-                      const SizedBox(height: 12),
+                      // Footer Actions
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          if (_isSpatialAudio)
-                            TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _spatialPreset = 'Natural';
-                                  _spatialWidth = 1.3;
-                                  _spatialDepth = 0.25;
-                                  _spatialIntensity = 0.75;
-                                });
-                                setDialogState(() {
-                                  _spatialPreset = 'Natural';
-                                  _spatialWidth = 1.3;
-                                  _spatialDepth = 0.25;
-                                  _spatialIntensity = 0.75;
-                                });
-                              },
-                              child: const Text('Reset', style: TextStyle(color: Colors.grey)),
-                            ),
-                          const SizedBox(width: 8),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.black,
@@ -3291,6 +3744,8 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                 lyrics: const [],
                 audioQuality: audioQuality,
                 isDolbyAtmos: isAtmos,
+                sourceId: (track['sourceId'] ?? 'app.bitchord.confih').toString(),
+                sourceName: (track['sourceName'] ?? sourceName).toString(),
               );
 
               final isSelected = songItem.id == _currentSong.id;
@@ -3945,6 +4400,8 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                           lyrics: const [],
                           audioQuality: audioQuality,
                           isDolbyAtmos: isAtmos,
+                          sourceId: (track['sourceId'] ?? 'app.bitchord.confih').toString(),
+                          sourceName: (track['sourceName'] ?? sourceName).toString(),
                         );
 
                         final isSelected = songItem.id == _currentSong.id;
@@ -4686,7 +5143,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     final showAudioQuality = (_selectedSettingsCategory == 0 || _selectedSettingsCategory == 1) &&
         matchesSearch(['audio', 'quality', 'wifi', 'cellular', 'flac', 'lossless', 'dolby', 'atmos', 'direct', 'stream', 'alignment']);
     final showPlayback = (_selectedSettingsCategory == 0 || _selectedSettingsCategory == 2) &&
-        matchesSearch(['playback', 'spatial', 'dsp', 'equalizer', 'eq', 'soundstage', 'binaural', 'loudness', 'crossfade', 'automix', 'silence']);
+        matchesSearch(['playback', 'spatial', 'dsp', 'equalizer', 'eq', 'binaural', 'loudness', 'crossfade', 'automix', 'silence']);
     final showAppearance = (_selectedSettingsCategory == 0 || _selectedSettingsCategory == 3) &&
         matchesSearch(['appearance', 'theme', 'dark', 'light', 'espresso', 'beige', 'lyrics', 'blur', 'artwork', 'cover', 'canvas', 'motion', 'animation']);
     final showDownloads = (_selectedSettingsCategory == 0 || _selectedSettingsCategory == 4) &&
@@ -4988,9 +5445,10 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
           builder: (context) {
             final registry = AddonSourceRegistry.instance;
             final enabled = registry.enabledSources;
-            final activeSource = enabled.isNotEmpty
-                ? enabled.first
-                : (registry.allSources.isNotEmpty ? registry.allSources.first : null);
+            final activeSource = registry.getSourceById('app.bitchord.confih') ??
+                (enabled.isNotEmpty
+                    ? enabled.first
+                    : (registry.allSources.isNotEmpty ? registry.allSources.first : null));
             if (activeSource == null) return const SizedBox.shrink();
 
             return Container(
@@ -5041,14 +5499,16 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
-                        value: activeSource.effectiveQualityOption,
+                        value: activeSource.effectiveAvailableOptions.any((o) => o.value == activeSource.effectiveQualityOption)
+                            ? activeSource.effectiveQualityOption
+                            : (activeSource.effectiveAvailableOptions.isNotEmpty ? activeSource.effectiveAvailableOptions.first.value : null),
                         isExpanded: true,
                         dropdownColor: isDark ? const Color(0xFF1B1614) : Colors.white,
                         items: activeSource.effectiveAvailableOptions.map((opt) {
                           return DropdownMenuItem<String>(
                             value: opt.value,
                             child: Text(
-                              '${opt.label} (${opt.value})',
+                              opt.label,
                               style: TextStyle(fontSize: 11, color: textPrimary),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -5057,14 +5517,25 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                         onChanged: (newVal) {
                           if (newVal != null) {
                             setState(() {
-                              registry.setQualityOption(activeSource.id, newVal);
-                              _updateMetadataForSong(_currentSong);
+                              _switchAudioQuality(newVal, sourceId: activeSource.id);
                             });
                           }
                         },
                       ),
                     ),
                   ),
+                  if (_currentAudioMetadata.isDolbyAtmos || _currentSong.isDolbyAtmos) ...[
+                    const SizedBox(width: 6),
+                    AtmosBadge(
+                      isAtmosSource: true,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AtmosDiagnosticScreen(streamingManager: _atmosStreamingManager),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             );
@@ -5076,33 +5547,12 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
         _buildSettingChoiceRow(
           'Global Streaming Quality',
           'Primary fidelity target negotiated with add-on sources',
-          _globalStreamingProfile.label,
-          ['MAX', 'HI-RES', 'LOSSLESS', 'HIGH', 'LOW', 'AUTO'],
+          _globalStreamingProfile.pickerLabel,
+          GlobalQualityProfileExt.pickerOptions,
           (val) {
             setState(() {
-              switch (val) {
-                case 'MAX':
-                  _globalStreamingProfile = GlobalQualityProfile.max;
-                  break;
-                case 'HI-RES':
-                  _globalStreamingProfile = GlobalQualityProfile.hires;
-                  break;
-                case 'LOSSLESS':
-                  _globalStreamingProfile = GlobalQualityProfile.lossless;
-                  break;
-                case 'HIGH':
-                  _globalStreamingProfile = GlobalQualityProfile.high;
-                  break;
-                case 'LOW':
-                  _globalStreamingProfile = GlobalQualityProfile.low;
-                  break;
-                case 'AUTO':
-                default:
-                  _globalStreamingProfile = GlobalQualityProfile.auto;
-                  break;
-              }
-              AddonQualityManager.instance.preferences.streamingQuality = _globalStreamingProfile;
-              _updateMetadataForSong(_currentSong);
+              final profile = GlobalQualityProfileExt.fromPickerLabel(val);
+              _switchAudioQuality(profile.value);
             });
           },
           isDark,
@@ -5200,6 +5650,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
           'Bitrate ceiling when streaming on home or office broadband networks',
           _wifiStreamingQuality,
           [
+            'Ultra Hi-Res FLAC (24-bit/192kHz · 9216 kbps)',
             'Lossless FLAC (24-bit/96kHz)',
             'High AAC (320kbps)',
             'Medium AAC (192kbps)',
@@ -5277,172 +5728,92 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
   // ==========================================
 
   Widget _buildPlaybackSpatialSettingsCard(bool isDark, Color cardBg, Color cardBorder, Color textPrimary, Color textMuted) {
-    final peach = const Color(0xFFFEDBB3);
-
     return _buildSettingSectionContainer(
       'Playback & Spatial Audio DSP',
-      'Binaural ITD crossfeed, dynamic soundstage matrixing, 7-band graphic EQ',
+      'Binaural ITD crossfeed, BitChord spatial widening, 7-band graphic EQ',
       Icons.spatial_audio_rounded,
       Colors.orangeAccent,
       [
         // Master Spatial Audio Switch
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                _isSpatialAudio ? Icons.spatial_audio_rounded : Icons.spatial_audio_off_rounded,
-                color: peach,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'AuraBeat Spatial Audio Engine',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textPrimary),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _isSpatialAudio ? 'Active · 96kHz Binaural HRTF Crossfeed' : 'Bypassed (Original Stereo)',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: _isSpatialAudio ? const Color(0xFFD47A46) : textMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Switch(
-              value: _isSpatialAudio,
-              activeColor: Colors.black,
-              activeTrackColor: peach,
-              onChanged: (val) {
-                setState(() => _isSpatialAudio = val);
-                WebAudioBridge.setSpatial(val, _spatialWidth, _spatialDepth, _spatialIntensity);
-              },
-            ),
-          ],
+        _buildSettingSwitchRow(
+          'Spatial audio',
+          'Widens stereo tracks for a more immersive feel',
+          _isSpatialAudio,
+          (val) {
+            setState(() {
+              _isSpatialAudio = val;
+              WebAudioBridge.setSpatialAudio(val);
+              AuraBeatAudioEngine.instance.setSpatialAudio(val);
+            });
+          },
+          isDark,
+          textPrimary,
+          textMuted,
+          badge: _isSpatialAudio ? 'ACTIVE' : null,
         ),
-        const SizedBox(height: 16),
+        _buildDivider(isDark),
 
-        // Live 3D Soundstage Visualizer Canvas
-        Container(
-          height: 130,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: isDark ? Colors.black38 : const Color(0xFFF6E8D7),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: CustomPaint(
-            painter: _SoundstagePainter(
-              isEnabled: _isSpatialAudio,
-              intensity: _spatialIntensity,
-              width: _spatialWidth,
-              depth: _spatialDepth,
-              accentColor: isDark ? peach : Colors.black,
-            ),
-          ),
+        // Deep Bass Boost & 808 Sub-Bass
+        _buildSettingSwitchRow(
+          'Deep Bass Boost & 808 Sub-Bass (+${_bassBoostGain.toStringAsFixed(0)}dB)',
+          'Resonant 36Hz sub-bass punch and studio limiter protection (Active by default)',
+          _bassBoostEnabled,
+          (val) {
+            setState(() => _bassBoostEnabled = val);
+            WebAudioBridge.setBassBoost(val, _bassBoostGain);
+          },
+          isDark,
+          textPrimary,
+          textMuted,
+          badge: '+${_bassBoostGain.toStringAsFixed(0)}dB SUB-BASS',
         ),
-        const SizedBox(height: 16),
-
-        if (_isSpatialAudio) ...[
-          // Acoustic Presets
-          Text('Acoustic Presets', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: textPrimary)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              _buildSettingsPresetChip('Natural', 1.8, 0.40, 0.90, isDark),
-              _buildSettingsPresetChip('Wide', 2.2, 0.55, 1.0, isDark),
-              _buildSettingsPresetChip('Concert', 2.5, 0.75, 1.0, isDark),
-              _buildSettingsPresetChip('Studio', 1.4, 0.20, 0.75, isDark),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Spatial Intensity Slider
+        if (_bassBoostEnabled) ...[
           _buildSettingSliderRow(
-            'Spatial Intensity',
-            'Master binaural wet/dry blending ratio',
-            _spatialIntensity,
-            0.0,
-            1.0,
-            '${(_spatialIntensity * 100).toInt()}%',
+            'Sub-Bass & Bass Intensity',
+            'Subwoofer punch and low-frequency resonant gain (Default: +10.0dB)',
+            _bassBoostGain,
+            2.0,
+            16.0,
+            '+${_bassBoostGain.toStringAsFixed(1)}dB',
             (val) {
-              setState(() {
-                _spatialIntensity = val;
-                _spatialPreset = 'Custom';
-              });
-              WebAudioBridge.setSpatial(_isSpatialAudio, _spatialWidth, _spatialDepth, val);
+              setState(() => _bassBoostGain = val);
+              WebAudioBridge.setBassBoost(_bassBoostEnabled, val);
             },
             isDark,
             textPrimary,
             textMuted,
           ),
-
-          // Soundstage Width Slider
-          _buildSettingSliderRow(
-            'Soundstage Width',
-            'Interaural channel separation and stereo widening',
-            _spatialWidth,
-            1.0,
-            2.5,
-            '${(_spatialWidth * 100).toInt()}%',
-            (val) {
-              setState(() {
-                _spatialWidth = val;
-                _spatialPreset = 'Custom';
-              });
-              WebAudioBridge.setSpatial(_isSpatialAudio, val, _spatialDepth, _spatialIntensity);
-            },
-            isDark,
-            textPrimary,
-            textMuted,
-          ),
-
-          // Acoustic Depth Slider
-          _buildSettingSliderRow(
-            'Acoustic Depth & Ambience',
-            'Subtle ITD delay modeling and room response',
-            _spatialDepth,
-            0.0,
-            1.0,
-            '${(_spatialDepth * 100).toInt()}%',
-            (val) {
-              setState(() {
-                _spatialDepth = val;
-                _spatialPreset = 'Custom';
-              });
-              WebAudioBridge.setSpatial(_isSpatialAudio, _spatialWidth, val, _spatialIntensity);
-            },
-            isDark,
-            textPrimary,
-            textMuted,
-          ),
-          _buildDivider(isDark),
         ],
+        _buildDivider(isDark),
 
         // 7-Band Master Equalizer
         Text('7-Band Graphic Equalizer', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textPrimary)),
         const SizedBox(height: 4),
-        Text('Fine-tune acoustic frequency curves across 32Hz to 16kHz', style: TextStyle(fontSize: 11, color: textMuted)),
+        Text('Fine-tune acoustic frequency curves across 32Hz to 16kHz with studio headroom', style: TextStyle(fontSize: 11, color: textMuted)),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
+          runSpacing: 6,
           children: [
-            _buildEqPresetButton('Flat', [0, 0, 0, 0, 0, 0, 0], isDark),
-            _buildEqPresetButton('Bass Boost', [4.0, 3.0, 1.5, 0, 0, 0.5, 1.0], isDark),
-            _buildEqPresetButton('Vocal', [-1.0, 0, 1.0, 3.0, 2.5, 1.0, 0], isDark),
-            _buildEqPresetButton('Aura Signature', [0.0, 1.5, 2.0, 0.5, -0.5, 1.0, 2.5], isDark),
+            _buildEqPresetButton('Flat', [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], isDark),
+            _buildEqPresetButton('Acoustic', [3.0, 1.5, 0.0, 1.5, 2.5, 2.0, 1.0], isDark),
+            _buildEqPresetButton('Bass Boost', [6.0, 4.0, 1.5, 0.0, 0.0, 0.0, 0.0], isDark),
+            _buildEqPresetButton('Bass Cut', [-6.0, -4.0, -1.5, 0.0, 0.0, 0.0, 0.0], isDark),
+            _buildEqPresetButton('Vocal', [-3.0, -1.5, 1.0, 3.5, 3.0, 1.0, -1.0], isDark),
+            _buildEqPresetButton('Treble Boost', [0.0, 0.0, 0.0, 0.0, 1.5, 3.5, 5.0], isDark),
+            _buildEqPresetButton('Treble Cut', [0.0, 0.0, 0.0, 0.0, -1.5, -3.5, -5.0], isDark),
+            _buildEqPresetButton('Loudness', [6.0, 3.5, 0.0, -1.5, -1.0, 2.0, 5.0], isDark),
+            _buildEqPresetButton('Spoken Word', [-5.0, -2.5, 1.5, 4.0, 3.5, 1.5, -2.0], isDark),
+            _buildEqPresetButton('Electronic', [5.0, 3.0, -1.0, 0.0, 1.0, 3.0, 4.0], isDark),
+            _buildEqPresetButton('Rock', [4.0, 2.5, -1.0, -1.5, 1.0, 3.0, 3.5], isDark),
+            _buildEqPresetButton('Hip-Hop', [6.0, 4.0, 0.5, -1.0, 0.5, 2.0, 2.5], isDark),
+            _buildEqPresetButton('Jazz', [3.0, 1.5, 0.0, 1.0, 1.5, 2.0, 2.5], isDark),
+            _buildEqPresetButton('Classical', [3.0, 2.0, 0.0, 0.0, 1.0, 2.5, 3.0], isDark),
+            _buildEqPresetButton('Small Speakers', [5.0, 4.0, 2.0, 0.5, 0.0, -1.0, -2.0], isDark),
+            _buildEqPresetButton('Late Night', [3.0, 1.0, 0.0, 1.5, 1.0, -1.0, -3.0], isDark),
+            _buildEqPresetButton('Audiophile Clear', [4.5, 3.5, 1.0, 1.5, 2.0, 2.5, 3.0], isDark),
+            _buildEqPresetButton('Sub Bass', [6.0, 4.5, 1.5, 0.5, 1.0, 1.5, 2.0], isDark),
+            _buildEqPresetButton('Aura Signature', [3.0, 2.0, 1.5, 1.0, 1.5, 2.0, 2.5], isDark),
           ],
         ),
         const SizedBox(height: 16),
@@ -5464,6 +5835,40 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
               _buildEqBandSlider(6, '16kHz', isDark, textPrimary, textMuted),
             ],
           ),
+        ),
+        const SizedBox(height: 6),
+        Builder(
+          builder: (context) {
+            final antiClipPreamp = manualCurve(_equalizerBands).preampDb;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.shield_outlined, size: 12, color: textMuted),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Anti-Clipping DSP Protection',
+                        style: TextStyle(fontSize: 10, color: textMuted),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    antiClipPreamp == 0.0
+                        ? '0.0 dB (Bit-Perfect Headroom)'
+                        : '${antiClipPreamp.toStringAsFixed(1)} dB (Auto Headroom Protection)',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: antiClipPreamp == 0.0 ? Colors.greenAccent : (isDark ? const Color(0xFFFEDBB3) : Colors.black87),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
         _buildDivider(isDark),
 
@@ -5512,7 +5917,28 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
           'Skip Silence',
           'Automatically skips leading and trailing silent sections in tracks',
           _skipSilence,
-          (val) => setState(() => _skipSilence = val),
+          (val) {
+            setState(() => _skipSilence = val);
+            WebAudioBridge.setSilenceSkipping(val);
+          },
+          isDark,
+          textPrimary,
+          textMuted,
+        ),
+        _buildDivider(isDark),
+
+        // Playback Speed (SOLA Time Stretch)
+        _buildSettingSliderRow(
+          'Playback Speed (SOLA)',
+          'Pitch-preserving time stretch DSP engine (0.5x – 2.0x)',
+          _playbackSpeed,
+          0.5,
+          2.0,
+          '${_playbackSpeed.toStringAsFixed(2)}x',
+          (val) {
+            setState(() => _playbackSpeed = val);
+            WebAudioBridge.setPlaybackSpeed(val);
+          },
           isDark,
           textPrimary,
           textMuted,
@@ -5526,33 +5952,10 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     );
   }
 
-  Widget _buildSettingsPresetChip(String name, double width, double depth, double intensity, bool isDark) {
-    final isSelected = _spatialPreset == name;
-    return ChoiceChip(
-      label: Text(name),
-      selected: isSelected,
-      selectedColor: const Color(0xFFFEDBB3),
-      labelStyle: TextStyle(
-        fontSize: 11,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        color: isSelected ? Colors.black : (isDark ? Colors.white70 : Colors.black87),
-      ),
-      onSelected: (val) {
-        if (val) {
-          setState(() {
-            _spatialPreset = name;
-            _spatialWidth = width;
-            _spatialDepth = depth;
-            _spatialIntensity = intensity;
-          });
-          WebAudioBridge.setSpatial(_isSpatialAudio, width, depth, intensity);
-        }
-      },
-    );
-  }
-
   Widget _buildEqPresetButton(String label, List<double> bands, bool isDark) {
-    final isSelected = _equalizerPreset == label;
+    final cleanCurrent = _equalizerPreset.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    final cleanLabel = label.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    final isSelected = cleanCurrent == cleanLabel;
     return OutlinedButton(
       style: OutlinedButton.styleFrom(
         foregroundColor: isSelected ? (isDark ? Colors.black : Colors.white) : (isDark ? const Color(0xFFFEDBB3) : Colors.black87),
@@ -5566,7 +5969,28 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
         setState(() {
           _equalizerPreset = label;
           _equalizerBands = List<double>.from(bands);
+          if (label == 'Sub Bass') {
+            _bassBoostEnabled = true;
+            _bassBoostGain = 12.0;
+          } else if (label == 'Bass Boost') {
+            _bassBoostEnabled = true;
+            _bassBoostGain = 10.0;
+          } else if (label == 'Audiophile Clear') {
+            _bassBoostEnabled = true;
+            _bassBoostGain = 10.0;
+          } else if (label == 'Vocal Clarity' || label == 'Vocal' || label == 'Treble Cut' || label == 'Bass Cut' || label == 'Spoken Word') {
+            _bassBoostEnabled = false;
+          } else if (label == 'Aura Signature' || label == 'Electronic' || label == 'Rock' || label == 'Hip-Hop' || label == 'Loudness') {
+            _bassBoostEnabled = true;
+            _bassBoostGain = 8.0;
+          } else if (label == 'Flat') {
+            _bassBoostEnabled = false;
+          }
         });
+        WebAudioBridge.setEqualizer(_equalizerBands);
+        WebAudioBridge.setPreset(label);
+        WebAudioBridge.setBassBoost(_bassBoostEnabled, _bassBoostGain);
+        AuraBeatAudioEngine.instance.setManualBands(_equalizerBands);
       },
       child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
     );
@@ -5599,6 +6023,9 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                     _equalizerBands[index] = newVal;
                     _equalizerPreset = 'Custom';
                   });
+                  WebAudioBridge.setEqBand(index, newVal);
+                  WebAudioBridge.setPreset('Custom');
+                  AuraBeatAudioEngine.instance.setManualBands(_equalizerBands);
                 },
               ),
             ),
@@ -6708,7 +7135,9 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                       Expanded(
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
-                            value: source.effectiveQualityOption,
+                            value: source.effectiveAvailableOptions.any((o) => o.value == source.effectiveQualityOption)
+                                ? source.effectiveQualityOption
+                                : (source.effectiveAvailableOptions.isNotEmpty ? source.effectiveAvailableOptions.first.value : null),
                             isDense: true,
                             dropdownColor: isDark ? const Color(0xFF1B1614) : Colors.white,
                             items: source.effectiveAvailableOptions.map((opt) {
@@ -6724,8 +7153,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                             onChanged: (newVal) {
                               if (newVal != null) {
                                 setState(() {
-                                  registry.setQualityOption(source.id, newVal);
-                                  _updateMetadataForSong(_currentSong);
+                                  _switchAudioQuality(newVal, sourceId: source.id);
                                 });
                               }
                             },
@@ -7538,37 +7966,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     );
   }
 
-  Widget _buildPresetChip(String name, double width, double depth, double intensity, StateSetter setDialogState) {
-    final isSelected = _spatialPreset == name;
-    return ChoiceChip(
-      label: Text(name),
-      selected: isSelected,
-      selectedColor: const Color(0xFFFEDBB3),
-      labelStyle: TextStyle(
-        fontSize: 11,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        color: isSelected ? Colors.black : Colors.grey,
-      ),
-      onSelected: (val) {
-        if (val) {
-          setState(() {
-            _spatialPreset = name;
-            _spatialWidth = width;
-            _spatialDepth = depth;
-            _spatialIntensity = intensity;
-          });
-          setDialogState(() {
-            _spatialPreset = name;
-            _spatialWidth = width;
-            _spatialDepth = depth;
-            _spatialIntensity = intensity;
-          });
-          WebAudioBridge.setSpatial(_isSpatialAudio, width, depth, intensity);
-        }
-      },
-    );
-  }
-
   Widget _buildBottomPlayer(bool isDark) {
     return Container(
       height: 104,
@@ -7667,10 +8064,14 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                           const SizedBox(width: 4),
                           Text(
                             _currentAudioMetadata.isDolbyAtmos
-                                ? 'DOLBY ATMOS'
+                                ? (_currentAudioMetadata.isHiRes
+                                    ? 'ATMOS · ${_currentAudioMetadata.bitDepth}b/${(_currentAudioMetadata.sampleRateHz ?? 192000) ~/ 1000}k · ${_currentAudioMetadata.bitrateKbps ?? 9216}k'
+                                    : 'DOLBY ATMOS · ${_currentAudioMetadata.bitrateKbps ?? 768}k')
                                 : (_currentAudioMetadata.isHiRes
-                                    ? 'HI-RES · ${_currentAudioMetadata.bitDepth}b/${(_currentAudioMetadata.sampleRateHz ?? 96000) ~/ 1000}k'
-                                    : (_currentAudioMetadata.isLossless ? 'CD LOSSLESS' : 'HIGH 320k')),
+                                    ? 'HI-RES · ${_currentAudioMetadata.bitDepth}b/${(_currentAudioMetadata.sampleRateHz ?? 96000) ~/ 1000}k · ${_currentAudioMetadata.bitrateKbps ?? 4608}k'
+                                    : (_currentAudioMetadata.isLossless
+                                        ? 'CD LOSSLESS · ${_currentAudioMetadata.bitrateKbps ?? 1411}k'
+                                        : '${_currentAudioMetadata.codec} · ${_currentAudioMetadata.bitrateKbps ?? 320}k')),
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
@@ -7686,6 +8087,18 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                       ),
                     ),
                   ),
+                  if (_currentAudioMetadata.isDolbyAtmos || _currentSong.isDolbyAtmos) ...[
+                    const SizedBox(width: 6),
+                    AtmosBadge(
+                      isAtmosSource: true,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AtmosDiagnosticScreen(streamingManager: _atmosStreamingManager),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -7767,6 +8180,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                             setState(() {
                               _currentPosition = val;
                             });
+                            _atmosStreamingManager.player.seek(val);
                           },
                         ),
                       ),
@@ -7787,9 +8201,9 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
               color: (_isSpatialAudio || _currentAudioMetadata.isDolbyAtmos) ? const Color(0xFFFEDBB3) : Colors.white54,
               size: 20,
             ),
-            tooltip: (_isSpatialAudio || _currentAudioMetadata.isDolbyAtmos)
-                ? (_currentAudioMetadata.isDolbyAtmos ? 'Dolby Atmos Spatial Audio Active' : 'Spatial Audio: $_spatialPreset')
-                : 'Spatial Audio / Dolby Atmos (Off)',
+            tooltip: _currentAudioMetadata.isDolbyAtmos
+                ? 'Dolby Atmos Spatial Audio Active'
+                : (_isSpatialAudio ? 'Spatial Audio Active' : 'Spatial Audio (Off)'),
             onPressed: () => _openSpatialAudioDialog(context, isDark),
           ),
           IconButton(
@@ -7996,6 +8410,21 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                         'Track: ${_currentSong.title} — ${_currentSong.artist}',
                         style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.7)),
                       ),
+                      if (_currentAudioMetadata.isDolbyAtmos || _currentSong.isDolbyAtmos) ...[
+                        const SizedBox(height: 10),
+                        AtmosBadge(
+                          isAtmosSource: true,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AtmosDiagnosticScreen(streamingManager: _atmosStreamingManager),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -8093,6 +8522,145 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                   ),
                 ),
 
+                // Dolby Atmos Diagnostic Lab Button
+                InkWell(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AtmosDiagnosticScreen(
+                          streamingManager: _atmosStreamingManager,
+                        ),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 18),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.deepPurpleAccent.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.deepPurpleAccent.withOpacity(0.5)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.troubleshoot_rounded, color: Colors.deepPurpleAccent, size: 22),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Dolby Atmos Diagnostic Lab',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'View real-time bitstream audit: Source, Player & Output Verification',
+                                style: TextStyle(fontSize: 10, color: Colors.white60),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.arrow_forward_ios_rounded, color: Colors.white54, size: 14),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Bass Boost Quick Toggle in Modal
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: _bassBoostEnabled
+                        ? (isDark ? const Color(0xFF2E2622) : const Color(0xFFFFF3E0))
+                        : (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03)),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: _bassBoostEnabled ? const Color(0xFFFEDBB3) : (isDark ? Colors.white10 : Colors.black12),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: _bassBoostEnabled ? const Color(0xFFFEDBB3) : Colors.grey.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.speaker_group_rounded,
+                          size: 18,
+                          color: _bassBoostEnabled ? Colors.black : Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  'Aura Studio Sub-Bass & Clarity',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: _bassBoostEnabled ? const Color(0xFFFEDBB3) : Colors.white10,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    _bassBoostEnabled ? '+${_bassBoostGain.toStringAsFixed(0)}dB MASTER' : 'OFF',
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.5,
+                                      color: _bassBoostEnabled ? Colors.black : textMuted,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _bassBoostEnabled
+                                  ? 'Active 36Hz sub-bass punch, vocal presence & 10kHz air (Limiter Protected)'
+                                  : 'Tap to engage deep subwoofer punch and audiophile clarity',
+                              style: TextStyle(fontSize: 10, color: textMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _bassBoostEnabled,
+                        activeColor: const Color(0xFFFEDBB3),
+                        activeTrackColor: const Color(0xFFD4A373),
+                        onChanged: (val) {
+                          setState(() {
+                            _bassBoostEnabled = val;
+                          });
+                          WebAudioBridge.setBassBoost(val, _bassBoostGain);
+                          setModalState(() {});
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
                 // Interactive Add-on Stream Quality Tier Selector for Active Track
                 Builder(
                   builder: (context) {
@@ -8163,8 +8731,9 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                                 backgroundColor: isDark ? Colors.black38 : Colors.white70,
                                 onSelected: (selected) {
                                   if (selected) {
-                                    registry.setQualityOption(currentSource.id, opt.value);
-                                    _updateMetadataForSong(_currentSong);
+                                    setState(() {
+                                      _switchAudioQuality(opt.value, sourceId: currentSource.id);
+                                    });
                                     setModalState(() {});
                                   }
                                 },
@@ -8202,6 +8771,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                 _buildAudioSpecRow('Streaming Protocol', 'BitChord Wire REST v2.0', textPrimary, textMuted),
                 _buildAudioSpecRow('Delivery Method', _currentAudioMetadata.streamType, textPrimary, textMuted),
                 _buildAudioSpecRow('Fallback Status', 'Target: ${_globalStreamingProfile.label} -> Direct Stream Hit (0 Fallbacks)', textPrimary, textMuted),
+                _buildAudioSpecRow('Pipeline Negotiation', _currentAudioMetadata.isLossless ? '6-Layer Verified Bit-Perfect Pass-Through' : 'Optimized Float32 Resampling Path', textPrimary, textMuted),
                 _buildAudioSpecRow('Download Authorization', 'Authorized (BitChord allowDownloads: true)', textPrimary, textMuted),
 
                 const SizedBox(height: 24),
@@ -8342,78 +8912,4 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
 }
 
 
-class _SoundstagePainter extends CustomPainter {
-  final bool isEnabled;
-  final double intensity;
-  final double width;
-  final double depth;
-  final Color accentColor;
 
-  _SoundstagePainter({
-    required this.isEnabled,
-    required this.intensity,
-    required this.width,
-    required this.depth,
-    required this.accentColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height * 0.72);
-
-    // Ambient Depth Waves
-    if (isEnabled) {
-      for (int i = 1; i <= 3; i++) {
-        final radius = (20.0 + i * 16.0) * (0.8 + depth * 0.4);
-        final wavePaint = Paint()
-          ..color = accentColor.withOpacity((0.15 + 0.2 * intensity) / i)
-          ..strokeWidth = 1.5
-          ..style = PaintingStyle.stroke;
-        canvas.drawOval(
-          Rect.fromCenter(center: center, width: radius * 2.2, height: radius * 1.3),
-          wavePaint,
-        );
-      }
-    }
-
-    // Listener Head (Center)
-    final headPaint = Paint()
-      ..color = isEnabled ? accentColor : Colors.grey
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, 9, headPaint);
-
-    // Left and Right Virtual Speakers
-    final spread = 35.0 + (width - 1.0) * 55.0;
-    final speakerY = center.dy - 35.0 - depth * 15.0;
-    final leftSpeaker = Offset(center.dx - spread, speakerY);
-    final rightSpeaker = Offset(center.dx + spread, speakerY);
-
-    final speakerPaint = Paint()
-      ..color = isEnabled ? accentColor : Colors.grey.withOpacity(0.5)
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(leftSpeaker, 7, speakerPaint);
-    canvas.drawCircle(rightSpeaker, 7, speakerPaint);
-
-    // Soundstage arc
-    final path = Path()
-      ..moveTo(leftSpeaker.dx, leftSpeaker.dy)
-      ..quadraticBezierTo(center.dx, center.dy - 55.0 - depth * 20.0, rightSpeaker.dx, rightSpeaker.dy);
-
-    final arcPaint = Paint()
-      ..color = (isEnabled ? accentColor : Colors.grey).withOpacity(isEnabled ? (0.3 + 0.4 * intensity) : 0.2)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
-    canvas.drawPath(path, arcPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SoundstagePainter oldDelegate) {
-    return oldDelegate.isEnabled != isEnabled ||
-        oldDelegate.intensity != intensity ||
-        oldDelegate.width != width ||
-        oldDelegate.depth != depth ||
-        oldDelegate.accentColor != accentColor;
-  }
-}

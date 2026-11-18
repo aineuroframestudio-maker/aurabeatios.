@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// Home's feed (ports the home half of ui/MainViewModel.kt: `loadHome`, `refreshHome`,

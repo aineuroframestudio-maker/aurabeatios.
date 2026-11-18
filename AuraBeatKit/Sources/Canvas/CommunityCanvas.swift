@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// A community-curated `song + artist -> looping video` index, published as one JSON file and

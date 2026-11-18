@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports playback/PlaybackFallback.kt, plus `Song.hasYouTubeOriginal` from PlayerConnection.kt.

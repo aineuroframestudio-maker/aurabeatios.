@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports AudioCache.requestAnalysisHead / awaitAnalysisHead / alignmentHeadComplete /

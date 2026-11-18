@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // Ports download/Downloader.kt, plus the fetching half of OfflineHls.kt / OfflineDash.kt.

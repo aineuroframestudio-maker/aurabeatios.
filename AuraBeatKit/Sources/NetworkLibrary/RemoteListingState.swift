@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 // Ports data/remote/RemoteListing.kt: what a remote library page shows for a

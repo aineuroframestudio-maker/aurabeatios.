@@ -1,4 +1,4 @@
-﻿import AudioCache
+import AudioCache
 import Automix
 import AuraBeatCore
 import CryptoKit

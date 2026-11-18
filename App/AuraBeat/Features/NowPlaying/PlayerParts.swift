@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Playback
 import PlaybackPolicy
 import PlaybackQueue

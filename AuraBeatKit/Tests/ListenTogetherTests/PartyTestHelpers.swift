@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import AuraBeatTestSupport
 import Foundation
 @testable import ListenTogether

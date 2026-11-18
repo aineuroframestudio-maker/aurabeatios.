@@ -1,4 +1,4 @@
-﻿import AVFoundation
+import AVFoundation
 import XCTest
 import AuraBeatCore
 import AuraBeatTestSupport

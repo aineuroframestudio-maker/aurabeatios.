@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import ListenTogether
 import SwiftUI
 import UIKit

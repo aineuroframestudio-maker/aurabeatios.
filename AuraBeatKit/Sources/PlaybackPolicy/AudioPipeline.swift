@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 
 // Ports the model behind ui/components/AudioPipelineDialog.kt: the five stages and their rows, and
 // `bitExactVerdict` — whether decoded samples reach the output unaltered, and what alters them.
@@ -80,6 +80,8 @@ public struct AudioPipeline: Hashable, Sendable {
         /// preset list lives in AudioDSP, so the app supplies the name.
         public var equalizerDescription: String?
         public var spatialAudio: Bool
+        public var spatialWidth: Float
+        public var spatialPreset: String?
         public var loudnessNormalization: Bool
         public var playbackSpeed: Float
         /// Whether the item runs through the app's processing tap at all (the engine's
@@ -90,6 +92,8 @@ public struct AudioPipeline: Hashable, Sendable {
             equalizerEnabled: Bool = false,
             equalizerDescription: String? = nil,
             spatialAudio: Bool = false,
+            spatialWidth: Float = 1.5,
+            spatialPreset: String? = nil,
             loudnessNormalization: Bool = true,
             playbackSpeed: Float = 1,
             tapped: Bool = true
@@ -97,6 +101,8 @@ public struct AudioPipeline: Hashable, Sendable {
             self.equalizerEnabled = equalizerEnabled
             self.equalizerDescription = equalizerDescription
             self.spatialAudio = spatialAudio
+            self.spatialWidth = spatialWidth
+            self.spatialPreset = spatialPreset
             self.loudnessNormalization = loudnessNormalization
             self.playbackSpeed = playbackSpeed
             self.tapped = tapped
@@ -202,7 +208,7 @@ public struct AudioPipeline: Hashable, Sendable {
             Row("Gain", loudnessGainText),
             Row("Measured", output.loudnessLufs.map { "\(signed($0)) LUFS" } ?? dash),
             Row("EQ Preset", equalizerActive ? (dsp.equalizerDescription ?? "On") : "Flat"),
-            Row("Stereo Expand", spatialActive ? "250%" : "100%"),
+            Row("Stereo Expand", spatialActive ? "\(Int(dsp.spatialWidth * 100))%\(dsp.spatialPreset.map { " (\($0))" } ?? "")" : "100%"),
             Row("Speed", speedActive ? "\(speedText(dsp.playbackSpeed)) (time-stretched)" : "1×"),
             Row("Buffers", buffersText(output: output) ?? dash),
             Row("Output API", output.sink.isEmpty ? "Core Audio" : output.sink),

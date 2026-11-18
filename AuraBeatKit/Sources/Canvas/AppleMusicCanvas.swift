@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// Apple Music's motion artwork — the animated sleeves the web player shows on an album page,

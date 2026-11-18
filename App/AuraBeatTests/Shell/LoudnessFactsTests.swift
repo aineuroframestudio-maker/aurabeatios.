@@ -1,4 +1,4 @@
-﻿import AudioDSP
+import AudioDSP
 import AuraBeatCore
 import Playback
 import XCTest

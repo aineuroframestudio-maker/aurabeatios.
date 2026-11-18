@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import os
 #if canImport(UserNotifications)
 import UserNotifications

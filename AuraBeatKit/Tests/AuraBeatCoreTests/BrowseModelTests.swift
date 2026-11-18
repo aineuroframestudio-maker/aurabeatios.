@@ -1,4 +1,4 @@
-﻿import XCTest
+import XCTest
 @testable import AuraBeatCore
 
 /// Browse ids, search types and the other feed models. The browse-type cases are ported from

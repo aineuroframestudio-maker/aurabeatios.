@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AuraBeatCore
 
 // The value types the download queue, the Downloads page and the app share. Ports the data classes

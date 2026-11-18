@@ -1,4 +1,4 @@
-﻿// These live end-to-end tests launch local servers with Process, which only exists on the
+// These live end-to-end tests launch local servers with Process, which only exists on the
 // Mac host; on the iOS Simulator they compile out (they could never start a server there).
 #if os(macOS)
 import AuraBeatCore

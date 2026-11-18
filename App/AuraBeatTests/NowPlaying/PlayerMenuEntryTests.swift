@@ -1,4 +1,4 @@
-﻿import XCTest
+import XCTest
 @testable import AuraBeat
 
 /// Android 89912638 (after 1.8): while the lyrics are up, the header's three-dot disc becomes the

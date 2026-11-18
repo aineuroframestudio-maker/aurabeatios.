@@ -1,0 +1,14 @@
+{
+  "name": "bitchord-addon-server-node",
+  "version": "2.0.0",
+  "type": "module",
+  "description": "BitChord Add-on Reference Server with Official Addon Auth Verifier",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node test-addon-auth.mjs"
+  },
+  "keywords": ["bitchord", "addon", "auth", "music", "hi-res"],
+  "author": "AuraBeat / BitChord",
+  "license": "MIT"
+}

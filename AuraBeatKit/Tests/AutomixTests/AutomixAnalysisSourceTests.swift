@@ -1,4 +1,4 @@
-﻿import XCTest
+import XCTest
 @testable import Automix
 
 /// Port of AutomixAnalysisSourceTest.kt. (Its third case, about `QualityUpgrade.upgradedUri`,

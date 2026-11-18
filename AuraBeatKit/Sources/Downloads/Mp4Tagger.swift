@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 
 // Ports download/Mp4Tagger.kt.
 

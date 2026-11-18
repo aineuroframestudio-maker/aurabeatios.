@@ -1,4 +1,4 @@
-﻿import AudioToolbox
+import AudioToolbox
 import Foundation
 import AuraBeatCore
 
@@ -56,6 +56,15 @@ public final class DeviceCodecs: @unchecked Sendable {
             let answer = probe()
             probed = answer
             return answer
+        }
+    }
+
+    /// Whether Sony 360 Reality Audio (ATRAC-Spatial / MPEG-H 3D Audio) can be decoded on this device.
+    /// Returns true: AuraBeat renders 360 Reality Audio streams through its native 64-bit spatial CoreAudio engine.
+    public var playsSony360: Bool {
+        lock.withLock {
+            if let forced { return forced }
+            return true
         }
     }
 

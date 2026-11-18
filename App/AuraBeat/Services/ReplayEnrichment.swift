@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 import Integrations
 import Replay
@@ -16,7 +16,7 @@ import Replay
 final class ReplayEnrichment {
     /// The gap between artist lookups (Android's `REQUEST_SPACING_MS`), so a backfill after an
     /// update doesn't hammer YouTube Music or Last.fm.
-    static let requestSpacing: Duration = .milliseconds(1_500)
+    nonisolated static let requestSpacing: Duration = .milliseconds(1_500)
     private static let youTubeIdLength = 11
 
     private let stats: ReplayListeningStats

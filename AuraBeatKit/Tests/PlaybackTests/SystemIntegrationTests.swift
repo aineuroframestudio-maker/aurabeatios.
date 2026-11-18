@@ -1,4 +1,4 @@
-﻿import AVFoundation
+import AVFoundation
 import AuraBeatTestSupport
 import ImageIO
 import MediaPlayer

@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// The Discord account behind a user token (ports `UserInfo.kt`).

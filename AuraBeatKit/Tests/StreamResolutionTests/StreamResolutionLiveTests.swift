@@ -1,4 +1,4 @@
-﻿import AVFoundation
+import AVFoundation
 import XCTest
 @testable import StreamResolution
 

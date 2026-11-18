@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// Spotify's own Canvas — the feature the other providers are named after (Android:

@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 // Ports data/webdav/WebDavRepository.kt: the WebDAV library as Song rows,

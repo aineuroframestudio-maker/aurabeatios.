@@ -1,4 +1,4 @@
-﻿import AVFoundation
+import AVFoundation
 import AuraBeatCore
 import Canvas
 import Foundation
@@ -279,7 +279,7 @@ final class CurrentTrackCanvas {
 
     /// The real pixel size of the video at `url`, from the asset's own track — width, height and
     /// any rotation note it carries — never guessed from the URL. Nil when it reads as no video.
-    static func assetSize(of url: URL) async -> CGSize? {
+    @Sendable static func assetSize(of url: URL) async -> CGSize? {
         let asset = AVURLAsset(url: url)
         guard let track = try? await asset.loadTracks(withMediaType: .video).first,
               let size = try? await track.load(.naturalSize),

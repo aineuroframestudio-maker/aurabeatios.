@@ -1,4 +1,4 @@
-﻿import AVFoundation
+import AVFoundation
 import AuraBeatCore
 
 /// The coded format of an item's audio track, read off the asset before it plays.

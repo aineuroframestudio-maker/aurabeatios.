@@ -1,4 +1,4 @@
-﻿import Downloads
+import Downloads
 import UIKit
 import XCTest
 @testable import AuraBeat

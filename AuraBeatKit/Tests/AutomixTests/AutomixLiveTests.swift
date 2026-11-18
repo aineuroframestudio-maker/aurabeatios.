@@ -1,4 +1,4 @@
-﻿import XCTest
+import XCTest
 @testable import Automix
 
 /// Real music from a real server, through the whole pipeline. Skipped unless

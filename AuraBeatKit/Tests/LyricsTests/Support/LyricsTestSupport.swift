@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import os
 import XCTest
 @testable import Lyrics

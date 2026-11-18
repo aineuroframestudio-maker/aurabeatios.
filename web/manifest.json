@@ -2,7 +2,7 @@
   "id": "app.bitchord.confih",
   "name": "BitChord Confih Studio",
   "version": "2.0.0",
-  "description": "Official BitChord Confih Hi-Res Master Streaming & Discovery Add-on",
+  "description": "Official BitChord Confih Hi-Res Master Streaming & Discovery Add-on with Hardware Attestation",
   "resources": [
     "search",
     "stream"

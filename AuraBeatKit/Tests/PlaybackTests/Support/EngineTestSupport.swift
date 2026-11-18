@@ -1,4 +1,4 @@
-﻿import AudioDSP
+import AudioDSP
 import AVFoundation
 import AuraBeatCore
 import AuraBeatTestSupport

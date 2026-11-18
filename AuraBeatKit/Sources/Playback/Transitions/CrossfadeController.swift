@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// What the controller needs of a deck. The engine's ``PlaybackDeck`` is one; the tests drive fakes.

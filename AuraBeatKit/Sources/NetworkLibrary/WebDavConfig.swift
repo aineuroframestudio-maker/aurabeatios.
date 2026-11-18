@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 // Ports data/webdav/WebDavConfig.kt: WebDAV music library configuration and

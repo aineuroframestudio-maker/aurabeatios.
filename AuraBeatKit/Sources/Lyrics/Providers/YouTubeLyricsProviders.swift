@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 /// The three InnerTube calls the YouTube lyric sources make, returning raw JSON bodies.

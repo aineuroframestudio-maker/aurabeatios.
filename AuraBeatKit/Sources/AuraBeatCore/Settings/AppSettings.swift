@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import Observation
 
 // Ports data/settings/AppSettings.kt.
@@ -139,6 +139,13 @@ public final class AppSettings {
         didSet { write(.dolbyAtmos, dolbyAtmos) }
     }
 
+    /// Whether a source offering a Sony 360 Reality Audio rendition may serve it. The listener's answer,
+    /// independent of whether this device can decode it (so a restored backup on another phone
+    /// doesn't rewrite it). Sony 360 is lossy ATRAC-Spatial; someone on wired headphones may prefer the FLAC.
+    public var sony360: Bool = true {
+        didSet { write(.sony360, sony360) }
+    }
+
     /// When a track starts on a ranked source instead of on YouTube with the upgrade partway through
     /// (``StreamRequest/waitsForSources``, ``StreamRequest/readsAheadFromSources``). Playback only.
     public var directSourceStream: DirectSourceStream = .off {
@@ -148,9 +155,62 @@ public final class AppSettings {
         }
     }
 
-    /// The app's own stereo widening (not object-based spatial audio).
+    /// The app's own stereo widening and binaural spatial enhancement.
     public var spatialAudio: Bool = false {
         didSet { write(.spatialAudio, spatialAudio) }
+    }
+
+    /// Master spatial intensity (0.0 to 1.0).
+    public var spatialAudioIntensity: Float = 0.75 {
+        didSet {
+            let clamped = spatialAudioIntensity.clamped(to: 0.0...1.0)
+            if clamped != spatialAudioIntensity { spatialAudioIntensity = clamped; return }
+            write(.spatialAudioIntensity, spatialAudioIntensity)
+        }
+    }
+
+    /// Stereo width multiplier (1.0 to 2.5).
+    public var spatialAudioWidth: Float = 1.5 {
+        didSet {
+            let clamped = spatialAudioWidth.clamped(to: 1.0...2.5)
+            if clamped != spatialAudioWidth { spatialAudioWidth = clamped; return }
+            write(.spatialAudioWidth, spatialAudioWidth)
+        }
+    }
+
+    /// Acoustic ambience and crossfeed depth (0.0 to 1.0).
+    public var spatialAudioDepth: Float = 0.4 {
+        didSet {
+            let clamped = spatialAudioDepth.clamped(to: 0.0...1.0)
+            if clamped != spatialAudioDepth { spatialAudioDepth = clamped; return }
+            write(.spatialAudioDepth, spatialAudioDepth)
+        }
+    }
+
+    /// Curated spatial audio preset.
+    public var spatialAudioPreset: SpatialAudioPreset = .natural {
+        didSet {
+            write(.spatialAudioPreset, spatialAudioPreset.rawValue)
+            if spatialAudioPreset != .custom {
+                spatialAudioWidth = spatialAudioPreset.defaultWidth
+                spatialAudioDepth = spatialAudioPreset.defaultDepth
+                spatialAudioIntensity = spatialAudioPreset.defaultIntensity
+            }
+        }
+    }
+
+    /// Resets all spatial audio parameters to their factory defaults.
+    public func resetSpatialAudio() {
+        spatialAudio = false
+        spatialAudioPreset = .natural
+        spatialAudioIntensity = SpatialAudioPreset.natural.defaultIntensity
+        spatialAudioWidth = SpatialAudioPreset.natural.defaultWidth
+        spatialAudioDepth = SpatialAudioPreset.natural.defaultDepth
+    }
+
+    /// Resets Sony 360 Reality Audio preference to default.
+    public func resetSony360() {
+        sony360 = false
     }
 
     /// Playback rate, clamped to ``playbackSpeedRange``.
@@ -896,9 +956,14 @@ public final class AppSettings {
         skipSilence = readBool(.skipSilence, default: false)
         loudnessNormalization = readBool(.loudnessNormalization, default: true)
         dolbyAtmos = readBool(.dolbyAtmos, default: true)
+        sony360 = readBool(.sony360, default: true)
         migrateDirectSourceStream()
         directSourceStream = readEnum(.directSourceStream, default: .off)
         spatialAudio = readBool(.spatialAudio, default: false)
+        spatialAudioPreset = SpatialAudioPreset(rawValue: readInt(.spatialAudioPreset, default: SpatialAudioPreset.natural.rawValue)) ?? .natural
+        spatialAudioIntensity = readFloat(.spatialAudioIntensity, default: spatialAudioPreset.defaultIntensity)
+        spatialAudioWidth = readFloat(.spatialAudioWidth, default: spatialAudioPreset.defaultWidth)
+        spatialAudioDepth = readFloat(.spatialAudioDepth, default: spatialAudioPreset.defaultDepth)
         playbackSpeed = readFloat(.playbackSpeed, default: 1.0)
         autoplay = readBool(.autoplay, default: true)
         shuffleEnabled = readBool(.shuffleEnabled, default: false)

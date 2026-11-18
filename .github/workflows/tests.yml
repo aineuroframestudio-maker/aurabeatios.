@@ -51,6 +51,8 @@ jobs:
 
       - name: Build for testing
         run: |
+          git config --global url."https://github.com/mobilyze-llc/onnxruntime-swift-package-manager.git".insteadOf "https://github.com/microsoft/onnxruntime-swift-package-manager.git" || true
+          git config --global url."https://github.com/mobilyze-llc/onnxruntime-swift-package-manager".insteadOf "https://github.com/microsoft/onnxruntime-swift-package-manager" || true
           set -o pipefail
           # shellcheck disable=SC2086 # XCB_FLAGS is a list of flags
           xcodebuild build-for-testing $XCB_FLAGS \

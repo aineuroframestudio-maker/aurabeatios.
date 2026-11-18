@@ -1,4 +1,4 @@
-﻿import AuraBeatTestSupport
+import AuraBeatTestSupport
 import Foundation
 import XCTest
 @testable import NetworkLibrary

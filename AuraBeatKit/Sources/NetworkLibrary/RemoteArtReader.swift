@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import Foundation
 
 // Ports data/remote/RemoteArtReader.kt: EmbeddedArt.Reader backends, one per

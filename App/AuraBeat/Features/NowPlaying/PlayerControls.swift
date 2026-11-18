@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import MediaPlayer
 import PlaybackPolicy
 import SwiftUI

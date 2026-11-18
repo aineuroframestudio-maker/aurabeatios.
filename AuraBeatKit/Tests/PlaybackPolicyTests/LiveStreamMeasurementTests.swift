@@ -1,4 +1,4 @@
-﻿import XCTest
+import XCTest
 import AVFoundation
 import AuraBeatCore
 @testable import PlaybackPolicy

@@ -1,4 +1,4 @@
-﻿import AuraBeatCore
+import AuraBeatCore
 import SwiftUI
 
 /// An SMB share or a WebDAV server as a library: ports LocalMusicScreen.kt as MainActivity.kt placed

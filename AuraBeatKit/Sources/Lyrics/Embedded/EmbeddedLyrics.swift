@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 
 /// The lyrics already sitting inside a local audio file (Android: `EmbeddedLyrics.kt`).
 ///
