@@ -62,6 +62,40 @@ class WebAudioBridge {
     setBassBoost(enabled, gainDb);
   }
 
+  static void setSubBassEnhancement({
+    required bool enabled,
+    required double intensity,
+    required double frequencyHz,
+    required double outputLevelDb,
+    required String preset,
+  }) {
+    try {
+      _channel.invokeMethod('setSubBassEnhancement', {
+        'enabled': enabled,
+        'intensity': intensity,
+        'frequencyHz': frequencyHz,
+        'outputLevelDb': outputLevelDb,
+        'preset': preset,
+      }).catchError((_) {});
+    } catch (_) {}
+  }
+
+  static Future<Map<String, dynamic>?> getSubBassConfiguration() async {
+    try {
+      final res = await _channel.invokeMethod('getSubBassConfiguration');
+      if (res is Map) {
+        return Map<String, dynamic>.from(res);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  static void resetSubBassConfiguration() {
+    try {
+      _channel.invokeMethod('resetSubBassConfiguration').catchError((_) {});
+    } catch (_) {}
+  }
+
   static void setEqBand(int index, double gainDb) {
     try {
       _channel.invokeMethod('setEqBand', {

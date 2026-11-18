@@ -15,6 +15,7 @@ extension _AuraBeatAudioJsExtension on _AuraBeatAudioJs {
   external void setVolume(double volume);
   external void setBassBoost(bool enabled, double gainDb);
   external void setSubBass(bool enabled, double gainDb);
+  external void setSubBassEnhancement(bool enabled, double intensity, double frequencyHz, double outputLevelDb, String preset);
   external void setEqBand(int index, double gainDb);
 }
 
@@ -74,6 +75,24 @@ class WebAudioBridge {
       _auraBeatAudio?.setSubBass(enabled, gainDb);
     } catch (_) {}
   }
+
+  static void setSubBassEnhancement({
+    required bool enabled,
+    required double intensity,
+    required double frequencyHz,
+    required double outputLevelDb,
+    required String preset,
+  }) {
+    try {
+      _auraBeatAudio?.setSubBassEnhancement(enabled, intensity, frequencyHz, outputLevelDb, preset);
+    } catch (_) {}
+  }
+
+  static Future<Map<String, dynamic>?> getSubBassConfiguration() async {
+    return null;
+  }
+
+  static void resetSubBassConfiguration() {}
 
   static void setEqBand(int index, double gainDb) {
     try {

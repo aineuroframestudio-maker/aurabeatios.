@@ -14,6 +14,7 @@ import 'sources/services/addon_logger.dart';
 import 'dolby_atmos/atmos_badge.dart';
 import 'dolby_atmos/atmos_streaming_manager.dart';
 import 'dolby_atmos/atmos_diagnostic_screen.dart';
+import 'screens/sub_bass_enhancement_screen.dart';
 import 'audio_engine/audio_engine.dart';
 
 void main() {
@@ -396,6 +397,11 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
   bool _automixEnabled = true;
   bool _bassBoostEnabled = true;
   double _bassBoostGain = 10.0;
+  bool _subBassEnabled = false;
+  double _subBassIntensity = 0.50;
+  double _subBassFrequency = 60.0;
+  double _subBassOutputLevel = 0.0;
+  String _subBassPreset = 'Natural Sub-Bass';
   List<double> _equalizerBands = [4.5, 3.5, 1.0, 1.5, 2.0, 2.5, 3.0]; // 32Hz, 64Hz, 250Hz, 1kHz, 4kHz, 8kHz, 16kHz (Audiophile Clear)
   String _equalizerPreset = 'Audiophile Clear';
 
@@ -1614,13 +1620,50 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
           if (nativeConfig['bassBoostGain'] is num) {
             _bassBoostGain = (nativeConfig['bassBoostGain'] as num).toDouble();
           }
+          if (nativeConfig['subBassEnabled'] is bool) {
+            _subBassEnabled = nativeConfig['subBassEnabled'] as bool;
+          }
+          if (nativeConfig['subBassIntensity'] is num) {
+            _subBassIntensity = (nativeConfig['subBassIntensity'] as num).toDouble();
+          }
+          if (nativeConfig['subBassFrequency'] is num) {
+            _subBassFrequency = (nativeConfig['subBassFrequency'] as num).toDouble();
+          }
+          if (nativeConfig['subBassOutputLevel'] is num) {
+            _subBassOutputLevel = (nativeConfig['subBassOutputLevel'] as num).toDouble();
+          }
+          if (nativeConfig['subBassPreset'] is String) {
+            _subBassPreset = nativeConfig['subBassPreset'] as String;
+          }
+          SubBassEngine.instance.setConfiguration(SubBassConfiguration(
+            enabled: _subBassEnabled,
+            intensity: _subBassIntensity,
+            frequencyHz: _subBassFrequency,
+            outputLevelDb: _subBassOutputLevel,
+            preset: SubBassPreset.fromName(_subBassPreset),
+          ));
         });
       }
     } else {
       // Fallback only if no native config returned (e.g. Web or headless test environment):
+      SubBassEngine.instance.setConfiguration(SubBassConfiguration(
+        enabled: _subBassEnabled,
+        intensity: _subBassIntensity,
+        frequencyHz: _subBassFrequency,
+        outputLevelDb: _subBassOutputLevel,
+        preset: SubBassPreset.fromName(_subBassPreset),
+      ));
       WebAudioBridge.setPlaybackSpeed(_playbackSpeed);
       WebAudioBridge.setSilenceSkipping(_skipSilence);
       WebAudioBridge.setBassBoost(_bassBoostEnabled, _bassBoostGain);
+    final subCfg = SubBassEngine.instance.config;
+    WebAudioBridge.setSubBassEnhancement(
+      enabled: subCfg.enabled,
+      intensity: subCfg.intensity,
+      frequencyHz: subCfg.frequencyHz,
+      outputLevelDb: subCfg.outputLevelDb,
+      preset: subCfg.preset.displayName,
+    );
       WebAudioBridge.setSpatialAudio(_isSpatialAudio);
       WebAudioBridge.setEqualizer(_equalizerBands);
       AuraBeatAudioEngine.instance.setSpatialAudio(_isSpatialAudio);
@@ -1847,6 +1890,14 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     final effectiveSpatial = _isSpatialAudio;
     WebAudioBridge.setSpatialAudio(effectiveSpatial);
     WebAudioBridge.setBassBoost(_bassBoostEnabled, _bassBoostGain);
+    final subCfg = SubBassEngine.instance.config;
+    WebAudioBridge.setSubBassEnhancement(
+      enabled: subCfg.enabled,
+      intensity: subCfg.intensity,
+      frequencyHz: subCfg.frequencyHz,
+      outputLevelDb: subCfg.outputLevelDb,
+      preset: subCfg.preset.displayName,
+    );
     WebAudioBridge.setEqualizer(_equalizerBands);
 
     // Negotiate 6-layer audio pipeline output
@@ -1902,6 +1953,14 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       WebAudioBridge.setPlaybackSpeed(_playbackSpeed);
       WebAudioBridge.setSilenceSkipping(_skipSilence);
       WebAudioBridge.setBassBoost(_bassBoostEnabled, _bassBoostGain);
+    final subCfg = SubBassEngine.instance.config;
+    WebAudioBridge.setSubBassEnhancement(
+      enabled: subCfg.enabled,
+      intensity: subCfg.intensity,
+      frequencyHz: subCfg.frequencyHz,
+      outputLevelDb: subCfg.outputLevelDb,
+      preset: subCfg.preset.displayName,
+    );
       WebAudioBridge.setEqualizer(_equalizerBands);
       final effectiveSpatial = _isSpatialAudio;
       WebAudioBridge.setSpatialAudio(effectiveSpatial);
@@ -2167,6 +2226,14 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     WebAudioBridge.setPlaybackSpeed(_playbackSpeed);
     WebAudioBridge.setSilenceSkipping(_skipSilence);
     WebAudioBridge.setBassBoost(_bassBoostEnabled, _bassBoostGain);
+    final subCfg = SubBassEngine.instance.config;
+    WebAudioBridge.setSubBassEnhancement(
+      enabled: subCfg.enabled,
+      intensity: subCfg.intensity,
+      frequencyHz: subCfg.frequencyHz,
+      outputLevelDb: subCfg.outputLevelDb,
+      preset: subCfg.preset.displayName,
+    );
     WebAudioBridge.setEqualizer(_equalizerBands);
     final effectiveSpatial = _isSpatialAudio;
     WebAudioBridge.setSpatialAudio(effectiveSpatial);
@@ -2224,6 +2291,14 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     WebAudioBridge.setPlaybackSpeed(_playbackSpeed);
     WebAudioBridge.setSilenceSkipping(_skipSilence);
     WebAudioBridge.setBassBoost(_bassBoostEnabled, _bassBoostGain);
+    final subCfg = SubBassEngine.instance.config;
+    WebAudioBridge.setSubBassEnhancement(
+      enabled: subCfg.enabled,
+      intensity: subCfg.intensity,
+      frequencyHz: subCfg.frequencyHz,
+      outputLevelDb: subCfg.outputLevelDb,
+      preset: subCfg.preset.displayName,
+    );
     WebAudioBridge.setEqualizer(_equalizerBands);
     final effectiveSpatial = _isSpatialAudio;
     WebAudioBridge.setSpatialAudio(effectiveSpatial);
@@ -5969,6 +6044,78 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
         ],
         _buildDivider(isDark),
 
+        // Advanced Sub-Bass Enhancement Engine
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: SubBassEngine.instance.isEnabled
+                  ? const Color(0xFFFEDBB3).withOpacity(0.18)
+                  : (isDark ? Colors.white10 : Colors.black12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.graphic_eq_rounded,
+              color: SubBassEngine.instance.isEnabled ? const Color(0xFFFEDBB3) : textMuted,
+              size: 22,
+            ),
+          ),
+          title: Row(
+            children: [
+              Text(
+                'Sub-Bass Enhancement',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: textPrimary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: SubBassEngine.instance.isEnabled
+                      ? const Color(0xFFFEDBB3).withOpacity(0.2)
+                      : Colors.white10,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  SubBassEngine.instance.isEnabled
+                      ? 'ACTIVE · ${SubBassEngine.instance.config.preset.displayName.toUpperCase()}'
+                      : 'BYPASSED',
+                  style: TextStyle(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.6,
+                    color: SubBassEngine.instance.isEnabled ? const Color(0xFFFEDBB3) : textMuted,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          subtitle: Text(
+            'Deep, controlled low-frequency enhancement. Preserves original bass, kicks, and vocals.',
+            style: TextStyle(color: textMuted, fontSize: 11),
+          ),
+          trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white54, size: 20),
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SubBassEnhancementScreen()),
+            );
+            setState(() {
+              final cfg = SubBassEngine.instance.config;
+              _subBassEnabled = cfg.enabled;
+              _subBassIntensity = cfg.intensity;
+              _subBassFrequency = cfg.frequencyHz;
+              _subBassOutputLevel = cfg.outputLevelDb;
+              _subBassPreset = cfg.preset.displayName;
+            });
+          },
+        ),
+        _buildDivider(isDark),
+
         // 7-Band Master Equalizer
         Text('7-Band Graphic Equalizer', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textPrimary)),
         const SizedBox(height: 4),
@@ -6173,6 +6320,14 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
         WebAudioBridge.setEqualizer(_equalizerBands);
         WebAudioBridge.setPreset(label);
         WebAudioBridge.setBassBoost(_bassBoostEnabled, _bassBoostGain);
+    final subCfg = SubBassEngine.instance.config;
+    WebAudioBridge.setSubBassEnhancement(
+      enabled: subCfg.enabled,
+      intensity: subCfg.intensity,
+      frequencyHz: subCfg.frequencyHz,
+      outputLevelDb: subCfg.outputLevelDb,
+      preset: subCfg.preset.displayName,
+    );
         AuraBeatAudioEngine.instance.setManualBands(_equalizerBands);
       },
       child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),

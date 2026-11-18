@@ -6,6 +6,7 @@
 
 import '../audio_bridge.dart';
 import 'negotiator/output_negotiator.dart';
+import 'sub_bass/sub_bass_engine.dart';
 
 export 'pcm/pcm_encoding.dart';
 export 'pcm/audio_block.dart';
@@ -14,6 +15,9 @@ export 'pipeline/audio_pipeline_telemetry.dart';
 export 'buffer/decode_ahead_buffer.dart';
 export 'negotiator/output_negotiator.dart';
 export 'dsd/dsd_format.dart';
+export 'sub_bass/sub_bass_config.dart';
+export 'sub_bass/sub_bass_dsp.dart';
+export 'sub_bass/sub_bass_engine.dart';
 
 /// Lightweight representation of EQ Curve parameters and anti-clipping headroom.
 class EqCurve {
@@ -64,6 +68,8 @@ class AuraBeatAudioEngine {
   OutputNegotiationResult? _lastNegotiationResult;
 
   AuraBeatAudioEngine._internal();
+
+  SubBassEngine get subBass => SubBassEngine.instance;
 
   bool get isSpatialAudioEnabled => _spatialAudioEnabled;
   List<double> get manualBands => List.unmodifiable(_manualBands);

@@ -50,6 +50,11 @@
       var isBassBoost = true;
       var bassGainDb = 10.0;
       var isSubBass = true;
+      var isSubBassEnhancement = false;
+      var subBassIntensity = 0.50;
+      var subBassFrequency = 60.0;
+      var subBassOutputLevelDb = 0.0;
+      var subBassPresetName = 'Natural Sub-Bass';
       var subBassGainDb = 10.0;
       var masterGain = null;
       var preampGain = null;
@@ -245,14 +250,21 @@
         if (crossGainR) crossGainR.gain.setTargetAtTime(effCross, ctx.currentTime, 0.05);
 
         var targetBass = isBassBoost ? Math.min(bassGainDb, 14.0) : 0.0;
-        if (ultraSubBassFilter) ultraSubBassFilter.gain.setTargetAtTime(targetBass * 0.45, ctx.currentTime, 0.05);
-        if (subBassFilter) subBassFilter.gain.setTargetAtTime(targetBass * 0.40, ctx.currentTime, 0.05);
+        var subEnhanceGain = isSubBassEnhancement ? (subBassIntensity * 6.0 * Math.pow(10.0, subBassOutputLevelDb / 20.0)) : 0.0;
+        if (ultraSubBassFilter) {
+          ultraSubBassFilter.frequency.setTargetAtTime(Math.min(45, subBassFrequency * 0.7), ctx.currentTime, 0.05);
+          ultraSubBassFilter.gain.setTargetAtTime((targetBass * 0.45) + (subEnhanceGain * 0.65), ctx.currentTime, 0.05);
+        }
+        if (subBassFilter) {
+          subBassFilter.frequency.setTargetAtTime(subBassFrequency, ctx.currentTime, 0.05);
+          subBassFilter.gain.setTargetAtTime((targetBass * 0.40) + (subEnhanceGain * 0.55), ctx.currentTime, 0.05);
+        }
         if (bassBoostFilter) bassBoostFilter.gain.setTargetAtTime(targetBass * 0.30, ctx.currentTime, 0.05);
         if (punchFilter) punchFilter.gain.setTargetAtTime(targetBass * 0.15, ctx.currentTime, 0.05);
         if (airFilter) airFilter.gain.setTargetAtTime(2.2, ctx.currentTime, 0.05);
 
         // Preamp Headroom: Guarantees zero clipping even on aggressive mastering while preserving full dynamic punch
-        var headroomRatio = isBassBoost ? 0.86 : 0.96;
+        var headroomRatio = (isBassBoost || isSubBassEnhancement) ? 0.82 : 0.96;
         if (preampGain) preampGain.gain.setTargetAtTime(headroomRatio, ctx.currentTime, 0.05);
       }
 
@@ -460,6 +472,14 @@
         setSubBass: function(enabled, gainDb) {
           isBassBoost = !!enabled;
           if (typeof gainDb === 'number') bassGainDb = gainDb;
+          updateDSP();
+        },
+        setSubBassEnhancement: function(enabled, intensity, frequencyHz, outputLevelDb, preset) {
+          isSubBassEnhancement = !!enabled;
+          if (typeof intensity === 'number') subBassIntensity = intensity;
+          if (typeof frequencyHz === 'number') subBassFrequency = frequencyHz;
+          if (typeof outputLevelDb === 'number') subBassOutputLevelDb = outputLevelDb;
+          if (typeof preset === 'string') subBassPresetName = preset;
           updateDSP();
         },
         setEqBand: function(index, gainDb) {

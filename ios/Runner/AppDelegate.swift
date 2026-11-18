@@ -93,6 +93,39 @@ import UIKit
         audioManager.setBassBoost(enabled: enabled, gainDb: gainDb)
         result(true)
 
+      case "setSubBassEnhancement":
+        guard let args = call.arguments as? [String: Any] else {
+          result(false)
+          return
+        }
+        let enabled = args["enabled"] as? Bool ?? false
+        let intensity = Float(args["intensity"] as? Double ?? 0.50)
+        let frequency = Float(args["frequencyHz"] as? Double ?? 60.0)
+        let outputLevel = Float(args["outputLevelDb"] as? Double ?? 0.0)
+        let preset = args["preset"] as? String ?? "Natural Sub-Bass"
+        audioManager.setSubBassEnhancement(
+          enabled: enabled,
+          intensity: intensity,
+          frequency: frequency,
+          outputLevel: outputLevel,
+          preset: preset
+        )
+        result(true)
+
+      case "getSubBassConfiguration":
+        let config = AuraBeatDSPConfiguration.shared
+        result([
+          "enabled": config.subBassEnabled,
+          "intensity": Double(config.subBassIntensity),
+          "frequencyHz": Double(config.subBassFrequency),
+          "outputLevelDb": Double(config.subBassOutputLevel),
+          "preset": config.subBassPreset
+        ])
+
+      case "resetSubBassConfiguration":
+        audioManager.resetSubBass()
+        result(true)
+
       case "setEqualizer":
         if let bands = call.arguments as? [Double] {
           audioManager.setEqualizer(bands: bands.map { Float($0) })

@@ -327,6 +327,21 @@ public final class AuraBeatDSPConfiguration {
     public var bassBoostGain: Float = 0.0 {
         didSet { saveToUserDefaults() }
     }
+    public var subBassEnabled: Bool = false {
+        didSet { saveToUserDefaults() }
+    }
+    public var subBassIntensity: Float = 0.50 {
+        didSet { saveToUserDefaults() }
+    }
+    public var subBassFrequency: Float = 60.0 {
+        didSet { saveToUserDefaults() }
+    }
+    public var subBassOutputLevel: Float = 0.0 {
+        didSet { saveToUserDefaults() }
+    }
+    public var subBassPreset: String = "Natural Sub-Bass" {
+        didSet { saveToUserDefaults() }
+    }
 
     private init() {
         loadFromUserDefaults()
@@ -347,6 +362,11 @@ public final class AuraBeatDSPConfiguration {
         defaults.set(playbackSpeed, forKey: "aurabeat.playbackSpeed")
         defaults.set(bassBoostEnabled, forKey: "aurabeat.bassBoostEnabled")
         defaults.set(bassBoostGain, forKey: "aurabeat.bassBoostGain")
+        defaults.set(subBassEnabled, forKey: "aurabeat.subBassEnabled")
+        defaults.set(subBassIntensity, forKey: "aurabeat.subBassIntensity")
+        defaults.set(subBassFrequency, forKey: "aurabeat.subBassFrequency")
+        defaults.set(subBassOutputLevel, forKey: "aurabeat.subBassOutputLevel")
+        defaults.set(subBassPreset, forKey: "aurabeat.subBassPreset")
         if let data = try? JSONEncoder().encode(manualBands) {
             if let jsonString = String(data: data, encoding: .utf8) {
                 defaults.set(jsonString, forKey: "aurabeat.eqBands")
@@ -415,12 +435,36 @@ public final class AuraBeatDSPConfiguration {
         if defaults.object(forKey: "aurabeat.bassBoostGain") != nil {
             bassBoostGain = max(0.0, min(18.0, defaults.float(forKey: "aurabeat.bassBoostGain")))
         }
+        if defaults.object(forKey: "aurabeat.subBassEnabled") != nil {
+            subBassEnabled = defaults.bool(forKey: "aurabeat.subBassEnabled")
+        }
+        if defaults.object(forKey: "aurabeat.subBassIntensity") != nil {
+            subBassIntensity = max(0.0, min(1.0, defaults.float(forKey: "aurabeat.subBassIntensity")))
+        }
+        if defaults.object(forKey: "aurabeat.subBassFrequency") != nil {
+            subBassFrequency = max(30.0, min(120.0, defaults.float(forKey: "aurabeat.subBassFrequency")))
+        }
+        if defaults.object(forKey: "aurabeat.subBassOutputLevel") != nil {
+            subBassOutputLevel = max(-12.0, min(6.0, defaults.float(forKey: "aurabeat.subBassOutputLevel")))
+        }
+        if let p = defaults.string(forKey: "aurabeat.subBassPreset"), !p.isEmpty {
+            subBassPreset = p
+        }
         if let str = defaults.string(forKey: "aurabeat.eqBands"),
            let data = str.data(using: .utf8),
            let bands = try? JSONDecoder().decode([Float].self, from: data),
            bands.count == 7 {
             manualBands = bands
         }
+    }
+
+    public func resetSubBass() {
+        subBassEnabled = false
+        subBassIntensity = 0.50
+        subBassFrequency = 60.0
+        subBassOutputLevel = 0.0
+        subBassPreset = "Natural Sub-Bass"
+        saveToUserDefaults()
     }
 
     public func toDictionary() -> [String: Any] {
@@ -438,7 +482,12 @@ public final class AuraBeatDSPConfiguration {
             "silenceSkippingEnabled": silenceSkippingEnabled,
             "playbackSpeed": playbackSpeed,
             "bassBoostEnabled": bassBoostEnabled,
-            "bassBoostGain": bassBoostGain
+            "bassBoostGain": bassBoostGain,
+            "subBassEnabled": subBassEnabled,
+            "subBassIntensity": subBassIntensity,
+            "subBassFrequency": subBassFrequency,
+            "subBassOutputLevel": subBassOutputLevel,
+            "subBassPreset": subBassPreset
         ]
     }
 }
@@ -655,6 +704,27 @@ public final class AuraBeatAudioManager: NSObject {
         QualityPreferenceManager.shared.bassBoostGain = gainDb
         AuraBeatDSPConfiguration.shared.bassBoostEnabled = enabled
         AuraBeatDSPConfiguration.shared.bassBoostGain = gainDb
+        syncWithConfiguration()
+    }
+
+    public func setSubBassEnhancement(
+        enabled: Bool,
+        intensity: Float = 0.50,
+        frequency: Float = 60.0,
+        outputLevel: Float = 0.0,
+        preset: String = "Natural Sub-Bass"
+    ) {
+        let config = AuraBeatDSPConfiguration.shared
+        config.subBassEnabled = enabled
+        config.subBassIntensity = max(0.0, min(1.0, intensity))
+        config.subBassFrequency = max(30.0, min(120.0, frequency))
+        config.subBassOutputLevel = max(-12.0, min(6.0, outputLevel))
+        config.subBassPreset = preset
+        syncWithConfiguration()
+    }
+
+    public func resetSubBass() {
+        AuraBeatDSPConfiguration.shared.resetSubBass()
         syncWithConfiguration()
     }
 
