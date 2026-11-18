@@ -196,6 +196,8 @@ class BitChordProtocolAdapter extends AddonProtocolAdapter {
     required String trackId,
     required String quality,
     String? atmos,
+    String? title,
+    String? artist,
   }) async {
     // Lossless output gate check
     if (!_outputManager.shouldAllowGatedSource(config)) {
@@ -224,6 +226,13 @@ class BitChordProtocolAdapter extends AddonProtocolAdapter {
     final queryParams = <String, String>{
       'quality': effectiveQuality,
     };
+
+    if (title != null && title.isNotEmpty) {
+      queryParams['title'] = title;
+    }
+    if (artist != null && artist.isNotEmpty) {
+      queryParams['artist'] = artist;
+    }
 
     // BitChord Spec: Send other settings default scalar values
     config.rawSettings.forEach((key, settingMap) {

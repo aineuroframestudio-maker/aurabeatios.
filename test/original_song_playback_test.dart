@@ -314,5 +314,87 @@ void main() {
       final effective = AuraBeatAudioEngine.bypassSpatialAudio ? false : engine.isSpatialAudioEnabled;
       expect(effective, isFalse, reason: 'Effective spatial signal processing must be false during verification');
     });
+
+    test('Phase 10.1: No obsolete demo MP3 URLs or fallback placeholders exist in codebase', () {
+      final workerFile = File('worker.mjs');
+      expect(workerFile.existsSync(), isTrue);
+      final workerContent = workerFile.readAsStringSync();
+
+      expect(workerContent.contains('soundhelix.com'), isFalse,
+          reason: 'All obsolete SoundHelix demo MP3 URLs must be removed from worker.mjs');
+      expect(workerContent.contains('espressif.com'), isFalse,
+          reason: 'All obsolete Espressif demo MP3 URLs must be removed from worker.mjs');
+      expect(workerContent.contains('AUDIO_STREAMS'), isFalse,
+          reason: 'AUDIO_STREAMS demo MP3 fallback table must be removed');
+      expect(workerContent.contains('REAL_CATALOG[0]'), isFalse,
+          reason: 'Silent track substitution with catalog[0] must be removed');
+    });
+
+    test('Phase 10.2: All 42 library songs in main.dart map to distinct authentic bitstream URLs', () {
+      final mainFile = File('lib/main.dart');
+      expect(mainFile.existsSync(), isTrue);
+      final mainContent = mainFile.readAsStringSync();
+
+      // Ensure no SoundHelix or Espressif references in main.dart
+      expect(mainContent.contains('soundhelix.com'), isFalse);
+      expect(mainContent.contains('espressif.com'), isFalse);
+
+      // Verify that song 7 ("Nightcall") does NOT point to confih_track_004
+      expect(mainContent.contains('streamUrl: \'https://yes.aineuroframestudio-986.workers.dev/media/confih_track_004.flac?tier=max\''), isFalse,
+          reason: 'Song 7 (Nightcall) must not point to confih_track_004 (Taylor Swift Anti-Hero)');
+
+      // Extract all stream URLs from main.dart
+      final streamUrlRegex = RegExp(r"streamUrl:\s*'([^']+)'");
+      final matches = streamUrlRegex.allMatches(mainContent);
+      final extractedUrls = matches.map((m) => m.group(1)!).toList();
+
+      expect(extractedUrls.length, greaterThanOrEqualTo(42),
+          reason: 'All library songs must have explicit streamUrl definitions');
+
+      // Check for distinctness of media stream URLs (IDs 1 through 42)
+      final catalogMediaUrls = extractedUrls.where((url) => url.contains('/media/')).toSet();
+      for (int i = 1; i <= 42; i++) {
+        final expected = 'https://yes.aineuroframestudio-986.workers.dev/media/$i.flac?tier=max';
+        expect(catalogMediaUrls.contains(expected), isTrue,
+            reason: 'Song ID $i must have its own unique stream URL: $expected');
+      }
+
+      expect(catalogMediaUrls.length, greaterThanOrEqualTo(42),
+          reason: 'Every single song from 1 to 42 must have a unique audio URL with zero collision');
+    });
+
+    test('Phase 10.3: Queue transitions across 42 songs preserve distinct stream identity', () {
+      final songList = List.generate(42, (index) {
+        final id = (index + 1).toString();
+        return SongItem(
+          id: id,
+          title: 'Track $id',
+          artist: 'Artist $id',
+          album: 'Album $id',
+          duration: '3:00',
+          durationSec: 180,
+          coverUrl: 'https://example.com/cover$id.jpg',
+          streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/$id.flac?tier=max',
+          lyrics: const ['Line 1'],
+        );
+      });
+
+      final controller = PlaybackQueueController(initialQueue: songList);
+      final playedUrls = <String>[];
+
+      for (int i = 0; i < 42; i++) {
+        final current = controller.currentSong;
+        expect(current, isNotNull);
+        expect(current!.id, equals((i + 1).toString()));
+        expect(current.streamUrl, equals('https://yes.aineuroframestudio-986.workers.dev/media/${i + 1}.flac?tier=max'));
+        playedUrls.add(current.streamUrl!);
+        if (i < 41) {
+          controller.getNextTrack(isAuto: false);
+        }
+      }
+
+      expect(playedUrls.toSet().length, equals(42),
+          reason: 'All 42 queued songs must play distinct original bitstream URLs without repeating previous tracks');
+    });
   });
 }

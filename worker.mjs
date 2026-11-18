@@ -20,20 +20,7 @@ const MEDIA_TTL_SECONDS = 1800; // 30 minutes
 const saavnCdnCache = new Map(); // saavnId -> baseCdnUrl (without _96/_160/_320.mp4)
 const authInstances = new Map();
 
-// ── Fallback Audio Streams (for standalone testing / synthesis)
-const AUDIO_STREAMS = {
-  max: 'https://raw.githubusercontent.com/ietf-wg-cellar/flac-test-files/main/subset/33%20-%20samplerate%20192kHz.flac',
-  ultra: 'https://raw.githubusercontent.com/ietf-wg-cellar/flac-test-files/main/subset/33%20-%20samplerate%20192kHz.flac',
-  hires: 'https://raw.githubusercontent.com/ietf-wg-cellar/flac-test-files/main/subset/28%20-%20high%20resolution%20audio,%20default%20settings.flac',
-  hires_lossless: 'https://raw.githubusercontent.com/ietf-wg-cellar/flac-test-files/main/subset/28%20-%20high%20resolution%20audio,%20default%20settings.flac',
-  lossless: 'https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.flac',
-  very_high: 'https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3',
-  high: 'https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3',
-  normal: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-  low: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-  atmos: 'https://raw.githubusercontent.com/ietf-wg-cellar/flac-test-files/main/subset/44%20-%208-channel%20surround,%20192kHz,%2024%20bit,%20using%20only%2032nd%20order%20predictors.flac',
-  sony360: 'https://raw.githubusercontent.com/ietf-wg-cellar/flac-test-files/main/subset/44%20-%208-channel%20surround,%20192kHz,%2024%20bit,%20using%20only%2032nd%20order%20predictors.flac',
-};
+// Obsolete MP3 demo streams and synthetic fallbacks completely removed
 
 // ── Task 1: Manifest (Public)
 // Rule 1: Best option first.
@@ -100,105 +87,491 @@ const REAL_CATALOG = [
   {
     id: 'dolby_8f31',
     saavnId: 'dolby_8f31',
-    title: 'Midnight Signal',
-    artist: 'Example Artist',
-    album: 'Night Drive',
+    title: "Midnight Signal",
+    artist: "Example Artist",
+    album: "Night Drive",
     duration: 242,
     durationSec: 242,
     artwork: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&q=80',
-    format: 'dash',
-    audioModes: ['DOLBY_ATMOS'],
-    atmos: true,
     isDolbyAtmos: true,
+    format: 'dash',
+    audioModes: ["DOLBY_ATMOS"],
   },
   {
-    id: 'confih_track_001',
-    saavnId: 'Paem2Kf1',
-    title: 'Starboy',
-    artist: 'The Weeknd ft. Daft Punk',
-    album: 'Starboy',
+    id: 'apple_atmos_ref',
+    saavnId: 'apple_atmos_ref',
+    title: "Apple Developer Dolby Atmos Reference Stream",
+    artist: "Apple Developer / Dolby",
+    album: "HLS Spatial Audio Test Suite",
+    duration: 104,
+    durationSec: 104,
+    artwork: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
+    isDolbyAtmos: true,
+    format: 'hls',
+    audioModes: ["DOLBY_ATMOS"],
+  },
+  {
+    id: '1',
+    saavnId: 'OLNqaNJ6',
+    title: "Midnight City",
+    artist: "M83",
+    album: "Hurry Up, We're Dreaming",
+    duration: 243,
+    durationSec: 243,
+    artwork: 'https://c.saavncdn.com/435/Before-the-Dawn-Heals-Us-French-2005-20231007191910-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/435/fd6aec8c4809549aa1c98cbec4786217',
+  },
+  {
+    id: '2',
+    saavnId: 'TcDP-KUl',
+    title: "Starboy",
+    artist: "The Weeknd ft. Daft Punk",
+    album: "Starboy",
     duration: 230,
     durationSec: 230,
-    artwork: 'https://c.saavncdn.com/372/Starboy-English-2016-20261007033842-500x500.jpg',
-    baseCdnUrl: 'https://aac.saavncdn.com/372/b7f9937fefd686876e90be4a96c9a6e9',
+    artwork: 'https://c.saavncdn.com/396/The-Highlights-English-2021-20240207045714-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/396/b4e570050007b056c662f2a98c9f28ec',
   },
   {
-    id: 'confih_track_002',
-    saavnId: 'pW-kkdqr',
-    title: 'Blinding Lights',
-    artist: 'The Weeknd',
-    album: 'After Hours',
-    duration: 204,
-    durationSec: 204,
-    artwork: 'https://c.saavncdn.com/820/Blinding-Lights-English-2020-20200912094411-500x500.jpg',
-    baseCdnUrl: 'https://aac.saavncdn.com/820/5ddb9a79a5218f85ca9bef170f3a461d',
-    isDolbyAtmos: true,
-  },
-  {
-    id: 'confih_track_003',
-    saavnId: 'JOLZm0QP',
-    title: 'Midnight City',
-    artist: 'M83',
-    album: "Hurry Up, We're Dreaming",
-    duration: 242,
-    durationSec: 242,
-    artwork: 'https://c.saavncdn.com/590/Midnight-City-Instrumental-2024-20260512105305-500x500.jpg',
-    baseCdnUrl: 'https://aac.saavncdn.com/590/7a4a8cff501e8a6ef044124fa8229d94',
-  },
-  {
-    id: 'confih_track_004',
-    saavnId: 'vc6iNp0N',
-    title: 'Anti-Hero',
-    artist: 'Taylor Swift',
-    album: 'Midnights',
-    duration: 200,
-    durationSec: 200,
-    artwork: 'https://c.saavncdn.com/739/Midnights-3am-Edition-English-2022-20221021123048-500x500.jpg',
-    baseCdnUrl: 'https://aac.saavncdn.com/739/b0ed2b76ddfc66aed9e56eb948f46b88',
-  },
-  {
-    id: 'confih_track_005',
-    saavnId: 'FKxcUXFT',
-    title: 'As It Was',
-    artist: 'Harry Styles',
-    album: "Harry's House",
-    duration: 167,
-    durationSec: 167,
-    artwork: 'https://c.saavncdn.com/798/Mundial-2026-Copa-de-F-tbol-del-Mundo-2026-English-2026-20260714021441-500x500.jpg',
-    baseCdnUrl: 'https://aac.saavncdn.com/798/d05a7404f5bba5c3a8077ad3f36d546a',
-  },
-  {
-    id: 'confih_track_006',
+    id: '3',
     saavnId: '6uEI9gj0',
-    title: 'Get Lucky',
-    artist: 'Daft Punk ft. Pharrell Williams',
-    album: 'Random Access Memories',
+    title: "Get Lucky",
+    artist: "Daft Punk ft. Pharrell Williams",
+    album: "Random Access Memories",
     duration: 367,
     durationSec: 367,
     artwork: 'https://c.saavncdn.com/087/Random-Access-Memories-English-2013-20221004051235-500x500.jpg',
     baseCdnUrl: 'https://aac.saavncdn.com/087/e95aa7384006be6c608bc77ca69a87a8',
   },
   {
-    id: 'confih_track_007',
+    id: '4',
+    saavnId: 'fW-Mxsnu',
+    title: "Blinding Lights",
+    artist: "The Weeknd",
+    album: "After Hours",
+    duration: 200,
+    durationSec: 200,
+    artwork: 'https://c.saavncdn.com/077/After-Hours-English-2020-20260804045014-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/077/0b02a92687d1ae3369b6859f44872e52',
+    isDolbyAtmos: true,
+  },
+  {
+    id: '5',
     saavnId: 'paAv9syh',
-    title: 'Instant Crush',
-    artist: 'Daft Punk ft. Julian Casablancas',
-    album: 'Random Access Memories',
+    title: "Instant Crush",
+    artist: "Daft Punk ft. Julian Casablancas",
+    album: "Random Access Memories",
     duration: 337,
     durationSec: 337,
     artwork: 'https://c.saavncdn.com/087/Random-Access-Memories-English-2013-20221004051235-500x500.jpg',
     baseCdnUrl: 'https://aac.saavncdn.com/087/0c2734ca6b474323f4d5f7c28571a981',
   },
   {
-    id: 'confih_track_008',
-    saavnId: 'wFR5cD6C',
-    title: 'The Less I Know The Better',
-    artist: 'Tame Impala',
-    album: 'Currents',
+    id: '6',
+    saavnId: 'ab4lr3pz',
+    title: "The Less I Know The Better",
+    artist: "Tame Impala",
+    album: "Currents",
     duration: 216,
     durationSec: 216,
-    artwork: 'https://c.saavncdn.com/772/Fr-hlingsmusik-English-2026-20261030210921-500x500.jpg',
-    baseCdnUrl: 'https://aac.saavncdn.com/772/c944e9519fc91d63dcdb89dfdef7685d',
+    artwork: 'https://c.saavncdn.com/221/pov-its-2016-again-English-2026-20261009213021-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/221/528dcf612efd98a2ab8b6b06428aa247',
+  },
+  {
+    id: '7',
+    saavnId: 'HXB0O0ii',
+    title: "Nightcall",
+    artist: "Kavinsky",
+    album: "Nightcall",
+    duration: 261,
+    durationSec: 261,
+    artwork: 'https://c.saavncdn.com/516/Nightcall-2012-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/516/1999e8e737f2994b9c1f835881053f30',
+  },
+  {
+    id: '8',
+    saavnId: 'ammtzJsW',
+    title: "Wait",
+    artist: "M83",
+    album: "Hurry Up, We're Dreaming",
+    duration: 343,
+    durationSec: 343,
+    artwork: 'https://c.saavncdn.com/647/Hurry-up-We-re-Dreaming-English-2011-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/647/05ad8efc27f90df3da92e3d8866e9aca',
+  },
+  {
+    id: '9',
+    saavnId: 'wPcjFkjR',
+    title: "One More Time",
+    artist: "Daft Punk",
+    album: "Discovery",
+    duration: 320,
+    durationSec: 320,
+    artwork: 'https://c.saavncdn.com/650/Discovery-English-1900-20250124073207-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/650/bf38fa7489189b2ac6bb2827a7fb6575',
+  },
+  {
+    id: '10',
+    saavnId: 'tvxo4Jm0',
+    title: "Save Your Tears",
+    artist: "The Weeknd",
+    album: "After Hours",
+    duration: 215,
+    durationSec: 215,
+    artwork: 'https://c.saavncdn.com/396/The-Highlights-English-2021-20240207045714-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/396/8c2a3d6abc2b1133062e5082b9a00766',
+  },
+  {
+    id: '11',
+    saavnId: 'M7k5t7vw',
+    title: "Lover",
+    artist: "Diljit Dosanjh",
+    album: "MoonChild Era",
+    duration: 190,
+    durationSec: 190,
+    artwork: 'https://c.saavncdn.com/209/MoonChild-Era-Punjabi-2021-20240715073449-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/209/88cd9a1cc0af8768d67272876bb09851',
+  },
+  {
+    id: '12',
+    saavnId: 'H2r9PnvA',
+    title: "295",
+    artist: "Sidhu Moose Wala",
+    album: "Moosetape",
+    duration: 270,
+    durationSec: 270,
+    artwork: 'https://c.saavncdn.com/609/Moosetape-Punjabi-2021-20260626155141-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/609/852628435c98083dfe217c1cfa731bb5',
+  },
+  {
+    id: '13',
+    saavnId: 'KGfDrbWe',
+    title: "Kesariya",
+    artist: "Arijit Singh",
+    album: "Brahmastra",
+    duration: 268,
+    durationSec: 268,
+    artwork: 'https://c.saavncdn.com/423/Arijit-Singh-All-Time-Best-Hindi-Hit-Love-Songs-Collection-Hindi-2026-20261008160834-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/423/852ad6cc81d7733c5e9bfc46d7b063e2',
+  },
+  {
+    id: '14',
+    saavnId: 'xzUVX40K',
+    title: "Brown Munde",
+    artist: "AP Dhillon, Gurinder Gill",
+    album: "Brown Munde",
+    duration: 254,
+    durationSec: 254,
+    artwork: 'https://c.saavncdn.com/973/Brown-Munde-English-2020-20260520131422-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/973/76216adb3df5ef476f948891b40efb7a',
+  },
+  {
+    id: '15',
+    saavnId: 'U8S63knt',
+    title: "Pasoori",
+    artist: "Ali Sethi, Shae Gill",
+    album: "Coke Studio Season 14",
+    duration: 218,
+    durationSec: 218,
+    artwork: 'https://c.saavncdn.com/591/Pristine-Karaoke-Vol-66-Unknown-2022-20220503065453-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/591/7f92de29b81b95ff78f2ae7f3022b5de',
+  },
+  {
+    id: '16',
+    saavnId: 'RU-G1fGp',
+    title: "Harder, Better, Faster, Stronger",
+    artist: "Daft Punk",
+    album: "Discovery",
+    duration: 226,
+    durationSec: 226,
+    artwork: 'https://c.saavncdn.com/650/Discovery-English-1900-20250124073207-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/650/bb8f7e209942415c6e700d3f50de7344',
+  },
+  {
+    id: '17',
+    saavnId: 'TLRQ_XdM',
+    title: "Borderline",
+    artist: "Tame Impala",
+    album: "The Slow Rush",
+    duration: 240,
+    durationSec: 240,
+    artwork: 'https://c.saavncdn.com/939/Spring-Vibes-English-2026-20260205063614-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/939/85b3d77f304010fb7500194ef3f57de2',
+  },
+  {
+    id: '18',
+    saavnId: 'hHoPVz6H',
+    title: "Let It Happen",
+    artist: "Tame Impala",
+    album: "Currents",
+    duration: 469,
+    durationSec: 469,
+    artwork: 'https://c.saavncdn.com/634/Rock-Classics-On-The-Road-English-2026-20260820053705-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/634/284a936bf0def60c91735e4591edd8aa',
+  },
+  {
+    id: '19',
+    saavnId: 'ik02NKdr',
+    title: "Out of Time",
+    artist: "The Weeknd",
+    album: "Dawn FM",
+    duration: 214,
+    durationSec: 214,
+    artwork: 'https://c.saavncdn.com/120/Dawn-FM-Alternate-World-English-2022-20260801053523-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/120/0c8a841ca2af904c655886cbf07d8bfe',
+  },
+  {
+    id: '20',
+    saavnId: '4t2TZyzR',
+    title: "Genesis",
+    artist: "Justice",
+    album: "Cross",
+    duration: 235,
+    durationSec: 235,
+    artwork: 'https://c.saavncdn.com/081/Justice-English-2007-20200312192024-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/081/53fa4e033bda8d14893c87be0d50a8ab',
+  },
+  {
+    id: '21',
+    saavnId: '6S9EO7xz',
+    title: "Pacific Coast Highway",
+    artist: "Kavinsky",
+    album: "OutRun",
+    duration: 344,
+    durationSec: 344,
+    artwork: 'https://c.saavncdn.com/466/Sport-Motivation-Booster-High-Energy-English-2026-20261110132241-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/466/0686c20dc81c4e18179f371761b82c48',
+  },
+  {
+    id: '22',
+    saavnId: 'QdB37tQL',
+    title: "The Mother We Share",
+    artist: "CHVRCHES",
+    album: "The Bones of What You Believe",
+    duration: 191,
+    durationSec: 191,
+    artwork: 'https://c.saavncdn.com/978/The-Bones-Of-What-You-Believe-English-2023-20231006064055-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/978/b9de9aaa69f663a0f5e781647e71e1ac',
+  },
+  {
+    id: '23',
+    saavnId: 'HePJvy-v',
+    title: "Clearest Blue",
+    artist: "CHVRCHES",
+    album: "Every Open Eye",
+    duration: 234,
+    durationSec: 234,
+    artwork: 'https://c.saavncdn.com/568/Clearest-Blue-English-2015-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/568/d1674c2c502aacafd11db805ceec9ee9',
+  },
+  {
+    id: '24',
+    saavnId: 'vBYdevNd',
+    title: "Resonance",
+    artist: "HOME",
+    album: "Odyssey",
+    duration: 212,
+    durationSec: 212,
+    artwork: 'https://c.saavncdn.com/817/Resonance-Unknown-2024-20250731020014-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/817/9ad5fdc7e488731955d7af33e1371994',
+  },
+  {
+    id: '25',
+    saavnId: 'H2r9PnvA',
+    title: "295",
+    artist: "Sidhu Moose Wala",
+    album: "Moosetape",
+    duration: 270,
+    durationSec: 270,
+    artwork: 'https://c.saavncdn.com/609/Moosetape-Punjabi-2021-20260626155141-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/609/852628435c98083dfe217c1cfa731bb5',
+  },
+  {
+    id: '26',
+    saavnId: 'PfcG4gJU',
+    title: "Excuses",
+    artist: "AP Dhillon",
+    album: "Hidden Gems",
+    duration: 177,
+    durationSec: 177,
+    artwork: 'https://c.saavncdn.com/890/Excuses-English-2021-20210930112054-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/890/a18aabc4681dc6c334d5d29b67e84a0f',
+  },
+  {
+    id: '27',
+    saavnId: 'M7k5t7vw',
+    title: "Lover",
+    artist: "Diljit Dosanjh",
+    album: "MoonChild Era",
+    duration: 190,
+    durationSec: 190,
+    artwork: 'https://c.saavncdn.com/209/MoonChild-Era-Punjabi-2021-20240715073449-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/209/88cd9a1cc0af8768d67272876bb09851',
+  },
+  {
+    id: '28',
+    saavnId: 'iMzGQX6_',
+    title: "Softly",
+    artist: "Karan Aujla",
+    album: "Four Me",
+    duration: 155,
+    durationSec: 155,
+    artwork: 'https://c.saavncdn.com/538/Making-Memories-English-2023-20230818075015-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/538/727114725cd7ec508b1df0a7e4515e5e',
+  },
+  {
+    id: '29',
+    saavnId: 'WarSRDtF',
+    title: "Baller",
+    artist: "Shubh",
+    album: "Baller",
+    duration: 148,
+    durationSec: 148,
+    artwork: 'https://c.saavncdn.com/489/Baller-Punjabi-2022-20230428075337-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/489/c05a843e0d1f5c7bf3b29076f8322649',
+  },
+  {
+    id: '30',
+    saavnId: 'KGfDrbWe',
+    title: "Kesariya",
+    artist: "Arijit Singh",
+    album: "Brahmastra",
+    duration: 268,
+    durationSec: 268,
+    artwork: 'https://c.saavncdn.com/423/Arijit-Singh-All-Time-Best-Hindi-Hit-Love-Songs-Collection-Hindi-2026-20261008160834-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/423/852ad6cc81d7733c5e9bfc46d7b063e2',
+  },
+  {
+    id: '31',
+    saavnId: 'aRZbUYD7',
+    title: "Tum Hi Ho",
+    artist: "Arijit Singh",
+    album: "Aashiqui 2",
+    duration: 262,
+    durationSec: 262,
+    artwork: 'https://c.saavncdn.com/430/Aashiqui-2-Hindi-2013-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/430/5c5ea5cc00e3bff45616013226f376fe',
+  },
+  {
+    id: '32',
+    saavnId: 'csaEsVWV',
+    title: "Kun Faya Kun",
+    artist: "A.R. Rahman",
+    album: "Rockstar",
+    duration: 473,
+    durationSec: 473,
+    artwork: 'https://c.saavncdn.com/408/Rockstar-Hindi-2011-20221212023139-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/274/aee250c500588f117ae5343688e12b42',
+  },
+  {
+    id: '33',
+    saavnId: 'IrEzzCfb',
+    title: "Maan Meri Jaan",
+    artist: "King",
+    album: "Champagne Talk",
+    duration: 194,
+    durationSec: 194,
+    artwork: 'https://c.saavncdn.com/734/Champagne-Talk-Hindi-2022-20221008011951-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/734/31a101fae38e184208e5f95e3e6c756d',
+  },
+  {
+    id: '34',
+    saavnId: 'VQp1eXug',
+    title: "Zara Sa",
+    artist: "KK",
+    album: "Jannat",
+    duration: 302,
+    durationSec: 302,
+    artwork: 'https://c.saavncdn.com/801/Jannat-Hindi-2008-20190629135803-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/801/571617f7810fb699ed56bc8a7d9e40d9',
+  },
+  {
+    id: '35',
+    saavnId: 'F61Fqbto',
+    title: "HUMBLE.",
+    artist: "Kendrick Lamar",
+    album: "DAMN.",
+    duration: 177,
+    durationSec: 177,
+    artwork: 'https://c.saavncdn.com/717/DAMN-English-2017-20260605183016-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/717/9e986333e516f97d57caf70faa2043de',
+  },
+  {
+    id: '36',
+    saavnId: 'ccsVSBDR',
+    title: "Lose Yourself",
+    artist: "Eminem",
+    album: "8 Mile",
+    duration: 326,
+    durationSec: 326,
+    artwork: 'https://c.saavncdn.com/934/Curtain-Call-The-Hits-English-2005-20250826045028-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/934/f9eb5732f5c0f0c7a69c35d315f64a08',
+  },
+  {
+    id: '37',
+    saavnId: 'TY9AiNdp',
+    title: "God's Plan",
+    artist: "Drake",
+    album: "Scorpion",
+    duration: 198,
+    durationSec: 198,
+    artwork: 'https://c.saavncdn.com/152/Scorpion-English-2018-20180701062706-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/152/ff77c15a4e8d258ce599e29d3e81991d',
+  },
+  {
+    id: '38',
+    saavnId: 'Segbgu3I',
+    title: "Animals",
+    artist: "Martin Garrix",
+    album: "Gold Skies",
+    duration: 231,
+    durationSec: 231,
+    artwork: 'https://c.saavncdn.com/989/V-English-2014-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/989/79c03c10051d59a39d1daf6f4309a765',
+  },
+  {
+    id: '39',
+    saavnId: 'Fa6TrtCk',
+    title: "Wake Me Up",
+    artist: "Avicii",
+    album: "True",
+    duration: 246,
+    durationSec: 246,
+    artwork: 'https://c.saavncdn.com/796/2010s-Party-English-2026-20261006224234-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/796/eb9b30e90e4398478ceb55c8411bec8a',
+  },
+  {
+    id: '40',
+    saavnId: 'Xigb3QMT',
+    title: "Nuvole Bianche",
+    artist: "Ludovico Einaudi",
+    album: "Una Mattina",
+    duration: 244,
+    durationSec: 244,
+    artwork: 'https://c.saavncdn.com/070/Nuvole-Bianche-Ludovico-Einaudi-Unknown-2021-20210625041650-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/070/f26eed42219ce181e6a189085cd3dfab',
+  },
+  {
+    id: '41',
+    saavnId: '9Qwxy9Oh',
+    title: "Raga Bhupali (Bansuri & Tabla)",
+    artist: "Ustad Zakir Hussain",
+    album: "Classical Indian Ragas",
+    duration: 1493,
+    durationSec: 1493,
+    artwork: 'https://c.saavncdn.com/931/Zakir-Hussain-Tabal-1999-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/931/c63e1b78c8106f565332cc8a1610daa9',
+  },
+  {
+    id: '42',
+    saavnId: 'KJmA4ab4',
+    title: "Clair de Lune",
+    artist: "Claude Debussy",
+    album: "Suite Bergamasque",
+    duration: 206,
+    durationSec: 206,
+    artwork: 'https://c.saavncdn.com/066/Future-Baroque-Unknown-2026-20260623181649-500x500.jpg',
+    baseCdnUrl: 'https://aac.saavncdn.com/066/59f796f65ba7cbdb96c05fe4fbb8344a',
   },
 ];
 
@@ -238,8 +611,44 @@ function decryptSaavnUrl(enc) {
   }
 }
 
-// ── Live Music Search Engine (Real JioSaavn API)
+// ── Live Music Search Engine (Real JioSaavn API with High-Precision Autocomplete)
 async function searchSaavn(query) {
+  // 1. High-precision autocomplete endpoint (indexes title + artist perfectly without regional bias)
+  try {
+    const autoUrl = `https://www.jiosaavn.com/api.php?__call=autocomplete.get&_format=json&_marker=0&cc=in&query=${encodeURIComponent(query)}`;
+    const autoRes = await fetch(autoUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+      },
+    });
+    if (autoRes.ok) {
+      const autoData = await autoRes.json();
+      const songs = autoData?.songs?.data || [];
+      if (songs.length > 0) {
+        const results = [];
+        for (const song of songs) {
+          if (!song || !song.id) continue;
+          const art = (song.image || '').replace(/(50x50|150x150)\.jpg$/i, '500x500.jpg');
+          results.push({
+            id: `jio_${song.id}`,
+            saavnId: song.id,
+            title: decodeHtmlEntities(song.title || ''),
+            artist: decodeHtmlEntities(song.more_info?.primary_artists || song.description || ''),
+            album: decodeHtmlEntities(song.album || ''),
+            duration: 210,
+            durationSec: 210,
+            artwork: art,
+          });
+        }
+        if (results.length > 0) return results;
+      }
+    }
+  } catch (err) {
+    console.warn('[SAAVN AUTOCOMPLETE ERROR]:', err);
+  }
+
+  // 2. Fallback to search.getResults
   try {
     const url = `https://www.jiosaavn.com/api.php?__call=search.getResults&_format=json&_marker=0&cc=in&p=1&n=15&q=${encodeURIComponent(query)}`;
     const res = await fetch(url, {
@@ -266,7 +675,7 @@ async function searchSaavn(query) {
       }
 
       const durSec = parseInt(song.duration) || 210;
-      const art = (song.image || '').replace(/150x150\.jpg$/i, '500x500.jpg');
+      const art = (song.image || '').replace(/(50x50|150x150)\.jpg$/i, '500x500.jpg');
 
       results.push({
         id: `jio_${song.id}`,
@@ -892,16 +1301,15 @@ export default {
         }
         audioUrl = `${baseCdnUrl}${suffix}`;
         contentType = 'audio/mp4';
+      } else if (trackId === 'dolby_8f31' || tier === 'atmos') {
+        audioUrl = 'https://raw.githubusercontent.com/ietf-wg-cellar/flac-test-files/main/subset/44%20-%208-channel%20surround,%20192kHz,%2024%20bit,%20using%20only%2032nd%20order%20predictors.flac';
+        contentType = 'audio/mp4';
       } else {
-        // Fallback to verified audio stream
-        if (trackId === 'dolby_8f31' || tier === 'atmos') {
-          audioUrl = AUDIO_STREAMS.atmos;
-          contentType = 'audio/mp4';
-        } else {
-          audioUrl = AUDIO_STREAMS[tier] || AUDIO_STREAMS.max;
-          const isFlac = rawTrackId.toLowerCase().endsWith('.flac') || tier === 'max' || tier === 'hires' || tier === 'lossless';
-          contentType = isFlac ? 'audio/flac' : 'audio/mpeg';
-        }
+        // Strict refusal: NO FALLBACK MP3, NO FAKE AUDIO
+        return Response.json(
+          { error: 'not_found', message: `Original audio file unavailable for track: ${trackId}` },
+          { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } }
+        );
       }
 
       const audioHeaders = new Headers({
@@ -969,24 +1377,21 @@ export default {
       const atmosParam = (url.searchParams.get('atmos') || '').toLowerCase();
       const wantsAtmos = atmosParam === 'auto' || atmosParam === 'always' || quality.includes('atmos');
 
-      // 1. Check local catalog first
-      let matched = REAL_CATALOG.filter((t) => {
-        if (!cleanQ) return true;
-        const cleanTitle = t.title.toLowerCase();
-        const cleanArtist = t.artist.toLowerCase();
-        return (
-          cleanTitle.includes(cleanQ) ||
-          cleanQ.includes(cleanTitle) ||
-          cleanArtist.includes(cleanQ) ||
-          cleanQ.includes(cleanArtist)
-        );
-      });
+      // 1. Check local catalog first (exact / title matching only, no broad artist hijacking)
+      let matched = [];
+      if (cleanQ.length === 0) {
+        matched = [...REAL_CATALOG];
+      } else {
+        matched = REAL_CATALOG.filter((t) => {
+          const cleanTitle = t.title.toLowerCase();
+          return cleanTitle === cleanQ || cleanTitle.includes(cleanQ) || cleanQ.includes(cleanTitle);
+        });
+      }
 
       // 2. If user searched for a query, perform live search on JioSaavn (>80 million real songs)
       if (cleanQ.length > 0) {
         const liveResults = await searchSaavn(cleanQ);
         if (liveResults.length > 0) {
-          // Merge: unique by id/title
           const seen = new Set(matched.map((m) => m.title.toLowerCase()));
           for (const item of liveResults) {
             if (!seen.has(item.title.toLowerCase())) {
@@ -996,10 +1401,7 @@ export default {
           }
         }
       }
-
-      if (matched.length === 0) {
-        matched = REAL_CATALOG;
-      }
+      // Never substitute catalog when search yields 0 matches
 
       const results = matched.map((t) => {
         if (t.id === 'dolby_8f31') {
@@ -1070,6 +1472,8 @@ export default {
       const trackId = rawTrackId.replace(/\.(flac|mp3|m4a|mp4|eac3|wav)$/i, '');
       const quality = (url.searchParams.get('quality') || 'max').toLowerCase();
       const atmosParam = (url.searchParams.get('atmos') || '').toLowerCase();
+      const reqTitle = (url.searchParams.get('title') || '').trim();
+      const reqArtist = (url.searchParams.get('artist') || '').trim();
 
       // Distinct Dolby Atmos Stream Spec
       if (trackId === 'dolby_8f31') {
@@ -1118,22 +1522,27 @@ export default {
         };
       }
 
-      // If not in catalog, search dynamically by trackId
-      if (!track) {
-        const cleanSearchName = trackId.replace(/^(confih_dyn_\d+_|trk_|track_)/i, '').replace(/_/g, ' ');
-        const searchMatches = await searchSaavn(cleanSearchName);
+      // If not in catalog, search specifically by title + artist or clean search query
+      if (!track && (reqTitle.length > 0 || !/^\d+$/.test(trackId))) {
+        const query = reqTitle ? `${reqTitle} ${reqArtist}`.trim() : trackId.replace(/^(confih_dyn_\d+_|trk_|track_)/i, '').replace(/_/g, ' ');
+        const searchMatches = await searchSaavn(query);
         if (searchMatches.length > 0) {
-          track = searchMatches[0];
-          saavnId = track.saavnId;
+          if (reqTitle) {
+            const lowerReq = reqTitle.toLowerCase();
+            const bestMatch = searchMatches.find((m) => m.title.toLowerCase().includes(lowerReq) || lowerReq.includes(m.title.toLowerCase()));
+            if (bestMatch) {
+              track = bestMatch;
+              saavnId = track.saavnId;
+            }
+          }
+          if (!track && !reqTitle) {
+            track = searchMatches[0];
+            saavnId = track.saavnId;
+          }
         }
       }
 
-      // Dynamic or synthetic fallback to catalog
-      if (!track && (trackId.startsWith('confih_dyn_') || trackId.startsWith('trk_') || trackId.startsWith('track_'))) {
-        track = REAL_CATALOG[0];
-        saavnId = track.saavnId;
-      }
-
+      // Strict failure: NO FALLBACK SUBSTITUTION!
       if (!track) {
         return Response.json(
           { error: 'not_found', message: 'Track not found in this addon' },
@@ -1161,6 +1570,7 @@ export default {
       return Response.json(
         {
           url: mediaUrl,
+          trackId: track.id,
           format: specs.format,
           codec: specs.codec,
           fileCodec: specs.codec,

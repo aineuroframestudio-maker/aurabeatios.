@@ -212,7 +212,11 @@ final class PlaybackSourceFactory {
     /// The cache entry the row's playing copy was opened under, if any. The cached-track floor reads
     /// this entry's size; Android read it back off the item's URI (`AudioCache.contentLengthOf`).
     func playingCacheKey(for videoId: String) -> AudioCacheKey? {
-        playingKeys.key(for: videoId).map { AudioCacheKey(rawValue: $0) }
+        // Validate that this videoId still maps to the currently playing song,
+        // not a stale entry from a previous queue position or version alignment.
+        guard let song = AppModel.current?.player?.currentSong else { return nil }
+        guard song.videoId == videoId else { return nil }  // Prevent cross-track cache collision
+        return playingKeys.key(for: videoId).map { AudioCacheKey(rawValue: $0) }
     }
 
     /// The full size in bytes of the cache entry the row is playing from, or 0 when nothing is
@@ -271,23 +275,42 @@ final class PlaybackSourceFactory {
     ///    (range-chunked with the stream's headers, written to disk as it plays), except HLS, which
     ///    AVFoundation fetches itself (a converted DASH manifest through SourcePlaylistLoader).
     func source(for song: Song) -> PlayableItem.Source {
+        // Diagnostic logging for playback identity verification
+        // Does NOT expose sensitive URLs or credentials
+        let playbackLog = { (event: String) in
+            TrackLog.d("PlaybackIdentity", "selectedTrackId=\(song.queueEntryId ?? song.videoId) selectedTitle=\(song.title) selectedArtist=\(song.artist) requestedSource=\(song.playbackSource ?? "unknown") resolvedVideoId=\(song.videoId) cacheKey=\(song.videoId) event=\(event)")
+        }
+        
         if let local = Self.localFileURL(of: song) {
+            playbackLog("source_type=local_file")
             return .file(local)
         }
         if let remote = networkSource(song) {
+            // Critical: validate videoId before using cache key - prevents serving
+            // another track's cached audio when queue entries have been reordered
+            // or version alignment has changed the song's identity.
+            guard AppModel.current?.player?.currentSong?.videoId == song.videoId else {
+                playbackLog("event=videoId_mismatch_fallback")
+                forgetMissing(song)
+                return source(for: song)  // Recursive fresh resolve
+            }
+            playbackLog("event=network_source_validated")
             guard let cache else { return .asset { throw PlaybackSourceError.missingLocalFile(URL(fileURLWithPath: song.videoId)) } }
             let key = AudioCacheKey(trackID: song.videoId)
             return .asset { cache.makeAsset(for: key, source: remote) }
         }
         if let saved = savedFile(song) {
+            playbackLog("event=saved_file_source isYouTubeOrigin=\(saved.isYouTubeOrigin)")
             guard saved.isYouTubeOrigin, let cache else { return .file(saved.url) }
             let key = AudioCacheKey.youtube(videoId: song.videoId, rendition: "download")
             let file = FileAudioSource(url: saved.url, mimeType: "audio/mp4", requiresYouTubeDurationFix: true)
             return .asset { cache.makeAsset(for: key, source: file) }
         }
         if let rendition = renditions[Self.itemID(for: song)], let stream = rendition.stream {
+            playbackLog("event=forced_rendition_source tag=\(rendition.tag) origin=\(stream.origin.rawValue)")
             return .asset(forcedAssetFactory(for: song, stream: stream, tag: rendition.tag))
         }
+        playbackLog("event=stream_asset_factory")
         return .resolvedAsset(streamAssetFactory(for: song))
     }
 
@@ -568,6 +591,7 @@ final class PlaybackSourceFactory {
         let quickCopy = self.quickCopy
         let soundingWait = self.soundingWait
         return { [weak self] in
+            playbackLog("event=stream_asset_factory_closure started")
             let wanted = request()
             let atmos = atmosAllowed()
             let started = ContinuousClock.now

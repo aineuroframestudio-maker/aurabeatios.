@@ -68,6 +68,8 @@ class AddonStreamResolver {
           trackId: trackId,
           quality: negotiatedQuality,
           atmos: atmosParam,
+          title: title,
+          artist: artist,
         );
 
         if (stream != null && stream.url.isNotEmpty) {

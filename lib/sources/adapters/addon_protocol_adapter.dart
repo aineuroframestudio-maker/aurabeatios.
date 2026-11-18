@@ -25,5 +25,7 @@ abstract class AddonProtocolAdapter {
     required String trackId,
     required String quality,
     String? atmos,
+    String? title,
+    String? artist,
   });
 }

@@ -965,8 +965,20 @@ final class PlayerController {
     /// The queued row whose engine item id is `itemID` — the current track first, then any row
     /// still in the queue. Nil for an engine id no row is on now (a rendition an upgrade replaced).
     private func song(forEngineItemID itemID: String) -> Song? {
-        if let current = currentSong, sources.engineItemID(for: current) == itemID { return current }
-        return queue.state.songs.first { sources.engineItemID(for: $0) == itemID }
+        // First check if current song matches
+        if let current = currentSong, sources.engineItemID(for: current) == itemID {
+            // Additional validation: ensure videoId hasn't been swapped by version alignment
+            if current.videoId == itemID.split("|").last { return current }
+        }
+        // Then check queue songs with full identity validation
+        return queue.state.songs.first { song in
+            let songItemID = sources.engineItemID(for: song)
+            guard songItemID == itemID else { return false }
+            // Critical: verify videoId matches - prevents wrong-track playback
+            // when queueEntryId persists across version alignment changes
+            guard song.videoId == itemID.split("|").last else { return false }
+            return true
+        }
     }
 
     /// Remembers a stream resolved for a row the engine has preloaded but not reached, dropping the
