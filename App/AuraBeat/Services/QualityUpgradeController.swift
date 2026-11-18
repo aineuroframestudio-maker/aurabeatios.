@@ -128,16 +128,16 @@ final class QualityUpgradeController {
 
     /// How long a proof may take before the upgrade is let go (Android `UPGRADE_AUDITION_MS`),
     /// unless its copy is still arriving faster than it plays (see ``proof(of:stream:tag:against:)``).
-    static let proveTimeout: Duration = .seconds(20)
+    nonisolated static let proveTimeout: Duration = .seconds(20)
     /// How often a proof past ``proveTimeout`` looks at how much of its copy has arrived.
-    static let proveCheck: Duration = .seconds(1)
+    nonisolated static let proveCheck: Duration = .seconds(1)
     /// How long a proof past ``proveTimeout`` goes on with nothing new arriving: longer than a
     /// segment takes at the rate it plays, so only a fetch that has stopped (a dropped connection
     /// whose retry never lands) trips it.
-    static let proveStall: Duration = .seconds(10)
+    nonisolated static let proveStall: Duration = .seconds(10)
     /// The longest any proof runs, however its copy is arriving: past it the track has mostly
     /// played without the copy.
-    static let proveCeiling: Duration = .seconds(120)
+    nonisolated static let proveCeiling: Duration = .seconds(120)
 
     /// The proof's clock: ``proveTimeout``, ``proveCheck``, ``proveStall`` and ``proveCeiling``. A test
     /// runs the same rules on a shorter one rather than waiting out real minutes.

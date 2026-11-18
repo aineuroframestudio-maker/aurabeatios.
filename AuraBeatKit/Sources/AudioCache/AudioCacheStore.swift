@@ -159,7 +159,7 @@ actor AudioCacheStore {
     private var flushTask: Task<Void, Never>?
     /// The index load, started in ``init`` so construction never blocks on entry files. Every
     /// public method awaits it before touching state, so nobody sees a half-loaded index.
-    private var loadTask: Task<Void, Never>?
+    nonisolated(unsafe) private var loadTask: Task<Void, Never>?
 
     nonisolated var unownedExecutor: UnownedSerialExecutor {
         executorQueue.asUnownedSerialExecutor()

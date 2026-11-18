@@ -214,7 +214,7 @@ final class PlaybackSourceFactory {
     func playingCacheKey(for videoId: String) -> AudioCacheKey? {
         // Validate that this videoId still maps to the currently playing song,
         // not a stale entry from a previous queue position or version alignment.
-        if let currentSong = AppModel.current?.player?.currentSong {
+        if let currentSong = AppModel.current?.player.currentSong {
             guard currentSong.videoId == videoId else { return nil }  // Prevent cross-track cache collision
         }
         return playingKeys.key(for: videoId).map { AudioCacheKey(rawValue: $0) }
@@ -290,7 +290,7 @@ final class PlaybackSourceFactory {
             // Critical: validate videoId before using cache key - prevents serving
             // another track's cached audio when queue entries have been reordered
             // or version alignment has changed the song's identity.
-            if let currentSong = AppModel.current?.player?.currentSong,
+            if let currentSong = AppModel.current?.player.currentSong,
                song.queueEntryId == currentSong.queueEntryId,
                currentSong.videoId != song.videoId {
                 playbackLog("event=videoId_mismatch_detected")
@@ -597,7 +597,7 @@ final class PlaybackSourceFactory {
         let quickCopy = self.quickCopy
         let soundingWait = self.soundingWait
         return { [weak self] in
-            playbackLog("event=stream_asset_factory_closure started")
+            TrackLog.d("PlaybackIdentity", "event=stream_asset_factory_closure started itemID=\(itemID)")
             let wanted = request()
             let atmos = atmosAllowed()
             let started = ContinuousClock.now
