@@ -10,7 +10,7 @@ import os
 /// mean reading the system log, and the answer is usually in a few seconds that scrolled past before
 /// anyone noticed. This keeps those lines, in memory, bounded by size.
 ///
-/// **What to log here:** only the paths that decide how a track plays — the resolver, the source
+/// **What to log here:** only the paths that decide how a track plays â€” the resolver, the source
 /// ladder, the cache and the player. Not feeds, artwork, lyrics or the library (use ``DebugLog``):
 /// a paste that includes everything is one nobody reads to the end of.
 ///
@@ -169,11 +169,11 @@ public final class TrackLog: @unchecked Sendable {
 
     /// The log for `song`: the lines about that track plus the ones about nothing in particular,
     /// from where its own story starts (its first line, or its start minus ``leadIn``, whichever is
-    /// earlier). Lines about other tracks in that stretch are left out and counted in the header —
+    /// earlier). Lines about other tracks in that stretch are left out and counted in the header â€”
     /// the difference between "nothing happened" and "nothing happened *to this track*".
     ///
     /// - Parameter context: extra header lines only the caller knows, e.g. what the player reports
-    ///   it is playing ("playing: flac · 24-bit · 96000 Hz") and the source settings in force.
+    ///   it is playing ("playing: flac Â· 24-bit Â· 96000 Hz") and the source settings in force.
     public func forTrack(_ song: Song, context: [String] = []) -> String {
         let (snapshot, started) = lock.withLock { (lines, startedAt[song.videoId]) }
         let candidates = [
@@ -181,11 +181,11 @@ public final class TrackLog: @unchecked Sendable {
             started?.addingTimeInterval(-leadIn),
         ].compactMap { $0 }
         let from = candidates.min()
-        let since = snapshot.filter { from == nil || $0.at >= from! }
+        let since = snapshot.filter { entry in from.map { entry.at >= $0 } ?? true }
         let window = since.filter { $0.track == nil || $0.track == song.videoId }
         let elsewhere = since.count - window.count
 
-        var out = "AuraBeat log — \(song.title) — \(song.artist)\n"
+        var out = "AuraBeat log â€” \(song.title) â€” \(song.artist)\n"
         out += "id=\(song.videoId) duration=\(song.durationText ?? "?") album=\(song.albumName ?? "?")\n"
         for line in context { out += line + "\n" }
         let windowStart = from.map(Self.clock) ?? "everything held"

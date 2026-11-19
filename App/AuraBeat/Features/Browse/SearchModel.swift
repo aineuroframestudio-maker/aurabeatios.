@@ -38,6 +38,7 @@ final class SearchModel {
     @ObservationIgnored private var cache = SearchCache(capacity: SearchModel.cacheEntries)
     @ObservationIgnored private var suggestTask: Task<Void, Never>?
     @ObservationIgnored private var typeaheadTask: Task<Void, Never>?
+    @ObservationIgnored private var searchTask: Task<Void, Never>?
     @ObservationIgnored private let suggestDelay: Duration
     @ObservationIgnored private let typeaheadDelay: Duration
 
@@ -94,6 +95,7 @@ final class SearchModel {
             scrollResetTrigger += 1
             suggestTask?.cancel()
             typeaheadTask?.cancel()
+            searchTask?.cancel()
             return
         }
         searchSubmitted = false
@@ -135,6 +137,7 @@ final class SearchModel {
     // MARK: - Searching
 
     private func runSearch() {
+        searchTask?.cancel()
         let query = self.query
         guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             newestRequestId += 1
@@ -162,7 +165,7 @@ final class SearchModel {
             return
         }
         guard let catalog else { return }
-        Task {
+        searchTask = Task {
             let outcome: Result<InnerTubeParser.SearchPage, Error>
             do {
                 outcome = .success(try await catalog.searchPage(query: query, filter: filter))
@@ -170,7 +173,7 @@ final class SearchModel {
                 outcome = .failure(error)
             }
             // A search that has been superseded doesn't land, whatever its outcome.
-            guard id == newestRequestId else { return }
+            guard !Task.isCancelled, id == newestRequestId else { return }
             switch outcome {
             case .success(let page):
                 if page.rows.isEmpty {
@@ -321,16 +324,32 @@ struct SearchSection: Identifiable {
 
     static func sections(_ rows: [SearchResult], filter: SearchFilter) -> [SearchSection] {
         guard filter == .all else { return [SearchSection(title: nil, rows: rows)] }
-        func browse(_ type: BrowseType) -> [SearchResult] {
-            rows.filter { if case .browse(let item) = $0 { return item.type == type } else { return false } }
+        var tracks = [SearchResult]()
+        var artists = [SearchResult]()
+        var albums = [SearchResult]()
+        var playlists = [SearchResult]()
+        var others = [SearchResult]()
+        for row in rows {
+            switch row {
+            case .track:
+                tracks.append(row)
+            case .browse(let item):
+                switch item.type {
+                case .artist: artists.append(row)
+                case .album: albums.append(row)
+                case .playlist: playlists.append(row)
+                case .other: others.append(row)
+                }
+            case .topTrack:
+                break
+            }
         }
-        let tracks = rows.filter { if case .track = $0 { return true } else { return false } }
-        return [
-            SearchSection(title: L10n.songs, rows: tracks),
-            SearchSection(title: L10n.artists, rows: browse(.artist)),
-            SearchSection(title: L10n.albums, rows: browse(.album)),
-            SearchSection(title: L10n.playlists, rows: browse(.playlist)),
-            SearchSection(title: BrowseStrings.sectionMore, rows: browse(.other)),
-        ].filter { !$0.rows.isEmpty }
+        var result = [SearchSection]()
+        if !tracks.isEmpty { result.append(SearchSection(title: L10n.songs, rows: tracks)) }
+        if !artists.isEmpty { result.append(SearchSection(title: L10n.artists, rows: artists)) }
+        if !albums.isEmpty { result.append(SearchSection(title: L10n.albums, rows: albums)) }
+        if !playlists.isEmpty { result.append(SearchSection(title: L10n.playlists, rows: playlists)) }
+        if !others.isEmpty { result.append(SearchSection(title: BrowseStrings.sectionMore, rows: others)) }
+        return result
     }
 }

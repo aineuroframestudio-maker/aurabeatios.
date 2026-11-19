@@ -142,7 +142,11 @@ public final class EqualizerProcessor: FloatAudioProcessor, @unchecked Sendable 
         control.withLock { current in
             current = tuning
             targets.publish { slot in
-                encoded.withUnsafeBufferPointer { slot.update(from: $0.baseAddress!, count: Self.targetLength) }
+                encoded.withUnsafeBufferPointer { buffer in
+                    if let base = buffer.baseAddress {
+                        slot.update(from: base, count: Self.targetLength)
+                    }
+                }
             }
         }
     }

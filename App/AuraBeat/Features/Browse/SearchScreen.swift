@@ -167,6 +167,12 @@ struct SearchScreen: View {
         let sections = SearchSection.sections(rows, filter: search.filter)
         let ordered = sections.flatMap(\.rows)
         let total = ordered.count
+        var sectionsWithOffsets: [(section: SearchSection, offset: Int)] = []
+        var runningOffset = 0
+        for section in sections {
+            sectionsWithOffsets.append((section: section, offset: runningOffset))
+            runningOffset += section.rows.count
+        }
         return LazyVStack(alignment: .leading, spacing: 0) {
             if search.filter == .all, let top {
                 TopResultCard(song: top) { playSong(top) } onPlaylist: {
@@ -176,7 +182,9 @@ struct SearchScreen: View {
                     model.router.present(.songActions(top))
                 }
             }
-            ForEach(Array(sections.enumerated()), id: \.element.id) { sectionIndex, section in
+            ForEach(sectionsWithOffsets, id: \.section.id) { item in
+                let section = item.section
+                let before = item.offset
                 if let title = section.title {
                     Text(title)
                         .font(BrowseFont.titleSmall)
@@ -186,7 +194,6 @@ struct SearchScreen: View {
                         .padding(.top, 16)
                         .padding(.bottom, 6)
                 }
-                let before = sections[..<sectionIndex].reduce(0) { $0 + $1.rows.count }
                 ForEach(Array(section.rows.enumerated()), id: \.element.id) { index, row in
                     resultRow(row)
                         .onAppear { search.rowAppeared(at: before + index, of: total) }

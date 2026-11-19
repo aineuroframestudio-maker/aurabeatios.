@@ -579,7 +579,7 @@ final class PlaybackSourceFactory {
     private func streamAssetFactory(for song: Song) -> PlayableItem.ResolvedAssetFactory {
         let youTube = self.youTube
         let pinned = isPinnedToYouTube(song)
-        let resolver = pinned ? youTube! : self.resolver
+        let resolver = (pinned ? youTube : nil) ?? self.resolver
         let cache = self.cache
         let facts = self.facts
         let session = self.session
@@ -697,7 +697,9 @@ final class PlaybackSourceFactory {
                         var found = await PlaybackSourceFactory.waitedFor(lookup.task, until: { await MainActor.run { factory?.isPlaying(song.videoId) ?? true } })
                         try Task.checkCancellation()
                         if found == nil {
-                            let left = lookupJoinWait - (ContinuousClock.now - lookup.startedAt)
+                            let isPlayingNow = await MainActor.run { factory?.isPlaying(song.videoId) ?? false }
+                            let effectiveJoinWait = isPlayingNow ? min(lookupJoinWait, .seconds(3)) : lookupJoinWait
+                            let left = effectiveJoinWait - (ContinuousClock.now - lookup.startedAt)
                             if left > .zero {
                                 let task = lookup.task
                                 found = await withDeadline(left) { try? await task.value }

@@ -748,7 +748,7 @@ actor AudioCacheStore {
             if case AudioCacheError.contentChanged? = failure, !fetch.keepsEntryWhenFileDiffers {
                 removeKey(fetch.key)
             }
-            TrackLog.d(Self.category, "fetch of \(fetch.key) [\(fetch.start), \(fetch.requestEnd)) stopped at \(fetch.position): \(failure!)", about: fetch.key.trackID)
+            TrackLog.d(Self.category, "fetch of \(fetch.key) [\(fetch.start), \(fetch.requestEnd)) stopped at \(fetch.position): \(failure.map { String(describing: $0) } ?? "unknown")", about: fetch.key.trackID)
         } else if error == nil, !fetch.receivedAny, fetch.stopAt > fetch.start {
             failure = AudioCacheError.unexpectedEndOfStream(key: fetch.key, position: fetch.start)
         }

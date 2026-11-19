@@ -76,7 +76,7 @@ public final class PartyServerClock: @unchecked Sendable {
             let cutoff = receivedAtLocalMs - Self.sampleTTLMs
             let usable = samples.filter { $0.takenAtMs >= cutoff }
             let pool = usable.isEmpty ? samples : usable
-            let best = pool.min(by: { $0.roundTripMs < $1.roundTripMs })!
+            guard let best = pool.min(by: { $0.roundTripMs < $1.roundTripMs }) else { return }
             _offsetMs = best.offsetMs
             _roundTripMs = best.roundTripMs
         }

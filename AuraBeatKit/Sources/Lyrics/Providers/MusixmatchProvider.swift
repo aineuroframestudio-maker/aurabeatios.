@@ -271,9 +271,12 @@ public final class MusixmatchProvider: LyricsProvider, Sendable {
     static func sign(_ url: String, secret: String, date: Date) -> String {
         let normalized = url.replacingOccurrences(of: "%20", with: "+").replacingOccurrences(of: " ", with: "+")
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
+        calendar.timeZone = TimeZone(identifier: "UTC") ?? TimeZone(secondsFromGMT: 0) ?? .gmt
         let parts = calendar.dateComponents([.year, .month, .day], from: date)
-        let day = String(format: "%04d%02d%02d", locale: Locale(identifier: "en_US_POSIX"), parts.year!, parts.month!, parts.day!)
+        let year = parts.year ?? 1970
+        let month = parts.month ?? 1
+        let dayNum = parts.day ?? 1
+        let day = String(format: "%04d%02d%02d", locale: Locale(identifier: "en_US_POSIX"), year, month, dayNum)
         let mac = HMAC<SHA256>.authenticationCode(
             for: Data((normalized + day).utf8),
             using: SymmetricKey(data: Data(secret.utf8))

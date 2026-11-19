@@ -60,8 +60,12 @@ public struct CanvasArtwork: Codable, Hashable, Sendable {
     /// queued from search may never get one, so requiring it outright would mean no canvas
     /// at all for most of a session.
     public func matches(title wantTitle: String, artist wantArtist: String, album wantAlbum: String?) -> Bool {
-        let titleOk = title == nil || wantTitle.isBlankForCanvas ||
-            title!.normalizedForCanvasMatch == wantTitle.normalizedForCanvasMatch
+        let titleOk: Bool
+        if let title, !wantTitle.isBlankForCanvas {
+            titleOk = title.normalizedForCanvasMatch == wantTitle.normalizedForCanvasMatch
+        } else {
+            titleOk = true
+        }
 
         let titleArtists = wantArtist.canvasArtists
         let ourArtists = (artist ?? "").canvasArtists
@@ -69,8 +73,12 @@ public struct CanvasArtwork: Codable, Hashable, Sendable {
             (!titleArtists.isEmpty && !ourArtists.isEmpty &&
                 titleArtists.allSatisfy { want in ourArtists.contains(want) })
 
-        let albumOk = album.isNullOrBlankForCanvas || wantAlbum.isNullOrBlankForCanvas ||
-            album!.normalizedForCanvasMatch == wantAlbum!.normalizedForCanvasMatch
+        let albumOk: Bool
+        if let album, let wantAlbum, !album.isNullOrBlankForCanvas, !wantAlbum.isNullOrBlankForCanvas {
+            albumOk = album.normalizedForCanvasMatch == wantAlbum.normalizedForCanvasMatch
+        } else {
+            albumOk = true
+        }
 
         return titleOk && artistOk && albumOk
     }

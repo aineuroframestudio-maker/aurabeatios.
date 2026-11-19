@@ -35,9 +35,9 @@ import UniformTypeIdentifiers
 /// of where its bytes stop; see ``read(asset:track:start:end:sink:abort:)`` for why that takes a
 /// second pass on iOS.
 ///
-/// Everything here is best-effort. A container AVFoundation cannot parse (WebM/Opus among them —
+/// Everything here is best-effort. A container AVFoundation cannot parse (WebM/Opus among them â€”
 /// the rendition provider should hand over an AAC/M4A, MP3, FLAC or ALAC copy), a region past the
-/// end, a file that vanished — all return nil, and the caller falls back to no analysis, which the
+/// end, a file that vanished â€” all return nil, and the caller falls back to no analysis, which the
 /// transition policy already handles as its bottom rung.
 ///
 /// Remote URLs work too: `AVAssetReader` refuses non-local assets, so a remote asset is fetched to
@@ -65,8 +65,8 @@ public enum AutomixAudioDecoder {
 
     /// Decoded planar stereo PCM. A mono source is widened by sharing the same samples on both
     /// sides, which is what the vocal model was trained to see for centre-panned material; more
-    /// than two channels keep only the first two, because a downmix would put the centre channel —
-    /// where the vocal usually is — into both sides at half level.
+    /// than two channels keep only the first two, because a downmix would put the centre channel â€”
+    /// where the vocal usually is â€” into both sides at half level.
     public struct StereoPCM: Sendable, Equatable {
         public var left: [Float]
         public var right: [Float]
@@ -97,8 +97,8 @@ public enum AutomixAudioDecoder {
 
     /// Decodes `start` to `end` seconds of `url`, downmixed to mono.
     ///
-    /// With `sampleRate` nil the PCM comes back at the container's own rate. With a rate — the
-    /// analyzer's 11,025 Hz is ``analysisSampleRate`` — it is converted with the analyzer's own
+    /// With `sampleRate` nil the PCM comes back at the container's own rate. With a rate â€” the
+    /// analyzer's 11,025 Hz is ``analysisSampleRate`` â€” it is converted with the analyzer's own
     /// windowed-sinc resampler rather than Core Audio's, so the numbers match Android's exactly.
     ///
     /// `abort` is polled once per decoded buffer; answering true abandons the decode as if it had
@@ -156,14 +156,14 @@ public enum AutomixAudioDecoder {
     }
 
     /// Reduces each decoded buffer as it arrives, so a whole-track decode never holds the
-    /// interleaved multichannel audio at once — only what the caller actually keeps.
+    /// interleaved multichannel audio at once â€” only what the caller actually keeps.
     class PCMSink: @unchecked Sendable {
         func consume(_ interleaved: UnsafeBufferPointer<Float>, channels: Int) {}
         /// Frames consumed so far.
         var frames: Int { 0 }
         var isEmpty: Bool { frames == 0 }
         /// How many AVAssetReaders this decode has constructed for a range. Constructing one
-        /// parses the container and re-resolves the track — the cost the recovery pass bounds —
+        /// parses the container and re-resolves the track â€” the cost the recovery pass bounds â€”
         /// and nothing else exposes it; the recovery tests are its only reader. Written and read
         /// on the decode queue, one decode per sink.
         var readerStarts = 0
@@ -267,7 +267,7 @@ public enum AutomixAudioDecoder {
     /// A recovery re-read that adds less than this much audio is the decoder's last partial
     /// buffer at the cut, not audio worth opening another reader for. It matters: in the
     /// simulator AVAssetReader hands back a *single frame* per start right at the truncation, so
-    /// without a floor the loop walks the last few milliseconds one reader at a time — measured,
+    /// without a floor the loop walks the last few milliseconds one reader at a time â€” measured,
     /// thousands of reader start-ups for one truncated file.
     static let recoveryMinAdvanceSeconds = 0.01
 
@@ -283,16 +283,16 @@ public enum AutomixAudioDecoder {
     ///
     /// It is a compromise, not a bound on the walk: a range that keeps stopping partway is reset
     /// to ``recoveryInitialChunkSeconds`` each time, so a file broken throughout can still exhaust
-    /// the budget before the range does — it just fails slowly and loudly rather than silently.
+    /// the budget before the range does â€” it just fails slowly and loudly rather than silently.
     ///
-    /// An infinite `end` — what ``decodeMono(_:from:to:sampleRate:fetcher:abort:)`` and
-    /// ``decodeStereo(_:from:to:fetcher:abort:)`` default to — cannot be measured, so such a
+    /// An infinite `end` â€” what ``decodeMono(_:from:to:sampleRate:fetcher:abort:)`` and
+    /// ``decodeStereo(_:from:to:fetcher:abort:)`` default to â€” cannot be measured, so such a
     /// whole-track recovery gets the flat floor: it is capped at ``recoveryMaxReaders`` readers
     /// whatever the track's length. The bounded internal call sites scale with their range.
     static func recoveryReaderBudget(from start: Double, to end: Double) -> Int {
         guard end.isFinite else { return recoveryMaxReaders }
         let range = max(0, end - start)
-        // A finite but absurd `end` — a corrupt duration — must only widen the budget, not trap.
+        // A finite but absurd `end` â€” a corrupt duration â€” must only widen the budget, not trap.
         let chunks = range / recoveryMaxChunkSeconds
         return chunks < Double(Int.max - recoveryMaxReaders) ? recoveryMaxReaders + Int(chunks) : Int.max
     }
@@ -313,8 +313,8 @@ public enum AutomixAudioDecoder {
     /// until a range adds no meaningful audio, the reader budget is reached, or the caller aborts.
     /// Returns whether the caller's `abort` ended it.
     ///
-    /// Separate from ``read(asset:track:start:end:sink:abort:)`` so the schedule — the doubling,
-    /// the drop-back, the stop — is one piece a test can drive without AVFoundation.
+    /// Separate from ``read(asset:track:start:end:sink:abort:)`` so the schedule â€” the doubling,
+    /// the drop-back, the stop â€” is one piece a test can drive without AVFoundation.
     @discardableResult
     static func recover(
         from start: Double,
@@ -365,13 +365,13 @@ public enum AutomixAudioDecoder {
     /// Reads `start..<end` into `sink`, recovering the tail of a file that stops partway.
     ///
     /// AVAssetReader decodes ahead in batches, and when it runs into the end of a partially
-    /// written file it fails the whole batch in flight — measured, up to ten seconds of audio that
+    /// written file it fails the whole batch in flight â€” measured, up to ten seconds of audio that
     /// *is* on disk never reaches the caller. MediaExtractor on Android hands back everything up
     /// to the missing byte, and the head pass is sized around that: it wants twelve seconds of a
     /// cached opening, not twenty-two. So when a read fails, ``recover(from:to:sampleRate:read:)``
     /// re-reads the rest from where the audio stopped, in ranges that double until one stops
     /// partway and then shrink back. It ends when a range adds no meaningful audio, when it hits
-    /// its reader budget (``recoveryReaderBudget(from:to:)``), or when the caller aborts — every
+    /// its reader budget (``recoveryReaderBudget(from:to:)``), or when the caller aborts â€” every
     /// reader start-up re-parses the container and re-seeks, so the number of them has to stay
     /// small.
     private static func read(
@@ -416,8 +416,8 @@ public enum AutomixAudioDecoder {
 
     /// Frames at the front of a decoded buffer that the sink already holds, because the reader
     /// primed before its seek point or a coarse seek landed early. Dropping them keeps the sink a
-    /// single gapless timeline and keeps a recovery range — which starts where the sink's audio
-    /// ended — from decoding those frames a second time.
+    /// single gapless timeline and keeps a recovery range â€” which starts where the sink's audio
+    /// ended â€” from decoding those frames a second time.
     static func leadingOverlapFrames(
         presentation: Double,
         decodedEnd: Double?,
@@ -500,12 +500,13 @@ public enum AutomixAudioDecoder {
             let usable = floats - floats % channels
             if usable == 0 { continue }
             if scratch.count < floats { scratch = [Float](repeating: 0, count: floats) }
-            let status = scratch.withUnsafeMutableBytes { bytes in
-                CMBlockBufferCopyDataBytes(
+            let status = scratch.withUnsafeMutableBytes { bytes -> OSStatus in
+                guard let base = bytes.baseAddress else { return kCMBlockBufferNoErr }
+                return CMBlockBufferCopyDataBytes(
                     block,
                     atOffset: 0,
                     dataLength: usable * MemoryLayout<Float>.stride,
-                    destination: bytes.baseAddress!
+                    destination: base
                 )
             }
             if status != kCMBlockBufferNoErr { continue }
@@ -515,7 +516,7 @@ public enum AutomixAudioDecoder {
             }
             // A re-read can hand back audio already in the sink: the decoder primes before the
             // seek point and a coarse seek lands early. Drop the overlap so the sink stays one
-            // gapless timeline and the next range — which starts at `decodedEnd` — does not decode
+            // gapless timeline and the next range â€” which starts at `decodedEnd` â€” does not decode
             // those frames a second time.
             let frames = usable / channels
             let leading = leadingOverlapFrames(
@@ -541,7 +542,7 @@ public enum AutomixAudioDecoder {
         }
 
         if reader.status == .failed {
-            // A file that stops partway — a cached head, a truncated download — fails the reader
+            // A file that stops partway â€” a cached head, a truncated download â€” fails the reader
             // near the first missing byte. What decoded before that is still the track's audio;
             // the whole-track pass has its own short-decode guard against mistaking it for the
             // complete track.
@@ -563,7 +564,7 @@ struct UncheckedSendable<Value>: @unchecked Sendable {
 /// URLs, can decode it.
 ///
 /// Networking goes through the injected `URLSession`, so tests can stub it. `maxBytes` bounds the
-/// download to the opening of the file — enough for a head region of any container that keeps its
+/// download to the opening of the file â€” enough for a head region of any container that keeps its
 /// index up front (MP3, ADTS, fast-start M4A, YouTube's fragmented M4A).
 ///
 /// A resolved YouTube stream needs two things from its caller that this module cannot know:

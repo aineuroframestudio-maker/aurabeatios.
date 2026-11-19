@@ -355,7 +355,7 @@ private struct PartyNowPlayingSection: View {
             HStack(spacing: 14) {
                 PartyRowIcon(symbol: AppSymbol.musicNote)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(track?.title.isEmpty == false ? track!.title : L10n.listenTogetherNothingPlaying)
+                    Text((track?.title.isEmpty == false ? track?.title : nil) ?? L10n.listenTogetherNothingPlaying)
                         .lineLimit(1)
                     Text(PartyText.nowPlayingSubtitle(state, positionMs: positionMs))
                         .font(.subheadline.monospacedDigit())

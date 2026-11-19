@@ -467,7 +467,8 @@ public final class HTTPAudioSource: AudioRangeDataSource, @unchecked Sendable {
             return (nil, startResolve())
         }
         if let stream = state.stream { return stream }
-        return try await finishResolve(state.task!)
+        guard let task = state.task else { throw AudioCacheError.noStream }
+        return try await finishResolve(task)
     }
 
     /// Re-mints the URL after `url` was refused, unless someone already has.
