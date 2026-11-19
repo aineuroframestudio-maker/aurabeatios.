@@ -574,8 +574,11 @@ public final class SourceResolver: StreamResolving, @unchecked Sendable {
             }) else { return nil }
             var matches = TrackMatcher.ranked(candidates, target)
             if requireSharedArtist {
-                matches = matches.filter { TrackMatcher.sharesArtist(target.artist, $0.artist) }
+                matches = matches.filter { TrackMatcher.sharesArtist(target.artist, $0.artist, wantedTitle: target.title, gotTitle: $0.title) }
             }
+            // Strict identity verification: candidate must be the exact original recording,
+            // never a cover, remix, live recording, karaoke take, or different artist.
+            matches = matches.filter { TrackMatcher.isVerifiedOriginalMatch($0, target) }
             // JioSaavn can hold different audio under one title and artist on different releases.
             // With no album on the requested track there is no honest way to choose; a unique
             // fullest credit may, otherwise this source is a miss and the known-correct fallback

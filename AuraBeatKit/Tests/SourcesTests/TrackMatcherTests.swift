@@ -381,4 +381,29 @@ final class TrackMatcherTests: XCTestCase {
         let targetAcoustic = TrackMatcher.Target("Shape of You (Acoustic)", "Ed Sheeran", durationSec: 233)
         XCTAssertEqual(TrackMatcher.best([acousticSong], targetAcoustic), acousticSong)
     }
+
+    func testCalgaryCowboysReproductionMatchAndRejections() {
+        let originalTarget = TrackMatcher.Target("Calgary Cowboys", "a.s. kullar, Harry Pannu", durationSec: 195)
+
+        // Exact original studio recording match
+        let exactSong = song("Calgary Cowboys", "a.s. kullar, Harry Pannu", "3:15")
+        XCTAssertTrue(TrackMatcher.isVerifiedOriginalMatch(exactSong, originalTarget))
+        XCTAssertEqual(TrackMatcher.best([exactSong], originalTarget), exactSong)
+
+        // Disjoint artists rejection
+        let differentArtist = song("Calgary Cowboys", "Other Singer", "3:15")
+        XCTAssertFalse(TrackMatcher.isVerifiedOriginalMatch(differentArtist, originalTarget))
+
+        // Cover version rejection
+        let coverSong = song("Calgary Cowboys (Acoustic Cover)", "a.s. kullar, Harry Pannu", "3:15")
+        XCTAssertFalse(TrackMatcher.isVerifiedOriginalMatch(coverSong, originalTarget))
+
+        // Remix version rejection
+        let remixSong = song("Calgary Cowboys (Club Remix)", "a.s. kullar, Harry Pannu", "3:15")
+        XCTAssertFalse(TrackMatcher.isVerifiedOriginalMatch(remixSong, originalTarget))
+
+        // Instrumental version rejection
+        let instrumentalSong = song("Calgary Cowboys (Instrumental)", "a.s. kullar, Harry Pannu", "3:15")
+        XCTAssertFalse(TrackMatcher.isVerifiedOriginalMatch(instrumentalSong, originalTarget))
+    }
 }

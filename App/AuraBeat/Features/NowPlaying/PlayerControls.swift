@@ -236,6 +236,97 @@ struct PlayerShimmerText: View {
     }
 }
 
+// MARK: - Source & Verification Indicator
+
+/// Real-time playback source and verification indicator displayed on the player controls.
+struct PlayerSourceIndicatorView: View {
+    @Environment(PlayerController.self) private var player
+
+    var body: some View {
+        let (sourceName, verificationStatus, symbol) = currentSourceInfo()
+        HStack(spacing: 5) {
+            Image(systemName: symbol)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.7))
+            Text(sourceName)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.85))
+            if let verification = verificationStatus {
+                Text("•")
+                    .font(.system(size: 8))
+                    .foregroundStyle(.white.opacity(0.4))
+                Text(verification)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.65))
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(Capsule().fill(Color.white.opacity(0.08)))
+        .overlay(Capsule().strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("nowPlaying.sourceIndicator")
+    }
+
+    private func currentSourceInfo() -> (name: String, status: String?, symbol: String) {
+        if let stream = player.currentStream {
+            let name = PlayerNerdStatsText.sourceName(of: stream)
+            switch stream.origin {
+            case .youtube:
+                return (name, "Direct Stream", "play.rectangle.fill")
+            case .jioSaavn, .addon, .module:
+                return (name, "Verified Original", "checkmark.seal.fill")
+            case .local:
+                return (name, "Local Audio", "internaldrive.fill")
+            case .networkShare:
+                return (name, "Network Stream", "network")
+            }
+        } else if let onDisk = player.sourceOnDisk {
+            return (onDisk, "Local Storage", "internaldrive.fill")
+        } else if player.pipelineStatus == .resolving || player.isBuffering {
+            return ("Resolving Source", "Connecting...", "antenna.radiowaves.left.and.right")
+        } else if case .failed = player.pipelineStatus {
+            return ("Source Verification", "Failed", "exclamationmark.triangle.fill")
+        }
+        return ("Audio Source", nil, "waveform")
+    }
+}
+
+/// An inline notification banner when original song verification or playback fails, offering retry.
+struct PlayerPlaybackErrorBanner: View {
+    let message: String
+    let onRetry: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.red.opacity(0.85))
+            Text("Original recording unavailable: \(message)")
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(.white.opacity(0.9))
+                .lineLimit(2)
+            Spacer(minLength: 4)
+            Button(action: onRetry) {
+                Text("Retry")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(Color.white.opacity(0.2)))
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("nowPlaying.retryButton")
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.black.opacity(0.65)))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.red.opacity(0.4), lineWidth: 1))
+        .padding(.horizontal, 4)
+        .accessibilityIdentifier("nowPlaying.playbackErrorBanner")
+    }
+}
+
 // MARK: - Transport
 
 /// Previous, play/pause, next. `compact` is the landscape player on a phone.

@@ -59,12 +59,16 @@ extension AudioPlayerEngine {
                 // Rate first, then play: on a USB DAC the session's rate is the DAC's, and asking
                 // once the deck plays would re-clock it under the track's opening.
                 self.audioSession?.trackSampleRate = entry.trackFormat.sampleRate
+                if self.playWhenReady { self.audioSession?.activate() }
                 #endif
-                if self.playWhenReady { deck.play() } else { deck.pause() }
                 deck.setCurrent(entry, at: at)
+                if self.playWhenReady { deck.play() } else { deck.pause() }
                 self.position = at
                 self.isLoadingItem = false
                 self.entryBecameCurrent(entry)
+                if self.playWhenReady {
+                    self.scheduleStallWatchdog(for: item.id)
+                }
             } catch is CancellationError {
                 return
             } catch {

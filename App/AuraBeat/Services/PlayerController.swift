@@ -271,6 +271,15 @@ final class PlayerController {
         return .paused
     }
 
+    /// Re-resolves and retries playing the current song after a failure or stall.
+    func retryCurrentSong() {
+        guard let song = currentSong else { return }
+        sources.forgetMissing(song)
+        currentStream = nil
+        let item = sources.item(for: song)
+        engine.load(item, startingAt: 0, playWhenReady: true)
+    }
+
     private var isLocalItem: Bool {
         guard let song = currentSong else { return false }
         return PlaybackSourceFactory.localFileURL(of: song) != nil || sources.savedFile(song) != nil

@@ -275,6 +275,6 @@ struct PlayerNerdStatsOverlay: View {
         let held = names.keys.filter { info[$0] != nil }.compactMap { names[$0] }.sorted()
         let keys = listed.isEmpty ? "none" : listed.joined(separator: ",")
         let inInfo = held.isEmpty ? "no" : held.joined(separator: ",")
-        return "Lock art: system keys \(keys) · \(decision) · in Now Playing: \(inInfo)"
+        return "Lock art: system keys \(keys) · \(decision) · animated cover: \(inInfo)"
     }
 }

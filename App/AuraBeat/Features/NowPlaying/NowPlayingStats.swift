@@ -69,6 +69,7 @@ enum PlayerNerdStatsText {
     static func line(_ snapshot: NerdStats.Snapshot?) -> String? {
         guard let snapshot else { return nil }
         var parts: [String] = []
+        if let source = snapshot.sourceName, !source.isEmpty { parts.append(source) }
         if let codec = NerdStats.codecLabel(snapshot.mimeType) { parts.append(codec) }
         if let bitDepth = snapshot.bitDepth { parts.append(L10n.bitDepth(bitDepth)) }
         if let rate = snapshot.sampleRateHz {
@@ -206,6 +207,7 @@ enum PlayerPipelineWording {
     static func label(_ label: String) -> String {
         switch label {
         case "Source": return L10n.pipelineSource
+        case "Verification": return "Verification"
         case "Format": return L10n.pipelineFormat
         case "Bit Depth": return L10n.pipelineBitDepth
         case "Sample Rate": return L10n.pipelineSampleRate

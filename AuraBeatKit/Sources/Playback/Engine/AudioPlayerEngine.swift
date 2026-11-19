@@ -242,6 +242,8 @@ public final class AudioPlayerEngine {
     @ObservationIgnored var silenceScanFailures: Set<String> = []
     /// The deck and entry the live skip-silence fallback is fast-forwarding, if it is.
     @ObservationIgnored var liveSkip: (deck: PlaybackDeck, entry: DeckEntry)?
+    /// Watchdog task monitoring playback start to prevent frozen 0:00 state.
+    @ObservationIgnored var stallWatchdogTask: Task<Void, Never>?
 
     public init(configuration: Configuration = Configuration()) {
         self.configuration = configuration
@@ -282,6 +284,7 @@ public final class AudioPlayerEngine {
         checkpoint()
         cancelSwap()
         crossfade.release()
+        cancelStallWatchdog()
         [loadTask, preloadTask, armTask, statsTask, sleepTask, tickerTask, samplerTask].forEach { $0?.cancel() }
         silenceScans.values.forEach { $0.cancel() }
         silenceScans.removeAll()
@@ -559,6 +562,7 @@ public final class AudioPlayerEngine {
 
     func pausePlayback() {
         endLiveSkip()
+        cancelStallWatchdog()
         setPlayWhenReady(false)
         active.pause()
         crossfade.syncTransport()
@@ -577,10 +581,12 @@ public final class AudioPlayerEngine {
             PlaybackLog.info("first audio for \(item.id) \(TrackLog.ms(since: opened.since))ms after it was asked for", about: item.trackID)
             awaitingFirstAudio = nil
             logClock("first audio", on: active)
+            cancelStallWatchdog()
         }
         if playing != isPlaying {
             isPlaying = playing
             if playing, let item = currentItem {
+                cancelStallWatchdog()
                 recovery.itemBecameAudible(item.id)
                 // A retry that worked, or the track after one that was skipped, is playing: the
                 // error has been dealt with and comes off the screen.
@@ -590,6 +596,36 @@ public final class AudioPlayerEngine {
             checkpoint()
         }
         isBuffering = currentItem != nil && (isLoadingItem || (playWhenReady && !hasEnded && active.isWaiting))
+    }
+
+    func scheduleStallWatchdog(for itemID: String) {
+        cancelStallWatchdog()
+        guard playWhenReady else { return }
+        stallWatchdogTask = Task { [weak self] in
+            // Step 1: Wait 4 seconds for audio output to begin
+            try? await Task.sleep(for: .seconds(4))
+            guard !Task.isCancelled, let self, self.currentItem?.id == itemID, self.playWhenReady else { return }
+            if !self.isPlaying && self.position <= 0.05 {
+                PlaybackLog.warning("Playback stalled at 0:00 after 4s; kicking active deck", about: self.currentItem?.trackID)
+                #if os(iOS)
+                self.audioSession?.activate()
+                #endif
+                self.active.play()
+                self.active.startIfBuffered()
+            }
+            // Step 2: If still frozen at 0:00 after an additional 6 seconds (10s total), fail and recover
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled, let self, self.currentItem?.id == itemID, self.playWhenReady else { return }
+            if !self.isPlaying && self.position <= 0.05 && !self.isLoadingItem {
+                PlaybackLog.error("Playback failed to begin past 0:00 after 10s; reporting stream stalled", about: self.currentItem?.trackID)
+                self.handleFailure(itemID: itemID, error: PlaybackSourceError.streamStalled)
+            }
+        }
+    }
+
+    func cancelStallWatchdog() {
+        stallWatchdogTask?.cancel()
+        stallWatchdogTask = nil
     }
 
     func checkpoint() {

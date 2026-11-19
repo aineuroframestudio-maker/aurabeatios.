@@ -257,6 +257,16 @@ struct PlayerDeck: View {
                 }
             }
             PlayerScrubberView(scrub: model.scrub, loading: player.isSwappingVersion, badge: PlayerQuality.badge(player: player, app: app))
+            if !compact {
+                PlayerSourceIndicatorView()
+                    .padding(.top, 4)
+                if case .failed(let message) = player.pipelineStatus {
+                    PlayerPlaybackErrorBanner(message: message) {
+                        player.retryCurrentSong()
+                    }
+                    .padding(.top, 4)
+                }
+            }
             Spacer().frame(height: (compact ? 0 : 8) + spread / 2)
             PlayerTransport(compact: compact)
             Spacer().frame(height: (compact ? 0 : 12) + spread / 2)

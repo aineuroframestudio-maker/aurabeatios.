@@ -6,8 +6,8 @@ import AuraBeatCore
 /// The engine never resolves streams or reads a cache itself. Whoever builds the item decides
 /// that, through ``Source``: a file on disk, an `AVURLAsset` produced on demand (the AudioCache
 /// module hands one out backed by its resource loader), or a ``ResolvedStream`` resolved on demand.
-/// The factories are called when the item is about to be needed — to start it, to preload it for a
-/// gapless or crossfaded advance, or again to recover from an error — so a stream URL that expires
+/// The factories are called when the item is about to be needed â€” to start it, to preload it for a
+/// gapless or crossfaded advance, or again to recover from an error â€” so a stream URL that expires
 /// after a few hours is resolved at play time rather than when the queue was built, the same reason
 /// the Android service resolved its `aurabeat://` URIs lazily in the data source.
 public struct PlayableItem: Identifiable, Sendable {
@@ -195,11 +195,17 @@ public enum PlaybackSourceError: Error, Hashable, Sendable, CustomStringConverti
     case missingLocalFile(URL)
     /// The asset opened but carries no audio track.
     case noAudioTrack
+    /// The audio stream stalled at 0:00 and failed to begin playback.
+    case streamStalled
+    /// The stream candidate could not be verified as the original recording.
+    case verificationFailed(String)
 
     public var description: String {
         switch self {
         case .missingLocalFile(let url): return "The file \(url.lastPathComponent) is missing"
         case .noAudioTrack: return "The stream has no audio track"
+        case .streamStalled: return "Audio stream stalled at 0:00"
+        case .verificationFailed(let reason): return "Original recording verification failed: \(reason)"
         }
     }
 }

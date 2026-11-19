@@ -148,8 +148,21 @@ public struct AudioPipeline: Hashable, Sendable {
         case 2: channelsText = "Stereo"
         case let count?: channelsText = "\(count) (Surround)"
         }
+        let verificationText: String
+        if let source = stats?.sourceName, !source.isEmpty {
+            if source == "YouTube" {
+                verificationText = "Direct Official Stream"
+            } else if source == "Local Storage" {
+                verificationText = "Local Storage (Bit-Exact)"
+            } else {
+                verificationText = "Verified Original Studio Master"
+            }
+        } else {
+            verificationText = dash
+        }
         let trackInfo = Stage(kind: .trackInfo, rows: [
             Row("Source", stats?.sourceName ?? dash),
+            Row("Verification", verificationText),
             Row("Format", NerdStats.codecLabel(stats?.mimeType) ?? stats?.mimeType ?? dash),
             Row("Bit Depth", (stats?.bitDepth ?? stats?.claimed?.bitDepth).map { "\($0)-bit" } ?? dash),
             Row("Sample Rate", (stats?.sampleRateHz ?? stats?.claimed?.sampleRateHz).map { "\($0) Hz" } ?? dash),

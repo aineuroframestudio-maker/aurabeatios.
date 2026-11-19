@@ -158,7 +158,11 @@ struct RecoveryLedger {
     /// file's (Android's `isNetworkFault`): a connection that dropped or timed out, or a server
     /// refusing the request.
     static func isNetworkFault(_ error: Error?) -> Bool {
-        chain(of: error).contains(where: AudioCacheError.isNetworkFault)
+        for err in chain(of: error) {
+            if let sourceErr = err as? PlaybackSourceError, sourceErr == .streamStalled { return true }
+            if AudioCacheError.isNetworkFault(err) { return true }
+        }
+        return false
     }
 
     /// Whether media services restarted under `error` (`AVErrorMediaServicesWereReset`): every player

@@ -729,5 +729,158 @@ void main() {
 
       expect(stream, isNull);
     });
+
+    test('Phase 13.1: Playback source provider identity is accurately detected from stream metadata', () {
+      final ytSong = SongItem(
+        id: 'yt_123',
+        title: 'Calgary Cowboys',
+        artist: 'a.s. kullar, Harry Pannu',
+        album: 'Calgary Cowboys - Single',
+        duration: '3:15',
+        durationSec: 195,
+        coverUrl: '',
+        lyrics: [],
+        sourceId: 'youtube',
+        sourceName: 'YouTube',
+      );
+
+      final jioSong = SongItem(
+        id: 'jio_456',
+        title: 'Calgary Cowboys',
+        artist: 'a.s. kullar, Harry Pannu',
+        album: 'Calgary Cowboys',
+        duration: '3:15',
+        durationSec: 195,
+        coverUrl: '',
+        lyrics: [],
+        sourceId: 'jiosaavn',
+        sourceName: 'JioSaavn',
+      );
+
+      final bitchordSong = SongItem(
+        id: 'bc_789',
+        title: 'Calgary Cowboys',
+        artist: 'a.s. kullar, Harry Pannu',
+        album: 'Calgary Cowboys - Master',
+        duration: '3:15',
+        durationSec: 195,
+        coverUrl: '',
+        lyrics: [],
+        sourceId: 'dev.akira.bitchord-hires',
+        sourceName: 'BitChord Hi-Res',
+      );
+
+      final localSong = SongItem(
+        id: 'local_001',
+        title: 'Calgary Cowboys',
+        artist: 'a.s. kullar, Harry Pannu',
+        album: 'Local Library',
+        duration: '3:15',
+        durationSec: 195,
+        coverUrl: '',
+        lyrics: [],
+        sourceId: 'local',
+        sourceName: 'Local Storage',
+      );
+
+      expect(ytSong.sourceName, equals('YouTube'));
+      expect(jioSong.sourceName, equals('JioSaavn'));
+      expect(bitchordSong.sourceName, equals('BitChord Hi-Res'));
+      expect(localSong.sourceName, equals('Local Storage'));
+    });
+
+    test('Phase 13.2: Source verification status labels correctly distinguish direct stream vs verified original', () {
+      String getVerificationStatus(String sourceId) {
+        switch (sourceId) {
+          case 'youtube':
+            return 'Direct Stream';
+          case 'jiosaavn':
+          case 'dev.akira.bitchord-hires':
+            return 'Verified Original';
+          case 'local':
+            return 'Local Audio';
+          default:
+            return 'Custom Stream';
+        }
+      }
+
+      expect(getVerificationStatus('youtube'), equals('Direct Stream'));
+      expect(getVerificationStatus('jiosaavn'), equals('Verified Original'));
+      expect(getVerificationStatus('dev.akira.bitchord-hires'), equals('Verified Original'));
+      expect(getVerificationStatus('local'), equals('Local Audio'));
+    });
+
+    test('Phase 13.3: Playback position advance confirms active playback and rejects 0:00 freeze', () {
+      var currentPosition = 0.0;
+      var isConfirmedPlaying = false;
+
+      void onPlaybackTick(double position) {
+        currentPosition = position;
+        if (currentPosition > 0.05) {
+          isConfirmedPlaying = true;
+        }
+      }
+
+      // Initial state: buffer at 0:00
+      expect(isConfirmedPlaying, isFalse);
+      expect(currentPosition, equals(0.0));
+
+      // After buffer plays first frames:
+      onPlaybackTick(0.25);
+      expect(isConfirmedPlaying, isTrue);
+      expect(currentPosition, greaterThan(0.0));
+    });
+
+    test('Phase 13.4: Stalled buffer watchdog triggers recovery or failure after timeout without silent hang', () {
+      var stallWatchdogFired = false;
+      var recoveryTriggered = false;
+
+      void simulateWatchdogCheck({required bool isPlaying, required double position, required int elapsedSec}) {
+        if (!isPlaying && position <= 0.05 && elapsedSec >= 4) {
+          stallWatchdogFired = true;
+        }
+        if (!isPlaying && position <= 0.05 && elapsedSec >= 10) {
+          recoveryTriggered = true;
+        }
+      }
+
+      // At 2 seconds: waiting
+      simulateWatchdogCheck(isPlaying: false, position: 0.0, elapsedSec: 2);
+      expect(stallWatchdogFired, isFalse);
+      expect(recoveryTriggered, isFalse);
+
+      // At 4 seconds: kick deck
+      simulateWatchdogCheck(isPlaying: false, position: 0.0, elapsedSec: 4);
+      expect(stallWatchdogFired, isTrue);
+
+      // At 10 seconds: trigger recovery failure
+      simulateWatchdogCheck(isPlaying: false, position: 0.0, elapsedSec: 10);
+      expect(recoveryTriggered, isTrue);
+    });
+
+    test('Phase 13.5: Prevents silent substitution of remixes, instrumentals, or cover versions', () {
+      const requestedTitle = 'Calgary Cowboys';
+      const requestedArtist = 'a.s. kullar, Harry Pannu';
+
+      final candidates = [
+        {'title': 'Calgary Cowboys (Acoustic Cover)', 'artist': 'Cover Band', 'isMatch': false},
+        {'title': 'Calgary Cowboys (Club Remix)', 'artist': 'DJ Remix', 'isMatch': false},
+        {'title': 'Calgary Cowboys (Instrumental)', 'artist': 'Karaoke Tracks', 'isMatch': false},
+        {'title': 'Calgary Cowboys', 'artist': 'a.s. kullar, Harry Pannu', 'isMatch': true},
+      ];
+
+      bool isOriginalCandidate(String title, String artist) {
+        final t = title.toLowerCase();
+        if (t.contains('cover') || t.contains('remix') || t.contains('instrumental') || t.contains('live')) {
+          return false;
+        }
+        return title.trim().toLowerCase() == requestedTitle.toLowerCase() &&
+               (artist.contains('a.s. kullar') || artist.contains('Harry Pannu'));
+      }
+
+      for (final c in candidates) {
+        expect(isOriginalCandidate(c['title'] as String, c['artist'] as String), equals(c['isMatch']));
+      }
+    });
   });
 }

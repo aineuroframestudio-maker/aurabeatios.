@@ -56,6 +56,20 @@ final class PlaybackRecoveryEngineTests: EngineTestCase {
         XCTAssertEqual(reasons, [.retry(attempt: 1, networkFault: true)])
     }
 
+    func testStreamStallTreatedAsNetworkFaultAndTriggersRecovery() async throws {
+        let good = try ToneFile.tone(4, in: directory, name: "recover-stall")
+        let item = PlayableItem(id: "stall", title: "S", artist: "A", source: .asset { throw PlaybackSourceError.streamStalled })
+        let h = harness(queue: [item])
+        var reasons: [RecoveryReason] = []
+        h.engine.sourceRecovery = { _, reason in
+            reasons.append(reason)
+            return .file(good)
+        }
+        h.engine.load(item, playWhenReady: true)
+        await waitUntil("recovered and playing") { h.engine.isPlaying }
+        XCTAssertEqual(reasons, [.retry(attempt: 1, networkFault: true)])
+    }
+
     func testTheRetryResumesWhereTheStreamDied() async throws {
         let good = try ToneFile.tone(8, in: directory, name: "recover-position")
         let bad = try garbage("recover-position-bad")

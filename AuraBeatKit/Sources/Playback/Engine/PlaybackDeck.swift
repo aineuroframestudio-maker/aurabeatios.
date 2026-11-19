@@ -287,11 +287,10 @@ final class PlaybackDeck: TransitionDeck {
     /// `playImmediately` plays what is there, and when that runs out the player stalls and waits
     /// again, showing as buffering, and this starts it once more: ExoPlayer's behaviour. A playlist
     /// (HLS) is left to AVPlayer, whose prediction holds for the segments it fetches itself.
-    private func startIfBuffered() {
+    func startIfBuffered() {
         guard wantsToPlay, let entry = current, pendingSeek == nil, failure == nil, !entry.asset.isStreamingPlaylist,
               player.currentItem === entry.playerItem, entry.playerItem.status == .readyToPlay,
-              player.timeControlStatus == .waitingToPlayAtSpecifiedRate,
-              player.reasonForWaitingToPlay == .toMinimizeStalls || player.reasonForWaitingToPlay == .evaluatingBufferingRate
+              player.timeControlStatus == .waitingToPlayAtSpecifiedRate
         else { return }
         let now = entry.playerItem.currentTime()
         guard let end = Self.bufferedEnd(in: entry.playerItem.loadedTimeRanges.map(\.timeRangeValue), at: now) else {
@@ -302,10 +301,12 @@ final class PlaybackDeck: TransitionDeck {
             return
         }
         let ahead = end - (now.isNumeric ? now.seconds : 0)
-        guard ahead >= (rebuffering ? Self.resumeBuffer : Self.startBuffer), end > (startedOnBufferEnd ?? -1) else { return }
+        let threshold = rebuffering ? Self.resumeBuffer : Self.startBuffer
+        guard ahead >= threshold || entry.playerItem.isPlaybackLikelyToKeepUp else { return }
         startedOnBufferEnd = end
         PlaybackLog.debug("\(entry.item.id): starting on \(String(format: "%.1f", ahead))s buffered rather than waiting "
             + "for the stream to look fast enough" + (rebuffering ? " (after a stall)" : ""), about: entry.item.trackID)
+        player.automaticallyWaitsToMinimizeStalling = false
         player.playImmediately(atRate: player.rate > 0 ? player.rate : (player.defaultRate > 0 ? player.defaultRate : 1))
     }
 
