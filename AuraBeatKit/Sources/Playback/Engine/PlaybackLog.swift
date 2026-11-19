@@ -15,4 +15,8 @@ enum PlaybackLog {
     static func warning(_ message: String, about item: String? = nil, error: Error? = nil) {
         TrackLog.w(category, message, error: error, about: item)
     }
+
+    static func error(_ message: String, about item: String? = nil, error: Error? = nil) {
+        TrackLog.e(category, message, error: error, about: item)
+    }
 }
