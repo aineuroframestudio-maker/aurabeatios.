@@ -1,13 +1,13 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "yes",
+  "name": "bitchord-addon",
   "main": "worker.mjs",
   "compatibility_date": "2024-01-01",
   "observability": {
     "enabled": true
   },
   "vars": {
-    "BITCHORD_HOSTS": "bitchord.confih.tech,yes.aineuroframestudio-986.workers.dev",
+    "BITCHORD_HOSTS": "bitchord.confih.tech",
     "BITCHORD_AUTH_MODE": "log"
   }
 }

@@ -66,8 +66,8 @@ class SongItem {
     this.isExplicit = false,
     this.isDolbyAtmos = false,
     this.isHiRes = true,
-    this.sourceId = 'app.bitchord.confih',
-    this.sourceName = 'BitChord Confih Studio',
+    this.sourceId = 'dev.akira.bitchord-hires',
+    this.sourceName = 'BitChord Hi-Res Add-on',
     this.streamUrl,
   });
 
@@ -387,8 +387,8 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     isLossless: true,
     isHiRes: true,
     isDolbyAtmos: false,
-    sourceId: 'app.bitchord.confih',
-    sourceName: 'Confih Hi-Res',
+    sourceId: 'dev.akira.bitchord-hires',
+    sourceName: 'BitChord Hi-Res Add-on',
     streamType: 'Direct Bit-Perfect Bitstream (24-bit / 192 kHz FLAC)',
   );
 
@@ -447,7 +447,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 105,
       mood: 'Energetic',
       popularity: 94,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/1.flac?tier=max',
       lyrics: [
         'Waiting in a car',
         'Waiting for a ride in the dark',
@@ -475,7 +474,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       popularity: 96,
       audioQuality: 'Dolby Atmos Spatial Audio (E-AC-3 JOC)',
       isDolbyAtmos: true,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/2.flac?tier=max',
       lyrics: [
         'I\'m tryna put you in the worst mood, ah',
         'P1 cleaner than your church shoes, ah',
@@ -499,7 +497,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 116,
       mood: 'Party',
       popularity: 92,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/3.flac?tier=max',
       lyrics: [
         'Like the legend of the phoenix',
         'All ends with beginnings',
@@ -529,7 +526,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       popularity: 98,
       audioQuality: 'Dolby Atmos Spatial Audio (E-AC-3 JOC)',
       isDolbyAtmos: true,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/4.flac?tier=max',
       lyrics: [
         'Yeah',
         'I\'ve been tryna call',
@@ -555,7 +551,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 110,
       mood: 'Late Night',
       popularity: 88,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/5.flac?tier=max',
       lyrics: [
         'I didn\'t want to be the one to forget',
         'I thought of everything I\'d never regret',
@@ -577,7 +572,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 117,
       mood: 'Chill',
       popularity: 95,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/6.flac?tier=max',
       lyrics: [
         'Someone said they left together',
         'I ran out the door to get her',
@@ -599,7 +593,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 91,
       mood: 'Late Night',
       popularity: 89,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/7.flac?tier=max',
       lyrics: [
         'I\'m giving you a night call to tell you how I feel',
         'I want to drive you through the night, down the hills',
@@ -621,7 +614,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 128,
       mood: 'Chill',
       popularity: 84,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/8.flac?tier=max',
       lyrics: [
         'Send your dreams where nobody hides',
         'Give your tears to the tide',
@@ -643,7 +635,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 123,
       mood: 'Party',
       popularity: 91,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/9.flac?tier=max',
       lyrics: [
         'One more time, we\'re gonna celebrate',
         'Oh yeah, all right, don\'t stop the dancing',
@@ -663,7 +654,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 118,
       mood: 'Energetic',
       popularity: 96,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/10.flac?tier=max',
       lyrics: [
         'I saw you dancing in a crowded room',
         'You look so happy when I\'m not with you',
@@ -684,7 +674,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Energetic',
       language: 'Punjabi',
       popularity: 93,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/11.flac?tier=max',
       lyrics: [
         'Tera ni tera lover, baitha main door ni',
         'Aakhan naal aakhan mila lai hun taan tu',
@@ -706,7 +695,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Intense',
       language: 'Punjabi',
       popularity: 95,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/12.flac?tier=max',
       lyrics: [
         'Dass keda karda ni ethe virodh',
         'Kise nu zameer di te kise nu lod',
@@ -728,7 +716,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Romantic',
       language: 'Hindi',
       popularity: 97,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/13.flac?tier=max',
       lyrics: [
         'Kesariya tera ishq hai piya',
         'Rang jaaun jo main haath lagaun',
@@ -751,7 +738,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Late Night',
       language: 'Punjabi',
       popularity: 91,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/14.flac?tier=max',
       lyrics: [
         'Desi jehe geet aa trappan jehi beat aa',
         'Sir kadd gajde brown munde',
@@ -772,7 +758,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Euphoric',
       language: 'Punjabi',
       popularity: 94,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/15.flac?tier=max',
       lyrics: [
         'Agg laavan majboori nu',
         'Aan jaan di pasoori nu',
@@ -794,7 +779,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 123,
       mood: 'Energetic',
       popularity: 90,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/16.flac?tier=max',
       lyrics: [
         'Work it make it do it makes us',
         'Harder better faster stronger',
@@ -816,7 +800,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 120,
       mood: 'Chill',
       popularity: 89,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/17.flac?tier=max',
       lyrics: [
         'Gone a little far, gone a little far this time for something',
         'How was I to know? How was I to know this dark will come?',
@@ -836,7 +819,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 125,
       mood: 'Euphoric',
       popularity: 91,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/18.flac?tier=max',
       lyrics: [
         'It\'s always around me, all this noise',
         'All these emotions and choices',
@@ -857,7 +839,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 93,
       mood: 'Chill',
       popularity: 88,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/19.flac?tier=max',
       lyrics: [
         'The last few months, I\'ve been workin\' on me, baby',
         'There\'s so much trauma in my life',
@@ -878,7 +859,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 117,
       mood: 'Intense',
       popularity: 86,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/20.flac?tier=max',
       lyrics: [
         '[Instrumental French Electro Masterpiece]',
       ],
@@ -897,7 +877,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 90,
       mood: 'Late Night',
       popularity: 83,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/21.flac?tier=max',
       lyrics: [
         '[Instrumental OutRun Synthwave]',
       ],
@@ -916,7 +895,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 112,
       mood: 'Energetic',
       popularity: 87,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/22.flac?tier=max',
       lyrics: [
         'Never let you go, never let me down',
         'Into the shadows where the heart beats sound',
@@ -936,7 +914,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 130,
       mood: 'Euphoric',
       popularity: 88,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/23.flac?tier=max',
       lyrics: [
         'Light is on the horizon',
         'Can you meet me halfway?',
@@ -956,7 +933,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       bpm: 100,
       mood: 'Chill',
       popularity: 93,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/24.flac?tier=max',
       lyrics: [
         '[Lush Analog Synth Frequencies]',
       ],
@@ -976,7 +952,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Intense',
       language: 'Punjabi',
       popularity: 98,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/25.flac?tier=max',
       lyrics: [
         'Chobbar de chehre utte noor dassda',
         'Ni ehda uthuga jawani ch janaja mithiye',
@@ -998,7 +973,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Chill',
       language: 'Punjabi',
       popularity: 95,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/26.flac?tier=max',
       lyrics: [
         'Dil nu dilaase den waleya',
         'Tu kehde paase tur geya ae',
@@ -1019,7 +993,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Party',
       language: 'Punjabi',
       popularity: 96,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/27.flac?tier=max',
       lyrics: [
         'Paisa poosa baane daulat shohrat ki karni',
         'Born to shine tera yaar ni',
@@ -1040,7 +1013,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Smooth',
       language: 'Punjabi',
       popularity: 93,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/28.flac?tier=max',
       lyrics: [
         'Take it softly, dilaan di gal aayi ae',
       ],
@@ -1060,7 +1032,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Energetic',
       language: 'Punjabi',
       popularity: 92,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/29.flac?tier=max',
       lyrics: [
         'Baller, life living large in the city lights',
       ],
@@ -1080,7 +1051,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Romantic',
       language: 'Hindi',
       popularity: 98,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/30.flac?tier=max',
       lyrics: [
         'Acha chalta hoon, duaon mein yaad rakhna',
         'Mere zikr ka zubaan pe swaad rakhna',
@@ -1102,7 +1072,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Melancholic',
       language: 'Hindi',
       popularity: 96,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/31.flac?tier=max',
       lyrics: [
         'Hum tere bin ab reh nahi sakte',
         'Tere bina kya wajood mera',
@@ -1124,7 +1093,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Spiritual',
       language: 'Hindi',
       popularity: 95,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/32.flac?tier=max',
       lyrics: [
         'Kun Faya Kun, Kun Faya Kun',
         'Jab kahin pe kuch nahi bhi nahi tha',
@@ -1145,7 +1113,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Romantic',
       language: 'Hindi',
       popularity: 94,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/33.flac?tier=max',
       lyrics: [
         'Tu maan meri jaan, main tujhe jaane na dunga',
       ],
@@ -1165,7 +1132,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Passionate',
       language: 'Hindi',
       popularity: 93,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/34.flac?tier=max',
       lyrics: [
         'Zara sa jhoom loon main, are na re na re na',
         'Zara sa dil mein de jagah tu',
@@ -1186,7 +1152,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Energetic',
       language: 'English',
       popularity: 96,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/35.flac?tier=max',
       lyrics: [
         'Nobody pray for me',
         'It been that day for me',
@@ -1208,7 +1173,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Intense',
       language: 'English',
       popularity: 97,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/36.flac?tier=max',
       lyrics: [
         'Look, if you had one shot or one opportunity',
         'To seize everything you ever wanted in one moment',
@@ -1229,7 +1193,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Uplifting',
       language: 'English',
       popularity: 95,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/37.flac?tier=max',
       lyrics: [
         'They wishin\' and wishin\' and wishin\' and wishin\'',
         'They wishin\' on me, yeah',
@@ -1251,7 +1214,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Party',
       language: 'Instrumental',
       popularity: 93,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/38.flac?tier=max',
       lyrics: [
         '[Massive Big Room Electro Drop]',
       ],
@@ -1271,7 +1233,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Uplifting',
       language: 'English',
       popularity: 95,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/39.flac?tier=max',
       lyrics: [
         'Feeling my way through the darkness',
         'Guided by a beating heart',
@@ -1292,7 +1253,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Peaceful',
       language: 'Instrumental',
       popularity: 91,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/40.flac?tier=max',
       lyrics: [
         '[Harmonic Neoclassical Piano Reverberation]',
       ],
@@ -1312,7 +1272,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Meditative',
       language: 'Instrumental',
       popularity: 89,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/41.flac?tier=max',
       lyrics: [
         '[Transcendental Bansuri & Tabla Improvisation]',
       ],
@@ -1332,7 +1291,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       mood: 'Dreamy',
       language: 'Instrumental',
       popularity: 94,
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/42.flac?tier=max',
       lyrics: [
         '[Poetic Impressionist Piano Solo]',
       ],
@@ -1353,9 +1311,8 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       popularity: 95,
       audioQuality: 'Dolby Atmos Spatial Audio (E-AC-3 JOC)',
       isDolbyAtmos: true,
-      sourceId: 'app.bitchord.confih',
-      sourceName: 'Confih Hi-Res',
-      streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/dolby_8f31.mp4?tier=atmos',
+      sourceId: 'dev.akira.bitchord-hires',
+      sourceName: 'BitChord Hi-Res Add-on',
       lyrics: [
         'Static in the midnight sky',
         'Signals moving through the dark',
@@ -1381,8 +1338,8 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       popularity: 99,
       audioQuality: 'Dolby Atmos E-AC-3 JOC (16/JOC · 768 kbps · 48 kHz)',
       isDolbyAtmos: true,
-      sourceId: 'app.bitchord.confih',
-      sourceName: 'Confih Hi-Res',
+      sourceId: 'dev.akira.bitchord-hires',
+      sourceName: 'BitChord Hi-Res Add-on',
       streamUrl: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/adv_dv_atmos/main.m3u8',
       lyrics: [
         'Official Apple Developer Reference Stream',
@@ -1728,7 +1685,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
         activeSource = matching.first;
       } else {
         activeSource = AddonSourceRegistry.instance.enabledSources.firstWhere(
-          (s) => s.id == 'app.bitchord.confih' || s.id == 'dev.akira.bitchord-hires',
+          (s) => s.id == 'dev.akira.bitchord-hires',
           orElse: () => allSources.isNotEmpty ? allSources.first : AddonSourceRegistry.instance.defaultSources.first,
         );
       }
@@ -3955,7 +3912,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                 lyrics: const [],
                 audioQuality: audioQuality,
                 isDolbyAtmos: isAtmos,
-                sourceId: (track['sourceId'] ?? 'app.bitchord.confih').toString(),
+                sourceId: (track['sourceId'] ?? 'dev.akira.bitchord-hires').toString(),
                 sourceName: (track['sourceName'] ?? sourceName).toString(),
               );
 
@@ -4621,7 +4578,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                           lyrics: const [],
                           audioQuality: audioQuality,
                           isDolbyAtmos: isAtmos,
-                          sourceId: (track['sourceId'] ?? 'app.bitchord.confih').toString(),
+                          sourceId: (track['sourceId'] ?? 'dev.akira.bitchord-hires').toString(),
                           sourceName: (track['sourceName'] ?? sourceName).toString(),
                         );
 
@@ -5395,7 +5352,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     final showPersonalization = (_selectedSettingsCategory == 0 || _selectedSettingsCategory == 7) &&
         matchesSearch(['personalization', 'recommendation', 'taste', 'ai', 'autoplay', 'search', 'discovery', 'radio', 'history', 'reset']);
     final showAddons = (_selectedSettingsCategory == 0 || _selectedSettingsCategory == 8) &&
-        matchesSearch(['addon', 'add-on', 'source', 'sources', 'all', 'all show', 'show', 'show sources', 'bitchord', 'confih', 'heisenberg', 'lastbabe', 'eljohnzc', 'manifest', 'hires', 'mono']);
+        matchesSearch(['addon', 'add-on', 'source', 'sources', 'all', 'all show', 'show', 'show sources', 'bitchord', 'heisenberg', 'lastbabe', 'eljohnzc', 'manifest', 'hires', 'mono']);
     final showAbout = (_selectedSettingsCategory == 0 || _selectedSettingsCategory == 6) &&
         matchesSearch(['about', 'version', 'aurabeat', 'github', 'discord', 'diagnostics', 'nerd', 'logs', 'developer']);
 
@@ -5687,7 +5644,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
           builder: (context) {
             final registry = AddonSourceRegistry.instance;
             final enabled = registry.enabledSources;
-            final activeSource = registry.getSourceById('app.bitchord.confih') ??
+            final activeSource = registry.getSourceById('dev.akira.bitchord-hires') ??
                 (enabled.isNotEmpty
                     ? enabled.first
                     : (registry.allSources.isNotEmpty ? registry.allSources.first : null));
@@ -7147,7 +7104,6 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
         ...allSources.asMap().entries.map((entry) {
           final index = entry.key;
           final source = entry.value;
-          final isConfih = source.id == 'app.bitchord.confih';
           final isGatedByOutput = source.checkValidLossless && !isLosslessOutput;
 
           Color statusColor;
@@ -7183,9 +7139,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
               color: isDark ? const Color(0xFF1E1917) : const Color(0xFFFAF3EB),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isConfih
-                    ? Colors.cyanAccent.withOpacity(0.35)
-                    : (source.isEnabled ? cardBorder : Colors.transparent),
+                color: source.isEnabled ? cardBorder : Colors.transparent,
               ),
             ),
             child: Column(
@@ -7540,7 +7494,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                         OutlinedButton.icon(
                           onPressed: () => _showSourceDiagnosticsModal(context, source, isDark, textPrimary, textMuted),
                           icon: const Icon(Icons.analytics_outlined, size: 13),
-                          label: Text(isConfih ? 'Telemetry & Manifest' : 'Manifest & Diagnostics', style: const TextStyle(fontSize: 11)),
+                          label: const Text('Manifest & Diagnostics', style: TextStyle(fontSize: 11)),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.cyanAccent,
                             side: BorderSide(color: Colors.cyanAccent.withOpacity(0.4)),

@@ -190,9 +190,9 @@ void main() {
       final registry = AddonSourceRegistry.instance;
       await registry.initialize();
 
-      // Ensure all 6 default sources exist
-      expect(registry.defaultSources.length, 6);
-      expect(registry.allSources.length, greaterThanOrEqualTo(6));
+      // Ensure all 5 default sources exist
+      expect(registry.defaultSources.length, 5);
+      expect(registry.allSources.length, greaterThanOrEqualTo(5));
     });
 
     test('8. Stream Resolver skips allowDownloads: false when isDownload: true', () async {

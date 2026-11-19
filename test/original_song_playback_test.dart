@@ -330,37 +330,25 @@ void main() {
           reason: 'Silent track substitution with catalog[0] must be removed');
     });
 
-    test('Phase 10.2: All 42 library songs in main.dart map to distinct authentic bitstream URLs', () {
+    test('Phase 10.2: Zero worker endpoint references exist in main.dart and library songs have unique identities', () {
       final mainFile = File('lib/main.dart');
       expect(mainFile.existsSync(), isTrue);
       final mainContent = mainFile.readAsStringSync();
+
+      // Ensure no obsolete worker sources exist in main.dart
+      expect(mainContent.contains('.workers.dev'), isFalse,
+          reason: 'All Cloudflare Worker sources must be completely removed');
 
       // Ensure no SoundHelix or Espressif references in main.dart
       expect(mainContent.contains('soundhelix.com'), isFalse);
       expect(mainContent.contains('espressif.com'), isFalse);
 
-      // Verify that song 7 ("Nightcall") does NOT point to confih_track_004
-      expect(mainContent.contains('streamUrl: \'https://yes.aineuroframestudio-986.workers.dev/media/confih_track_004.flac?tier=max\''), isFalse,
-          reason: 'Song 7 (Nightcall) must not point to confih_track_004 (Taylor Swift Anti-Hero)');
-
-      // Extract all stream URLs from main.dart
-      final streamUrlRegex = RegExp(r"streamUrl:\s*'([^']+)'");
-      final matches = streamUrlRegex.allMatches(mainContent);
-      final extractedUrls = matches.map((m) => m.group(1)!).toList();
-
-      expect(extractedUrls.length, greaterThanOrEqualTo(42),
-          reason: 'All library songs must have explicit streamUrl definitions');
-
-      // Check for distinctness of media stream URLs (IDs 1 through 42)
-      final catalogMediaUrls = extractedUrls.where((url) => url.contains('/media/')).toSet();
-      for (int i = 1; i <= 42; i++) {
-        final expected = 'https://yes.aineuroframestudio-986.workers.dev/media/$i.flac?tier=max';
-        expect(catalogMediaUrls.contains(expected), isTrue,
-            reason: 'Song ID $i must have its own unique stream URL: $expected');
-      }
-
-      expect(catalogMediaUrls.length, greaterThanOrEqualTo(42),
-          reason: 'Every single song from 1 to 42 must have a unique audio URL with zero collision');
+      // Verify that song IDs 1 through 42 are distinct
+      final idRegex = RegExp(r"id:\s*'(\d+)'");
+      final matches = idRegex.allMatches(mainContent);
+      final extractedIds = matches.map((m) => int.tryParse(m.group(1)!) ?? -1).where((id) => id >= 1 && id <= 42).toSet();
+      expect(extractedIds.length, equals(42),
+          reason: 'All 42 songs must have distinct identities');
     });
 
     test('Phase 10.3: Queue transitions across 42 songs preserve distinct stream identity', () {
@@ -374,7 +362,7 @@ void main() {
           duration: '3:00',
           durationSec: 180,
           coverUrl: 'https://example.com/cover$id.jpg',
-          streamUrl: 'https://yes.aineuroframestudio-986.workers.dev/media/$id.flac?tier=max',
+          streamUrl: 'https://streaming.aurabeat.internal/media/$id.flac?tier=max',
           lyrics: const ['Line 1'],
         );
       });
@@ -386,7 +374,7 @@ void main() {
         final current = controller.currentSong;
         expect(current, isNotNull);
         expect(current!.id, equals((i + 1).toString()));
-        expect(current.streamUrl, equals('https://yes.aineuroframestudio-986.workers.dev/media/${i + 1}.flac?tier=max'));
+        expect(current.streamUrl, equals('https://streaming.aurabeat.internal/media/${i + 1}.flac?tier=max'));
         playedUrls.add(current.streamUrl!);
         if (i < 41) {
           controller.getNextTrack(isAuto: false);

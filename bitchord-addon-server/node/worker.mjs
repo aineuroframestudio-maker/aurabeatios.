@@ -12,7 +12,7 @@ import CryptoJS from 'crypto-js';
 const cryptoLib = CryptoJS?.default || CryptoJS;
 const DES_KEY = cryptoLib.enc.Utf8.parse('38346591');
 
-const DEFAULT_HOSTS = ['bitchord.confih.tech', 'yes.aineuroframestudio-986.workers.dev'];
+const DEFAULT_HOSTS = ['bitchord.confih.tech'];
 const MEDIA_SECRET = 'bitchord_confih_master_secret_key_9876543210';
 const MEDIA_TTL_SECONDS = 1800; // 30 minutes
 

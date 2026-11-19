@@ -117,13 +117,11 @@ class AddonSearchService {
         ? '24-bit / 192 kHz Master FLAC'
         : (source.qualityTiers.isNotEmpty ? source.qualityTiers.first : 'CD Lossless (16-bit / 44.1 kHz FLAC)');
 
-    final defaultArtist = source.id.contains('confih')
-        ? 'BitChord Confih Studio'
-        : (source.id.contains('hires')
-            ? 'Studio Master Direct'
-            : (source.id.contains('mono')
-                ? 'Reference Mono Masters'
-                : 'Audiophile Master Edition'));
+    final defaultArtist = source.id.contains('hires')
+        ? 'Studio Master Direct'
+        : (source.id.contains('mono')
+            ? 'Reference Mono Masters'
+            : 'Audiophile Master Edition');
 
     final tracks = <Map<String, dynamic>>[
       {
@@ -201,17 +199,17 @@ class AddonSearchService {
   List<Map<String, dynamic>> getFeaturedAddonTracks() {
     return [
       {
-        'id': 'featured_confih_1',
+        'id': 'featured_bitchord_1',
         'title': 'Starboy (Studio Master Direct)',
         'artist': 'The Weeknd ft. Daft Punk',
-        'album': 'Confih Hi-Res Vault',
+        'album': 'BitChord Studio Masters',
         'duration': '3:50',
         'durationSec': 230,
         'artwork': 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80',
         'audioQuality': '24-bit / 192 kHz Master FLAC',
         'format': 'FLAC',
-        'sourceId': 'app.bitchord.confih',
-        'sourceName': 'Confih Hi-Res',
+        'sourceId': 'dev.akira.bitchord-hires',
+        'sourceName': 'BitChord Hi-Res Add-on',
         'negotiatedQuality': 'max',
         'isDolbyAtmos': false,
       },

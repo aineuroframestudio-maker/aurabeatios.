@@ -110,7 +110,7 @@ node test-addon-auth.mjs
 ### Deploy to Cloudflare Workers
 ```bash
 cd bitchord-addon-server/node
-npx wrangler deploy worker.mjs --name bitchord-confih-addon
+npx wrangler deploy worker.mjs --name bitchord-addon
 ```
 
 ---

@@ -47,7 +47,7 @@ class AddonSourceRegistry {
   List<AddonSourceConfig> get defaultSources =>
       List.unmodifiable(_sources.where((s) => s.isDefault));
 
-  /// Initialize all 6 default sources and load user-installed add-ons from persistent storage
+  /// Initialize all 5 default sources and load user-installed add-ons from persistent storage
   Future<void> initialize() async {
     if (_initialized && _sources.isNotEmpty) return;
     _initialized = true;
@@ -171,57 +171,6 @@ class AddonSourceRegistry {
       upstreamProvider: 'Multi-source (Qobuz hi-res, Tidal, Monochrome, Deezer)',
     ));
 
-    // Register Source 6: BitChord Confih (app.bitchord.confih / Confih Hi-Res)
-    // Uses the user's Cloudflare Worker which has checkValidLossless: false so it works on all devices.
-    final confihConfig = AddonSourceConfig(
-      id: 'app.bitchord.confih',
-      name: 'Confih Hi-Res',
-      url: 'https://yes.aineuroframestudio-986.workers.dev',
-      manifestUrl: 'https://yes.aineuroframestudio-986.workers.dev/manifest.json',
-      version: '2.0.0',
-      isDefault: true,
-      isEnabled: true,
-      status: AddonConnectionStatus.connected,
-      statusMessage: 'Operational · BitChord Confih v2.0 · Verified Manifest (24-bit/192kHz)',
-      lastRefreshed: DateTime.now(),
-      resources: ['search', 'stream'],
-      qualityTiers: [
-        'Ultra Hi-Res & Dolby Atmos (24-bit / 192 kHz FLAC)',
-        'Hi-Res Audio (24-bit / 96 kHz FLAC)',
-        'Hi-Res Lossless (24-bit / 48 kHz FLAC)',
-        'CD Lossless (16-bit / 44.1 kHz FLAC)',
-        'Very High (320 kbps MP3)',
-        'High (256 kbps AAC)',
-        'Normal (128 kbps AAC)',
-        'Data Saver (64 kbps AAC)',
-        'Dolby Atmos Spatial Audio (7.1.4)',
-        'Sony 360° Reality Audio (360° Spatial)',
-      ],
-      qualityOptions: const [
-        ManifestQualityOption(value: 'max', label: 'Ultra Hi-Res (24-bit / 192 kHz FLAC · 9216 kbps)'),
-        ManifestQualityOption(value: 'hires', label: 'Hi-Res Audio (24-bit / 96 kHz FLAC · 4608 kbps)'),
-        ManifestQualityOption(value: 'hires_lossless', label: 'Hi-Res Lossless (24-bit / 48 kHz FLAC · 2304 kbps)'),
-        ManifestQualityOption(value: 'lossless', label: 'CD Lossless (16-bit / 44.1 kHz FLAC · 1411 kbps)'),
-        ManifestQualityOption(value: 'very_high', label: 'Very High (320 kbps MP3)'),
-        ManifestQualityOption(value: 'high', label: 'High (256 kbps AAC)'),
-        ManifestQualityOption(value: 'normal', label: 'Normal (128 kbps AAC)'),
-        ManifestQualityOption(value: 'low', label: 'Data Saver (64 kbps AAC)'),
-        ManifestQualityOption(value: 'atmos', label: 'Dolby Atmos Spatial (768 kbps)'),
-        ManifestQualityOption(value: 'sony360', label: 'Sony 360° Reality Audio (1536 kbps)'),
-      ],
-      requiresAuth: false,
-      authRealm: null,
-      bitchordAuth: false,
-      allowDownloads: true,
-      checkValidLossless: false,
-      selectedQualityOption: 'max',
-      upstreamProvider: 'Confih Studio Hi-Res Engine',
-      metadata: {
-        'portal': 'https://yes.aineuroframestudio-986.workers.dev',
-      },
-    );
-    _registerDefault(confihConfig);
-
     // Load persisted settings and user-installed custom addons from disk
     try {
       final savedSources = await _storageService.loadSavedSources();
@@ -250,7 +199,7 @@ class AddonSourceRegistry {
     }
 
     // Refresh live configuration for network sources asynchronously in background
-    unawaited(refreshSource('app.bitchord.confih'));
+    unawaited(refreshSource('dev.akira.bitchord-hires'));
   }
 
   void _registerDefault(AddonSourceConfig source) {

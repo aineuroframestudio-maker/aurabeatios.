@@ -15,12 +15,12 @@ import 'package:aurabeat/sources/services/addon_logger.dart';
 
 void main() {
   group('AuraBeat Add-on Source Ecosystem Tests', () {
-    test('1. Registry initializes with exactly 6 default sources', () async {
+    test('1. Registry initializes with exactly 5 default sources', () async {
       final registry = AddonSourceRegistry.instance;
       await registry.initialize();
 
       final defaultSources = registry.defaultSources;
-      expect(defaultSources.length, 6);
+      expect(defaultSources.length, 5);
 
       final names = defaultSources.map((s) => s.name).toList();
       expect(names.contains('Heisenberg'), isTrue);
@@ -28,24 +28,22 @@ void main() {
       expect(names.contains('ElJohnzC Mono'), isTrue);
       expect(names.contains('ElJohnzC Add-on'), isTrue);
       expect(names.contains('BitChord Hi-Res Add-on'), isTrue);
-      expect(names.contains('Confih Hi-Res'), isTrue);
     });
 
-    test('2. BitChord Configh (Source 6) has correct permanent ID, URL, and manifest', () async {
+    test('2. BitChord Hi-Res (Source 5) has correct permanent ID, URL, and manifest', () async {
       final registry = AddonSourceRegistry.instance;
       await registry.initialize();
 
-      final confih = registry.getSourceById('app.bitchord.confih');
-      expect(confih, isNotNull);
-      expect(confih!.url, 'https://yes.aineuroframestudio-986.workers.dev');
-      expect(confih.manifestUrl, 'https://yes.aineuroframestudio-986.workers.dev/manifest.json');
-      expect(confih.version, '2.0.0');
-      expect(confih.isDefault, isTrue);
-      expect(confih.bitchordAuth, isFalse);
-      expect(confih.requiresAuth, isFalse);
-      expect(confih.checkValidLossless, isFalse);
-      expect(confih.resources, contains('search'));
-      expect(confih.resources, contains('stream'));
+      final bitchord = registry.getSourceById('dev.akira.bitchord-hires');
+      expect(bitchord, isNotNull);
+      expect(bitchord!.url, 'https://bitchord-hires-addon.de.deplexo.com');
+      expect(bitchord.manifestUrl, 'https://bitchord-hires-addon.de.deplexo.com/');
+      expect(bitchord.isDefault, isTrue);
+      expect(bitchord.bitchordAuth, isTrue);
+      expect(bitchord.requiresAuth, isTrue);
+      expect(bitchord.checkValidLossless, isTrue);
+      expect(bitchord.resources, contains('search'));
+      expect(bitchord.resources, contains('stream'));
     });
 
     test('3. Duplicate prevention refuses existing URLs and IDs', () async {
@@ -54,21 +52,21 @@ void main() {
 
       // Duplicate by ID
       final duplicateId = AddonSourceConfig(
-        id: 'app.bitchord.confih',
-        name: 'Duplicate Confih',
-        url: 'https://bitchord-alt.confih.tech',
-        manifestUrl: 'https://bitchord-alt.confih.tech/manifest.json',
-        version: '2.0.0',
+        id: 'dev.akira.bitchord-hires',
+        name: 'Duplicate BitChord',
+        url: 'https://bitchord-alt.example.com',
+        manifestUrl: 'https://bitchord-alt.example.com/manifest.json',
+        version: '1.0.0',
       );
       expect(registry.addSource(duplicateId), isFalse);
 
       // Duplicate by canonical URL
       final duplicateUrl = AddonSourceConfig(
-        id: 'new.bitchord.custom',
-        name: 'Another Confih',
-        url: 'https://yes.aineuroframestudio-986.workers.dev/',
-        manifestUrl: 'https://yes.aineuroframestudio-986.workers.dev/manifest.json',
-        version: '2.0.0',
+        id: 'new.heisenberg.custom',
+        name: 'Another Heisenberg',
+        url: 'https://heisenbergbackaaahh.de.deplexo.com/',
+        manifestUrl: 'https://heisenbergbackaaahh.de.deplexo.com/a/manifest.json',
+        version: '1.0.0',
       );
       expect(registry.addSource(duplicateUrl), isFalse);
     });
@@ -77,20 +75,20 @@ void main() {
       final registry = AddonSourceRegistry.instance;
       await registry.initialize();
 
-      final confihId = 'app.bitchord.confih';
-      expect(registry.getSourceById(confihId)!.isEnabled, isTrue);
+      final bitchordId = 'dev.akira.bitchord-hires';
+      expect(registry.getSourceById(bitchordId)!.isEnabled, isTrue);
 
-      // Disable Confih
-      registry.setEnabled(confihId, false);
-      expect(registry.getSourceById(confihId)!.isEnabled, isFalse);
+      // Disable BitChord
+      registry.setEnabled(bitchordId, false);
+      expect(registry.getSourceById(bitchordId)!.isEnabled, isFalse);
 
       // Verify other sources are still enabled
       expect(registry.getSourceById('source.builtin.heisenberg')!.isEnabled, isTrue);
       expect(registry.getSourceById('source.builtin.lastbabe')!.isEnabled, isTrue);
 
-      // Re-enable Confih
-      registry.setEnabled(confihId, true);
-      expect(registry.getSourceById(confihId)!.isEnabled, isTrue);
+      // Re-enable BitChord
+      registry.setEnabled(bitchordId, true);
+      expect(registry.getSourceById(bitchordId)!.isEnabled, isTrue);
     });
 
     test('5. AddonDiscoveryService correctly parses remote manifest and handles bitchordAuth', () async {
@@ -167,17 +165,17 @@ void main() {
       final registry = AddonSourceRegistry.withDiscovery(discovery);
       await registry.initialize();
 
-      // Confih is present
-      final before = registry.getSourceById('app.bitchord.confih');
+      // BitChord is present
+      final before = registry.getSourceById('dev.akira.bitchord-hires');
       expect(before, isNotNull);
       final originalName = before!.name;
 
       // Refresh while offline
-      final refreshed = await registry.refreshSource('app.bitchord.confih');
+      final refreshed = await registry.refreshSource('dev.akira.bitchord-hires');
       expect(refreshed, isNotNull);
       expect(refreshed!.status, AddonConnectionStatus.offline);
       expect(refreshed.name, originalName);
-      expect(refreshed.url, 'https://yes.aineuroframestudio-986.workers.dev');
+      expect(refreshed.url, 'https://bitchord-hires-addon.de.deplexo.com');
     });
 
     test('7. Lossless Output Gating (checkValidLossless: 1) blocks non-qualified routes', () {
@@ -310,19 +308,19 @@ void main() {
       // Original order
       expect(registry.allSources.first.id, 'source.builtin.heisenberg');
 
-      // Move BitChord Confih (index 5) to index 0
-      final confihIndex = registry.allSources.indexWhere((s) => s.id == 'app.bitchord.confih');
-      expect(confihIndex, 5);
+      // Move BitChord (index 4) to index 0
+      final bitchordIndex = registry.allSources.indexWhere((s) => s.id == 'dev.akira.bitchord-hires');
+      expect(bitchordIndex, 4);
 
-      registry.reorderSources(5, 0);
+      registry.reorderSources(4, 0);
 
-      // Now Confih is first priority (#1)
-      expect(registry.allSources.first.id, 'app.bitchord.confih');
+      // Now BitChord is first priority (#1)
+      expect(registry.allSources.first.id, 'dev.akira.bitchord-hires');
       expect(registry.allSources.first.sortOrder, 0);
-      expect(registry.enabledSources.first.id, 'app.bitchord.confih');
+      expect(registry.enabledSources.first.id, 'dev.akira.bitchord-hires');
 
       // Reorder back so other tests aren't impacted
-      registry.reorderSources(0, 5);
+      registry.reorderSources(0, 4);
       expect(registry.allSources.first.id, 'source.builtin.heisenberg');
     });
 
@@ -358,8 +356,8 @@ void main() {
       // 1. Featured Addon Tracks for Home Screen always return curated master discoveries
       final featured = AddonSearchService.instance.getFeaturedAddonTracks();
       expect(featured.length, 6);
-      expect(featured.any((t) => t['sourceName'] == 'Confih Hi-Res'), isTrue);
       expect(featured.any((t) => t['sourceName'] == 'BitChord Hi-Res Add-on'), isTrue);
+      expect(featured.any((t) => t['sourceName'] == 'Heisenberg'), isTrue);
 
       // 2. Add-on Multi-Source Search always returns rich results
       final searchResults = await AddonSearchService.instance.searchAllSources(query: 'Starboy');
