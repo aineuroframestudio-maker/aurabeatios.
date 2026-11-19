@@ -48,11 +48,12 @@ final class TrackMatcherTests: XCTestCase {
         XCTAssertTrue(matches(song("Numb / Encore", "Jay-Z & Linkin Park"), "Numb / Encore", "Linkin Park"))
     }
 
-    /// Composer credit on one side, singer on the other, nothing shared: an exact runtime says they
-    /// are one master; the remix and the cover from the same results don't agree on length.
-    func testAcceptsAComposerCreditAgainstASingerCreditOnAnExactRuntime() {
-        XCTAssertTrue(matches(song("Jhak Maar Ke", "Neeraj Shridhar", "3:53"), "Jhak Maar Ke", "Pritam", 233))
+    /// Strict artist verification: different artists must never match, even if runtimes coincide.
+    func testRefusesCandidateWhenArtistsCompletelyDisagreeEvenIfRuntimeMatches() {
+        XCTAssertFalse(matches(song("Jhak Maar Ke", "Neeraj Shridhar", "3:53"), "Jhak Maar Ke", "Pritam", 233))
         XCTAssertFalse(matches(song("Jhak Maar Ke", "Leo Lz Mix", "4:01"), "Jhak Maar Ke", "Pritam", 233))
+        // When target credits both, candidate sharing an artist matches
+        XCTAssertTrue(matches(song("Jhak Maar Ke", "Neeraj Shridhar", "3:53"), "Jhak Maar Ke", "Pritam, Neeraj Shridhar", 233))
     }
 
     func testWillNotWaiveTheCreditCheckWithoutARuntimeToBackIt() {
@@ -62,9 +63,9 @@ final class TrackMatcherTests: XCTestCase {
 
     func testPrefersACreditedMatchOverARuntimeVouchedOne() {
         let target = TrackMatcher.Target("Jhak Maar Ke", "Pritam, Neeraj Shridhar", durationSec: 233)
-        let vouched = song("Jhak Maar Ke", "Some Uploader", "3:53")
+        let uncredited = song("Jhak Maar Ke", "Some Uploader", "3:53")
         let credited = song("Jhak Maar Ke", "Neeraj Shridhar", "3:53")
-        XCTAssertEqual(TrackMatcher.best([vouched, credited], target), credited)
+        XCTAssertEqual(TrackMatcher.best([uncredited, credited], target), credited)
     }
 
     func testRefusesAnArtistWhoseNameMerelyContainsTheOneAskedFor() {

@@ -87,11 +87,36 @@ public enum TrackMatcher {
         (artistSeparators.split(artist.lowercased()).first ?? "").trimmingCharacters(in: .whitespaces)
     }
 
+    private static let artistDisqualifyingWords: Set<String> = [
+        "tribute", "cover", "karaoke", "instrumental", "parody", "soundalike",
+        "backing", "orchestra", "symphonic", "ensemble", "singers", "players"
+    ]
+
     /// Whether both credits name at least one of the same artists.
     public static func sharesArtist(_ wanted: String, _ got: String, wantedTitle: String = "", gotTitle: String = "") -> Bool {
         let want = artistNames(wanted, extraTitle: wantedTitle)
         let have = artistNames(got, extraTitle: gotTitle)
-        return !want.isEmpty && !have.isEmpty && want.contains { w in have.contains { h in sameArtist(w, h) } }
+        guard !want.isEmpty, !have.isEmpty else { return false }
+
+        let wantHasDisqualified = want.contains { words in words.contains { artistDisqualifyingWords.contains($0) } }
+        let haveHasDisqualified = have.contains { words in words.contains { artistDisqualifyingWords.contains($0) } }
+        if haveHasDisqualified && !wantHasDisqualified {
+            return false
+        }
+
+        return want.contains { w in have.contains { h in sameArtist(w, h) } }
+    }
+
+    /// Whether candidate and wanted titles disagree on version markers (remix, cover, live, acoustic, etc.)
+    public static func hasVersionMismatch(_ wanted: TitleParts, _ got: TitleParts) -> Bool {
+        if wanted.versions != got.versions { return true }
+        let wantedSet = Set(wanted.words)
+        let gotSet = Set(got.words)
+        for v in versionWords {
+            if gotSet.contains(v) && !wantedSet.contains(v) { return true }
+            if wantedSet.contains(v) && !gotSet.contains(v) { return true }
+        }
+        return false
     }
 
     /// Strict identity verification: confirms candidate is the exact same original recording.
@@ -100,12 +125,13 @@ public enum TrackMatcher {
         let wanted = parseTitle(target.title, artist: target.artist)
         let got = parseTitle(candidate.title, artist: candidate.artist)
         guard !wanted.core.isEmpty, !got.core.isEmpty, wanted.core == got.core else { return false }
-        guard wanted.versions == got.versions else { return false }
+        guard !hasVersionMismatch(wanted, got) else { return false }
         if target.artist.nonBlank != nil {
             guard sharesArtist(target.artist, candidate.artist, wantedTitle: target.title, gotTitle: candidate.title) else { return false }
         }
         if let wantedDur = target.durationSec, let gotDur = secondsOf(candidate.durationText) {
-            guard abs(wantedDur - gotDur) <= durationLimitSec else { return false }
+            let maxAllowed = target.isVideo ? videoDurationLimitSec : durationStrictAudioSec
+            guard abs(wantedDur - gotDur) <= maxAllowed else { return false }
         }
         if let wantedExp = target.isExplicit, let gotExp = candidate.isExplicit {
             guard wantedExp == gotExp else { return false }
@@ -133,7 +159,7 @@ public enum TrackMatcher {
         guard !wanted.core.isEmpty else { return nil }
         let scored: [(Song, Int)] = candidates.compactMap { candidate in
             let got = parseTitle(candidate.title, artist: candidate.artist)
-            guard wanted.core == got.core, wanted.versions == got.versions,
+            guard wanted.core == got.core, !hasVersionMismatch(wanted, got),
                   let artist = artistScore(target.artist, candidate.artist, wantedTitle: target.title, gotTitle: candidate.title) else { return nil }
             var duration = 0
             if let expected = target.durationSec {
@@ -151,15 +177,11 @@ public enum TrackMatcher {
         let scored: [(Song, Int)] = candidates.compactMap { candidate in
             score(candidate, target).map { (candidate, $0) }
         }
-        // A runtime-identical cover is only a last-resort explanation for catalogues crediting the
-        // same master differently. If the search also returned anything carrying the requested
-        // artist, the different-artist rows leave contention — which also avoids opening their
-        // stream URLs while a correct result waits.
         let credited = scored.filter { artistScore(target.artist, $0.0.artist, wantedTitle: target.title, gotTitle: $0.0.title) != nil }
-        if requireSharedArtist && target.artist.nonBlank != nil {
+        if target.artist.nonBlank != nil {
             return stableSortedDescending(credited).map(\.0)
         }
-        return stableSortedDescending(credited.isEmpty ? scored : credited).map(\.0)
+        return stableSortedDescending(scored).map(\.0)
     }
 
     /// How confident this is the same recording, or nil when it is not one. Nil is the common and
@@ -169,31 +191,29 @@ public enum TrackMatcher {
         let got = parseTitle(candidate.title, artist: candidate.artist)
         guard !wanted.core.isEmpty, !got.core.isEmpty, wanted.core == got.core else { return nil }
         // Both directions: the album cut must not land on the live take, nor the reverse.
-        guard wanted.versions == got.versions else { return nil }
+        guard !hasVersionMismatch(wanted, got) else { return nil }
 
         let creditedArtist = artistScore(target.artist, candidate.artist, wantedTitle: target.title, gotTitle: candidate.title)
+
+        let artist: Int
+        if let creditedArtist {
+            artist = creditedArtist
+        } else if target.artist.nonBlank == nil {
+            artist = 0
+        } else {
+            // Strict artist matching: candidate MUST share artist when target specifies one.
+            // Never waive artist disagreement based on duration.
+            return nil
+        }
+
         // A music video may carry a long visual intro. That drift is credible only when the row
         // names the same artist; duration must never make an unrelated artist into the song.
         guard let duration = durationScore(
             target.durationSec,
             secondsOf(candidate.durationText),
-            allowVideoDrift: creditedArtist != nil
+            allowVideoDrift: target.isVideo && creditedArtist != nil
         ) else { return nil }
 
-        let artist: Int
-        if let creditedArtist {
-            artist = creditedArtist
-        } else if !target.isVideo, withinSeconds(candidate, target, creditOverrideSec) {
-            // The credits name different people, sometimes because they describe the same
-            // recording from different ends: YouTube Music may file a film song under the composer
-            // who wrote it, and every store under the singer. A runtime agreeing to the second is
-            // the same master; a cover or remix essentially never lands there. Only an exact
-            // runtime may stand in, and never a music video's (a 3:30 track by one artist would
-            // otherwise pass for another artist's 3:31 video of the same title).
-            artist = creditsDisagree
-        } else {
-            return nil
-        }
         guard let explicit = explicitScore(target.isExplicit, candidate.isExplicit) else { return nil }
         return base + artist + duration + albumScore(target.album, candidate.albumName) + explicit
             + contextScore(wanted, got)
@@ -364,7 +384,8 @@ public enum TrackMatcher {
     private static func artistScore(_ wanted: String, _ got: String, wantedTitle: String = "", gotTitle: String = "") -> Int? {
         let want = artistNames(wanted, extraTitle: wantedTitle)
         let have = artistNames(got, extraTitle: gotTitle)
-        if want.isEmpty || have.isEmpty { return 0 }
+        if want.isEmpty { return 0 }
+        guard !have.isEmpty else { return nil }
         guard sharesArtist(wanted, got, wantedTitle: wantedTitle, gotTitle: gotTitle) else { return nil }
         return want == have ? artistExact : artistShared
     }
@@ -471,22 +492,19 @@ public enum TrackMatcher {
     private static let base = 100
     private static let artistExact = 25
     private static let artistShared = 10
-    /// A match the runtime vouched for rather than the credit: a penalty, so any properly credited
-    /// candidate beats it.
-    private static let creditsDisagree = -30
-    /// How exactly runtimes must agree to stand in for a shared credit.
-    private static let creditOverrideSec = 2
     private static let durationTight = 40
     private static let durationLoose = 15
     private static let albumExact = 35
     private static let explicitExact = 20
     private static let contextShared = 20
-    /// Within this many seconds is the same master, allowing for trimmed silence.
+    /// Within this many seconds is the same master for catalogue audio, allowing for trimmed silence.
+    public static let durationStrictAudioSec = 5
+    /// Within this many seconds is a tight match.
     private static let durationTightSec = 3
     /// Past this, two tracks sharing a title are not sharing a recording.
     public static let durationLimitSec = 30
     /// Visual intros/outros can make a video substantially longer than its audio master.
-    private static let videoDurationLimitSec = 90
+    public static let videoDurationLimitSec = 90
     private static let bracketPasses = 3
     private static let dashPasses = 3
 

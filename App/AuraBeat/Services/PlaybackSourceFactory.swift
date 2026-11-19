@@ -755,6 +755,15 @@ final class PlaybackSourceFactory {
                     }
                 }
             }
+            let expectedSec = TrackMatcher.secondsOf(song.durationText)
+            if let streamSec = verifiedStream.durationSeconds, let expectedSec,
+               TrackMatcher.isSevereMismatch(expectedSec: expectedSec, actualSec: streamSec) {
+                TrackLog.w(PlaybackSourceFactory.logCategory,
+                           "Resolved stream for '\(song.title)' failed duration verification (\(streamSec)s vs expected \(expectedSec)s)",
+                           about: song.videoId)
+                throw PlaybackSourceError.verificationFailed("Stream duration (\(streamSec)s) severely mismatched from recording (\(expectedSec)s)")
+            }
+            TrackLog.d("PlaybackIdentity", "resolvedStreamTitle='\(song.title)' artist='\(song.artist)' origin=\(verifiedStream.origin) codec=\(verifiedStream.format.codec ?? "unknown") kbps=\(verifiedStream.format.kbps ?? 0) sampleRate=\(verifiedStream.format.sampleRateHz ?? 0) duration=\(verifiedStream.durationSeconds ?? 0)s verification=verified_original")
             var stamped = verifiedStream
             if refind != nil, stamped.origin != .youtube {
                 // A copy found ahead counts as expired past its freshness, so the byte source finds
