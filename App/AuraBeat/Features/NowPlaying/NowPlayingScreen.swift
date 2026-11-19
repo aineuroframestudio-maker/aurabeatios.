@@ -445,10 +445,11 @@ private struct PortraitPlayer: View {
                 )
             }
             // The lyrics and the queue have no artwork edge to continue from, so they stand on
-            // one blurred copy of the cover instead. Kept mounted; only its opacity changes.
-            PlayerArtworkBlurBackdrop(url: url, palettes: app.palettes)
-                .opacity(main ? 0 : 1)
-                .animation(.easeInOut(duration: 0.36), value: main)
+            // one blurred copy of the cover instead. Mount only when panel is visible.
+            if !main {
+                PlayerArtworkBlurBackdrop(url: url, palettes: app.palettes)
+                    .transition(.opacity)
+            }
         }
     }
 
@@ -737,11 +738,18 @@ private struct PortraitPlayer: View {
         PlayerPlaybackOrigin.open(song: song, player: player, router: router, model: model)
     }
 
+    private static var lastCanvasFrameTime: ContinuousClock.Instant = .now - .seconds(10)
+
     /// Frames off a playing clip re-tint the mesh, while the mesh is what's on screen.
     private func canvasFrameHandler(main: Bool) -> ((ArtworkPixels) -> Void)? {
         guard main, !settings.legacyMeshGradient else { return nil }
         let mesh = model.mesh
-        return { frame in Task { await mesh.receiveCanvasFrame(frame) } }
+        return { frame in
+            let now = ContinuousClock.now
+            guard now - Self.lastCanvasFrameTime >= .seconds(2) else { return }
+            Self.lastCanvasFrameTime = now
+            Task { await mesh.receiveCanvasFrame(frame) }
+        }
     }
 }
 

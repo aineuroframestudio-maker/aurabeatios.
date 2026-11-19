@@ -518,6 +518,9 @@ public final class AuraBeatAudioManager: NSObject {
     private var isDolbyActive: Bool = false
     private var nativePlayer: AVPlayer?
     private var nativePlayerEndObserver: NSObjectProtocol?
+    private var nativePlayerErrorObserver: NSObjectProtocol?
+    private var nativePlayerStallObserver: NSObjectProtocol?
+    private var nativePlayerItemStatusObservation: NSKeyValueObservation?
 
     // Network Monitor
     private let pathMonitor = NWPathMonitor()
@@ -628,92 +631,96 @@ public final class AuraBeatAudioManager: NSObject {
                 } catch {
                     print("[AuraBeatAudio] Spatial renderer prepare fallback to native AVPlayer: \(error.localizedDescription)")
                     self.isDolbyActive = false
-                    if let url = URL(string: urlStr) {
-                        let session = AVAudioSession.sharedInstance()
-                        try? session.setCategory(.playback, mode: .default, options: [.allowBluetooth, .allowBluetoothA2DP, .allowAirPlay])
-                        try? session.setActive(true)
-                        
-                        let asset = AVURLAsset(url: url)
-                        let item = AVPlayerItem(asset: asset)
-                        let player = AVPlayer(playerItem: item)
-                        player.volume = self.currentVolume
-                        player.rate = self.playbackSpeed
-                        player.automaticallyWaitsToMinimizeStalling = true
-                        self.nativePlayer = player
-                        
-                        self.nativePlayerEndObserver = NotificationCenter.default.addObserver(
-                            forName: .AVPlayerItemDidPlayToEndTime,
-                            object: item,
-                            queue: .main
-                        ) { [weak self] _ in
-                            self?.isPlaying = false
-                            print("[AuraBeatAudio] Track finished playing: \(title)")
-                        }
-                        
-                        player.play()
-                        print("[AuraBeatAudio] Native AVPlayer playing fallback stream: \(title)")
-                    }
-                    let request = LoadRequest(
-                        source: urlStr,
-                        title: title,
-                        artist: "AuraBeat Master",
-                        startSeconds: 0.0,
-                        plan: nil,
-                        headers: nil,
-                        claimedKbps: 1536,
-                        loudnessDb: nil,
-                        durationSeconds: nil
-                    )
-                    try? self.nativeEngine.loadTrack(request: request)
-                    try? self.nativeEngine.play()
+                    self.startNativePlayback(urlStr: urlStr, title: title)
                 }
             }
         } else {
             isDolbyActive = false
             dolbyRenderer.stop()
-            
-            if let url = URL(string: urlStr) {
-                let session = AVAudioSession.sharedInstance()
-                try? session.setCategory(.playback, mode: .default, options: [.allowBluetooth, .allowBluetoothA2DP, .allowAirPlay])
-                try? session.setActive(true)
-                
-                let asset = AVURLAsset(url: url)
-                let item = AVPlayerItem(asset: asset)
-                let player = AVPlayer(playerItem: item)
-                player.volume = currentVolume
-                player.rate = playbackSpeed
-                player.automaticallyWaitsToMinimizeStalling = true
-                self.nativePlayer = player
-                
-                nativePlayerEndObserver = NotificationCenter.default.addObserver(
-                    forName: .AVPlayerItemDidPlayToEndTime,
-                    object: item,
-                    queue: .main
-                ) { [weak self] _ in
-                    self?.isPlaying = false
-                    print("[AuraBeatAudio] Track finished playing: \(title)")
-                }
-                
-                player.play()
-                print("[AuraBeatAudio] Playing native audio track via AVPlayer: \(title) -> \(urlStr)")
-            }
-
-            let request = LoadRequest(
-                source: urlStr,
-                title: title,
-                artist: "AuraBeat Master",
-                startSeconds: 0.0,
-                plan: nil,
-                headers: nil,
-                claimedKbps: 1411,
-                loudnessDb: nil,
-                durationSeconds: nil
-            )
-            try? nativeEngine.loadTrack(request: request)
-            try? nativeEngine.play()
+            startNativePlayback(urlStr: urlStr, title: title)
         }
 
         updateNowPlayingInfo(title: title, artist: "AuraBeat Master", album: "Studio Master Quality")
+    }
+
+    private func startNativePlayback(urlStr: String, title: String) {
+        let url: URL?
+        if urlStr.hasPrefix("http://") || urlStr.hasPrefix("https://") || urlStr.hasPrefix("file://") || urlStr.contains("://") {
+            url = URL(string: urlStr)
+        } else {
+            url = URL(fileURLWithPath: urlStr)
+        }
+        
+        if let url = url {
+            Task.detached(priority: .userInitiated) {
+                let session = AVAudioSession.sharedInstance()
+                try? session.setCategory(.playback, mode: .default, options: [.allowBluetooth, .allowBluetoothA2DP, .allowAirPlay])
+                try? session.setActive(true)
+            }
+            
+            let asset = AVURLAsset(url: url)
+            let item = AVPlayerItem(asset: asset)
+            let player = AVPlayer(playerItem: item)
+            player.volume = currentVolume
+            player.rate = playbackSpeed
+            player.automaticallyWaitsToMinimizeStalling = true
+            self.nativePlayer = player
+            
+            nativePlayerEndObserver = NotificationCenter.default.addObserver(
+                forName: .AVPlayerItemDidPlayToEndTime,
+                object: item,
+                queue: .main
+            ) { [weak self] _ in
+                self?.isPlaying = false
+                print("[AuraBeatAudio] Track finished playing: \(title)")
+            }
+
+            nativePlayerErrorObserver = NotificationCenter.default.addObserver(
+                forName: .AVPlayerItemFailedToPlayToEndTime,
+                object: item,
+                queue: .main
+            ) { [weak self] note in
+                let err = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
+                print("[AuraBeatAudio] Playback failed for \(title): \(String(describing: err))")
+                self?.isPlaying = false
+            }
+
+            nativePlayerStallObserver = NotificationCenter.default.addObserver(
+                forName: .AVPlayerItemPlaybackStalled,
+                object: item,
+                queue: .main
+            ) { [weak self] _ in
+                print("[AuraBeatAudio] Playback stalled for \(title); kicking playback if buffered")
+                guard let self = self, self.isPlaying, let p = self.nativePlayer else { return }
+                p.play()
+            }
+
+            nativePlayerItemStatusObservation = item.observe(\.status, options: [.new]) { [weak self] itm, _ in
+                DispatchQueue.main.async {
+                    if itm.status == .failed {
+                        print("[AuraBeatAudio] Item status failed for \(title): \(String(describing: itm.error))")
+                        self?.isPlaying = false
+                    }
+                }
+            }
+            
+            player.play()
+            print("[AuraBeatAudio] Playing native audio track via AVPlayer: \(title) -> \(urlStr)")
+        }
+
+        let request = LoadRequest(
+            source: urlStr,
+            title: title,
+            artist: "AuraBeat Master",
+            startSeconds: 0.0,
+            plan: nil,
+            headers: nil,
+            claimedKbps: 1411,
+            loudnessDb: nil,
+            durationSeconds: nil
+        )
+        try? nativeEngine.loadTrack(request: request)
+        try? nativeEngine.play()
     }
 
     public func pause() {
@@ -732,7 +739,18 @@ public final class AuraBeatAudioManager: NSObject {
             NotificationCenter.default.removeObserver(observer)
             nativePlayerEndObserver = nil
         }
+        if let observer = nativePlayerErrorObserver {
+            NotificationCenter.default.removeObserver(observer)
+            nativePlayerErrorObserver = nil
+        }
+        if let observer = nativePlayerStallObserver {
+            NotificationCenter.default.removeObserver(observer)
+            nativePlayerStallObserver = nil
+        }
+        nativePlayerItemStatusObservation?.invalidate()
+        nativePlayerItemStatusObservation = nil
         nativePlayer?.pause()
+        nativePlayer?.replaceCurrentItem(with: nil)
         nativePlayer = nil
         if isDolbyActive {
             dolbyRenderer.stop()
@@ -743,6 +761,10 @@ public final class AuraBeatAudioManager: NSObject {
 
     public func resume() {
         isPlaying = true
+        Task.detached(priority: .userInitiated) {
+            let session = AVAudioSession.sharedInstance()
+            try? session.setActive(true)
+        }
         nativePlayer?.play()
         if isDolbyActive {
             dolbyRenderer.play()

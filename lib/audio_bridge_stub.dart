@@ -25,6 +25,12 @@ class WebAudioBridge {
     } catch (_) {}
   }
 
+  static void resume() {
+    try {
+      _channel.invokeMethod('resume').catchError((_) {});
+    } catch (_) {}
+  }
+
   static void stop() {
     try {
       _channel.invokeMethod('stop').catchError((_) {});

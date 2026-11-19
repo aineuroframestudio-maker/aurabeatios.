@@ -49,6 +49,10 @@ import UIKit
         audioManager.pause()
         result(true)
 
+      case "resume":
+        audioManager.resume()
+        result(true)
+
       case "stop":
         audioManager.stop()
         self.atmosPlayer.stop()

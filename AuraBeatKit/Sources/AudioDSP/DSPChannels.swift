@@ -72,7 +72,12 @@ public struct DSPChannels {
         interleaved == nil ? 1 : channelCount
     }
 
-    @usableFromInline static var dummySample: Float = 0
+    @usableFromInline static let dummyCapacity = 4096
+    @usableFromInline static let dummyBuffer: UnsafeMutablePointer<Float> = {
+        let ptr = UnsafeMutablePointer<Float>.allocate(capacity: dummyCapacity)
+        ptr.initialize(repeating: 0, count: dummyCapacity)
+        return ptr
+    }()
 
     /// First sample of [channel]; step by [stride] to reach the next frame.
     @inlinable
@@ -81,11 +86,11 @@ public struct DSPChannels {
             return interleaved + channel
         }
         guard let bufferList else {
-            return withUnsafeMutablePointer(to: &Self.dummySample) { $0 }
+            return Self.dummyBuffer
         }
         let buffers = UnsafeMutableAudioBufferListPointer(bufferList)
         guard channel < buffers.count, let data = buffers[channel].mData else {
-            return withUnsafeMutablePointer(to: &Self.dummySample) { $0 }
+            return Self.dummyBuffer
         }
         return data.assumingMemoryBound(to: Float.self)
     }

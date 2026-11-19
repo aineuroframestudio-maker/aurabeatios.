@@ -573,6 +573,9 @@ public final class AudioPlayerEngine {
 
     func updatePlayingState() {
         let playing = active.isPlaying && active.current?.item.id == currentItem?.id
+        if playing || position > 0.05 {
+            cancelStallWatchdog()
+        }
         // Not only on a change: a skip onto a preloaded item can go from playing to playing. And
         // only on a ready item: just after the skip the player still says it is playing, about an
         // item with nothing to play yet.
@@ -613,10 +616,10 @@ public final class AudioPlayerEngine {
                 self.active.play()
                 self.active.startIfBuffered()
             }
-            // Step 2: If still frozen at 0:00 after an additional 8 seconds (12s total), fail and recover only if not actively buffering
+            // Step 2: If still frozen at 0:00 after an additional 8 seconds (12s total), fail and recover only if not actively buffering and not playing
             try? await Task.sleep(for: .seconds(8))
-            guard !Task.isCancelled, self.currentItem?.id == itemID, self.playWhenReady else { return }
-            if !self.isPlaying && self.position <= 0.05 && !self.isLoadingItem && !self.isBuffering {
+            guard !Task.isCancelled, let self, self.currentItem?.id == itemID, self.playWhenReady else { return }
+            if !self.isPlaying && !self.active.isPlaying && self.position <= 0.05 && !self.isLoadingItem && !self.isBuffering {
                 PlaybackLog.error("Playback failed to begin past 0:00 after 12s; reporting stream stalled", about: self.currentItem?.trackID)
                 self.handleFailure(itemID: itemID, error: PlaybackSourceError.streamStalled)
             }

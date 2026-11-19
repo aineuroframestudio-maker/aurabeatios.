@@ -1931,13 +1931,20 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
         timer.cancel();
         return;
       }
-      if (_currentPosition < _currentSong.durationSec) {
+      final duration = _currentSong.durationSec;
+      if (duration > 0) {
+        if (_currentPosition < duration) {
+          setState(() {
+            _currentPosition += 1.0;
+          });
+        } else {
+          timer.cancel();
+          _onTrackEnded();
+        }
+      } else {
         setState(() {
           _currentPosition += 1.0;
         });
-      } else {
-        timer.cancel();
-        _onTrackEnded();
       }
     });
   }
@@ -1948,7 +1955,11 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     });
 
     if (_isPlaying) {
-      WebAudioBridge.play(_currentSong.title, _currentSong.streamUrl, (_currentAudioMetadata.sampleRateHz ?? 192000).toDouble());
+      if (_currentPosition > 0 && _currentSong.streamUrl != null) {
+        WebAudioBridge.resume();
+      } else {
+        WebAudioBridge.play(_currentSong.title, _currentSong.streamUrl, (_currentAudioMetadata.sampleRateHz ?? 192000).toDouble());
+      }
       WebAudioBridge.setVolume(_volume);
       WebAudioBridge.setPlaybackSpeed(_playbackSpeed);
       WebAudioBridge.setSilenceSkipping(_skipSilence);
@@ -8476,8 +8487,8 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                           thumbColor: const Color(0xFFFEDBB3),
                         ),
                         child: Slider(
-                          value: _currentPosition.clamp(0.0, _currentSong.durationSec.toDouble()),
-                          max: _currentSong.durationSec.toDouble(),
+                          value: _currentPosition.clamp(0.0, _currentSong.durationSec > 0 ? _currentSong.durationSec.toDouble() : (_currentPosition > 1.0 ? _currentPosition : 1.0)),
+                          max: _currentSong.durationSec > 0 ? _currentSong.durationSec.toDouble() : (_currentPosition > 1.0 ? _currentPosition : 1.0),
                           onChanged: (val) {
                             setState(() {
                               _currentPosition = val;
