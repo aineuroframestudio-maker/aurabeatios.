@@ -618,7 +618,7 @@ public final class AudioPlayerEngine {
             }
             // Step 2: If still frozen at 0:00 after an additional 8 seconds (12s total), fail and recover only if not actively buffering and not playing
             try? await Task.sleep(for: .seconds(8))
-            guard !Task.isCancelled, let self, self.currentItem?.id == itemID, self.playWhenReady else { return }
+            guard !Task.isCancelled, self.currentItem?.id == itemID, self.playWhenReady else { return }
             if !self.isPlaying && !self.active.isPlaying && self.position <= 0.05 && !self.isLoadingItem && !self.isBuffering {
                 PlaybackLog.error("Playback failed to begin past 0:00 after 12s; reporting stream stalled", about: self.currentItem?.trackID)
                 self.handleFailure(itemID: itemID, error: PlaybackSourceError.streamStalled)
