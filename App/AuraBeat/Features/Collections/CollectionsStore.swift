@@ -54,10 +54,10 @@ final class CollectionsStore {
         if let entry = stores[key], entry.model === model { return entry.store }
         stores = stores.filter { $0.value.model != nil }
         let live = LiveCollectionsService(repository: model.repository, accounts: model.accounts,
-                                          downloadLibrary: { [unowned model] in model.downloadLibrary },
-                                          downloads: { [unowned model] in model.downloads },
-                                          replayStats: { [unowned model] in model.replayStats },
-                                          canvas: { [unowned model] in model.canvas })
+                                          downloadLibrary: { model.downloadLibrary },
+                                          downloads: { model.downloads },
+                                          replayStats: { model.replayStats },
+                                          canvas: { model.canvas })
         var service: CollectionsService = live
         #if DEBUG
         if CollectionsDemoService.isRequested { service = CollectionsDemoService(live: live, repository: model.repository) }

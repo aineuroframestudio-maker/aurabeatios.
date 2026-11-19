@@ -59,8 +59,8 @@ final class ArtworkImageCache: @unchecked Sendable {
         memoryBudgetBytes = budget
         memory.totalCostLimit = budget
         try? FileManager.default.createDirectory(at: self.directory, withIntermediateDirectories: true)
-        // A cache left over its disk budget — after a lowered limit, or a heavy session that ended
-        // before the debounced trim ran — is reclaimed here too: trimming otherwise waits for the
+        // A cache left over its disk budget â€” after a lowered limit, or a heavy session that ended
+        // before the debounced trim ran â€” is reclaimed here too: trimming otherwise waits for the
         // next network load, so an over-budget directory would sit that way across launches.
         // The task holds the cache until it is done, so the trim runs whoever drops the cache first.
         Task.detached(priority: .utility) {
@@ -324,10 +324,10 @@ extension View {
 /// The view is exactly the box its caller gives it, whatever the image's shape: the backing plate
 /// takes the proposed size and the picture is laid over it, so a 16:9 video thumbnail can never
 /// widen the layout. (Drawn as the ZStack's own child, a `scaledToFill` image reported its filled
-/// width as the stack's, and the stack — clip and all — grew past the caller's frame.)
+/// width as the stack's, and the stack â€” clip and all â€” grew past the caller's frame.)
 ///
 /// `contentMode` is Compose's `contentScale` on the matching AsyncImage: `.fill` for Crop, which
-/// is Coil's own default and what every Android surface uses — page headers, shelf cards, back
+/// is Coil's own default and what every Android surface uses â€” page headers, shelf cards, back
 /// drops, the list rows and the mini player, where a widescreen video thumbnail is centre-cropped
 /// into its fixed square box.
 struct ArtworkImage: View {
@@ -404,6 +404,11 @@ struct ArtworkImage: View {
                     return
                 }
                 if loadedURL == url, image != nil { return }
+                if let hit = ArtworkImageCache.shared.memoryImage(for: url, pixels: pixels) {
+                    image = hit
+                    loadedURL = url
+                    return
+                }
                 let fetched = await ArtworkImageCache.shared.image(for: url, pixels: pixels)
                 guard !Task.isCancelled else { return }
                 withAnimation(.easeOut(duration: 0.2)) {

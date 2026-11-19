@@ -126,7 +126,7 @@ enum NetworkListing {
 /// The running app's downloads, library and remote servers.
 @MainActor
 final class LiveDownloadsService: DownloadsService {
-    private unowned let model: AppModel
+    private let model: AppModel
     private let covers: RemoteCoverLoader
 
     init(model: AppModel) {

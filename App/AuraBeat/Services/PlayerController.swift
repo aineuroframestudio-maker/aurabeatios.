@@ -943,8 +943,10 @@ final class PlayerController {
             : []
         let items = songs.isEmpty ? [] : sources.prefetchItems(for: songs)
         let previous = readAheadJob
+        previous?.cancel()
         readAheadJob = Task {
             _ = await previous?.value
+            guard !Task.isCancelled else { return }
             await cache.prefetch(items)
         }
     }
