@@ -1,6 +1,7 @@
 import AuraBeatCore
 import InnerTube
 import PlaybackQueue
+import Sources
 import SwiftUI
 
 /// Search (ports ui/screens/SearchScreen.kt and its wiring in MainActivity.kt).
