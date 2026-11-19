@@ -291,13 +291,19 @@ public enum TrackMatcher {
             var rebuilt = ""
             var cursor = text.startIndex
             for match in matches {
-                guard let whole = Range(match.range, in: text), let inner = Range(match.range(at: 1), in: text) else { continue }
+                guard let whole = Range(match.range, in: text),
+                      whole.lowerBound >= cursor,
+                      match.numberOfRanges > 1,
+                      match.range(at: 1).location != NSNotFound,
+                      let inner = Range(match.range(at: 1), in: text) else { continue }
                 rebuilt += text[cursor..<whole.lowerBound]
                 classify(String(text[inner]), &versions, &context)
                 rebuilt += " "
                 cursor = whole.upperBound
             }
-            rebuilt += text[cursor...]
+            if cursor <= text.endIndex {
+                rebuilt += text[cursor...]
+            }
             text = rebuilt
         }
         // An unbalanced bracket — a title truncated mid-aside — takes the rest of the line with it.

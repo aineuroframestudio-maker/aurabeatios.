@@ -90,9 +90,9 @@ struct PlayerCredits: View {
     /// The collapsed header over the lyrics or the queue: smaller, and it doesn't crawl.
     var compact = false
 
-    @Environment(PlayerController.self) private var player
-    @Environment(AppModel.self) private var app
-    @Environment(AppRouter.self) private var router
+    @Environment(PlayerController.self) private var player: PlayerController?
+    @Environment(AppModel.self) private var app: AppModel?
+    @Environment(AppRouter.self) private var router: AppRouter?
     @State private var titleOverflowing = false
 
     var body: some View {
@@ -123,11 +123,11 @@ struct PlayerCredits: View {
             .id("\(song.title)\u{1F}\(song.artist)")
             .transition(.opacity)
             .animation(.easeInOut(duration: 0.3), value: "\(song.title)\u{1F}\(song.artist)")
-            if app.accounts.isSignedIn && song.localUri == nil {
-                let liked = player.likeStatus(of: song) == .like
+            if app?.accounts.isSignedIn == true && song.localUri == nil {
+                let liked = player?.likeStatus(of: song) == .like
                 Button {
                     Haptics.shared.play(liked ? .toggleOff : .toggleOn)
-                    player.toggleLike(song)
+                    player?.toggleLike(song)
                 } label: {
                     PlayerCircleGlyph(symbol: liked ? AppSymbol.heartFilled : AppSymbol.heart, active: liked)
                 }
@@ -143,8 +143,8 @@ struct PlayerCredits: View {
     private func open(_ browseId: String?) {
         guard let browseId, !browseId.isEmpty else { return }
         Haptics.shared.play(.tap)
-        router.nowPlaying.close()
-        router.open(AppRoute.browse(browseId))
+        router?.nowPlaying.close()
+        router?.open(AppRoute.browse(browseId))
     }
 }
 
@@ -306,33 +306,34 @@ struct PlayerActions: View {
     let song: Song
     let model: NowPlayingModel
 
-    @Environment(PlayerController.self) private var player
-    @Environment(AppModel.self) private var app
-    @Environment(AppRouter.self) private var router
+    @Environment(PlayerController.self) private var player: PlayerController?
+    @Environment(AppModel.self) private var app: AppModel?
+    @Environment(AppRouter.self) private var router: AppRouter?
 
     var body: some View {
         let output = AudioOutputStatus.shared.current
-        let accountName = app.accounts.activeProfile?.name
+        let accountName = app?.accounts.activeProfile?.name
         VStack(spacing: 12) {
             PlayerActionRow(
                 panes: model.panes,
-                shuffleEnabled: player.shuffleEnabled,
-                repeatMode: player.repeatMode,
-                autoplayEnabled: player.isAutoplayEnabled,
+                shuffleEnabled: player?.shuffleEnabled ?? false,
+                repeatMode: player?.repeatMode ?? .off,
+                autoplayEnabled: player?.isAutoplayEnabled ?? false,
                 party: model.party,
                 onToggleLyrics: { withAnimation(NowPlayingMotion.collapse) { model.panes.toggleLyrics() } },
                 onToggleQueue: { withAnimation(NowPlayingMotion.collapse) { model.panes.toggleQueue() } },
-                onToggleShuffle: { player.toggleShuffle() },
-                onCycleRepeat: { player.cycleRepeatMode() },
-                onToggleAutoplay: { player.toggleAutoplay() },
+                onToggleShuffle: { player?.toggleShuffle() },
+                onCycleRepeat: { player?.cycleRepeatMode() },
+                onToggleAutoplay: { player?.toggleAutoplay() },
                 onOpenOutput: { model.sheet = .output },
                 onParty: openListenTogether
             )
+            let snap = player.flatMap { PlayerQuality.snapshot(player: $0) }
             PlayerOutputCaption(
                 outputName: PlayerOutputLabel.activeName(of: output.outputs, accountName: accountName),
                 party: model.party,
                 shines: PlaybackQualityBadge.outputCaptionShines(
-                    stats: PlayerQuality.snapshot(player: player),
+                    stats: snap,
                     output: output,
                     inParty: model.party.inParty
                 ),
@@ -342,8 +343,8 @@ struct PlayerActions: View {
     }
 
     private func openListenTogether() {
-        router.nowPlaying.close()
-        router.open(.listenTogether)
+        router?.nowPlaying.close()
+        router?.open(.listenTogether)
     }
 }
 

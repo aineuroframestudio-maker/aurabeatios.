@@ -255,6 +255,7 @@ struct SearchScreen: View {
             guard search.resultsAreFinal else { return }
             pendingPlay = nil
             let songs = Array(rows.lazy.compactMap(\.song))
+            guard !songs.isEmpty else { return }
             let target = TrackMatcher.Target(query)
             if let match = TrackMatcher.best(songs, target) ?? songs.first(where: {
                 TrackMatcher.matches($0, title: query, artist: "") ||

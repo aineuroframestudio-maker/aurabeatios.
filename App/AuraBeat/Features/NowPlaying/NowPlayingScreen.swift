@@ -64,6 +64,11 @@ struct NowPlayingScreen: View {
         .accessibilityAction(.escape) { router.nowPlaying.close() }
         .sheet(item: $model.sheet) { sheet in
             sheetContent(sheet)
+                .environment(app)
+                .environment(router)
+                .environment(player)
+                .environment(settings)
+                .environment(likeState)
         }
         .environment(model.lyrics)
         .environment(lyricsShare)

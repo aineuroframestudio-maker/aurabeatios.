@@ -208,7 +208,11 @@ struct Pattern: @unchecked Sendable {
 
     /// Capture group `group` of the first match, or nil.
     func firstGroup(_ group: Int = 1, in text: String) -> String? {
-        guard let match = firstMatch(in: text), let range = Range(match.range(at: group), in: text) else { return nil }
+        guard let match = firstMatch(in: text),
+              group < match.numberOfRanges else { return nil }
+        let nsRange = match.range(at: group)
+        guard nsRange.location != NSNotFound,
+              let range = Range(nsRange, in: text) else { return nil }
         return String(text[range])
     }
 
@@ -222,11 +226,13 @@ struct Pattern: @unchecked Sendable {
         var cursor = text.startIndex
         for match in regex.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
             guard let range = Range(match.range, in: text) else { continue }
-            if range.isEmpty { continue }
+            if range.isEmpty || range.lowerBound < cursor { continue }
             pieces.append(String(text[cursor..<range.lowerBound]))
             cursor = range.upperBound
         }
-        pieces.append(String(text[cursor...]))
+        if cursor <= text.endIndex {
+            pieces.append(String(text[cursor...]))
+        }
         return pieces
     }
 }

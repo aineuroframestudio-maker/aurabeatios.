@@ -211,6 +211,14 @@ final class PlayerController {
         if engine.duration > 0 { return engine.duration }
         return TimeInterval(currentSong?.durationMillis ?? 0) / 1_000
     }
+    /// Safely converts a TimeInterval to milliseconds, guarding against NaN, infinite, or overflowing values.
+    static func safeMillis(_ seconds: TimeInterval) -> Int64 {
+        guard seconds.isFinite, !seconds.isNaN, seconds >= 0 else { return 0 }
+        let ms = seconds * 1_000
+        guard ms <= Double(Int64.max) else { return Int64.max }
+        return Int64(ms)
+    }
+
     var shuffleEnabled: Bool { queue.state.shuffleEnabled }
     var repeatMode: RepeatMode { queue.state.repeatMode }
     var isAutoplayEnabled: Bool { queue.isAutoplayEnabled }
@@ -432,7 +440,7 @@ final class PlayerController {
     /// Previous: back a track within the first 10 s, otherwise to the start of this one.
     @discardableResult
     func previous() -> Bool {
-        refusalNotice(queue.skipToPrevious(positionMs: Int64(engine.position * 1_000))) == .done
+        refusalNotice(queue.skipToPrevious(positionMs: Self.safeMillis(engine.position))) == .done
     }
 
     func seek(to seconds: TimeInterval) {
@@ -443,8 +451,8 @@ final class PlayerController {
         engine.seek(to: seconds)
         // Here rather than in the checkpoint handler, which drops zeros: a seek to the start is real. The engine's
         // position is the clamped target.
-        if let song = currentSong { lastCheckpointMs[Self.itemID(for: song)] = Int64(engine.position * 1_000) }
-        queue.recordPlayhead(positionMs: Int64(seconds * 1_000), isPlaying: engine.isPlaying)
+        if let song = currentSong { lastCheckpointMs[Self.itemID(for: song)] = Self.safeMillis(engine.position) }
+        queue.recordPlayhead(positionMs: Self.safeMillis(seconds), isPlaying: engine.isPlaying)
         if isInParty { partySeekIntent?() }
     }
 
@@ -733,7 +741,7 @@ final class PlayerController {
         // song changes (Android's `keepVideoId = original.videoId`).
         if !song.isVideo, other.isVideo { keepVideoId = other.videoId }
         // The playhead as it is now, not as it was before the measurement: the track played on.
-        let positionMs = fromTheTop ? 0 : Self.alignedPosition(sourceMs: Int64(engine.position * 1_000), offsetMs: offsetMs,
+        let positionMs = fromTheTop ? 0 : Self.alignedPosition(sourceMs: Self.safeMillis(engine.position), offsetMs: offsetMs,
                                                                targetDurationMs: Int64(other.durationMillis))
         swapCurrent(to: other, atMs: positionMs)
         if musicOnlyHold != nil { play() }
@@ -819,7 +827,7 @@ final class PlayerController {
     /// Writes the restart snapshot now. Call when the app leaves the foreground: iOS can kill a
     /// suspended app with an asynchronous write still queued.
     func flushPersistence() {
-        queue.flushPersistence(positionMs: Int64(engine.position * 1_000), isPlaying: engine.isPlaying)
+        queue.flushPersistence(positionMs: Self.safeMillis(engine.position), isPlaying: engine.isPlaying)
     }
 
     func addObserver(_ observer: PlaybackEventObserver) {
@@ -1095,7 +1103,7 @@ final class PlayerController {
         // but 0 once it had to open the item (a skip, or nothing preloaded): then the last checkpoint,
         // at most one sampler interval old, is the best there is. A track that ended played from the
         // start, so the larger of the two is never wrong.
-        let live = Int64(engine.position * 1_000)
+        let live = Self.safeMillis(engine.position)
         let checkpointed = previous.flatMap { lastCheckpointMs[Self.itemID(for: $0)] } ?? 0
         let previousPosition = reason.previousEnded ? max(live, checkpointed) : (checkpointed > 0 ? checkpointed : live)
         lastStartedSong = song
@@ -1152,8 +1160,8 @@ final class PlayerController {
         let playing = engine.isPlaying
         guard playing != lastReportedPlaying else { return }
         lastReportedPlaying = playing
-        let positionMs = Int64(engine.position * 1_000)
-        let durationMs = Int64(duration * 1_000)
+        let positionMs = Self.safeMillis(engine.position)
+        let durationMs = Self.safeMillis(duration)
         observers.values.forEach { $0.playback(didChangePlaying: playing, song: song, positionMs: positionMs, durationMs: durationMs) }
         // Sound is out of the speaker (Android called `lookForBetterCopy` from
         // `onIsPlayingChanged` when it turned true), so a cached row that was not eligible when it
@@ -1239,7 +1247,7 @@ extension PlayerController: AudioPlayerEngineDelegate {
     }
 
     func audioPlayerEngine(_ engine: AudioPlayerEngine, checkpoint: PlaybackCheckpoint) {
-        let positionMs = Int64(checkpoint.position * 1_000)
+        let positionMs = Self.safeMillis(checkpoint.position)
         let checkpointed = PlaybackSourceFactory.baseItemID(checkpoint.itemID)
         if awaitingFirstCheckpoint == checkpointed {
             awaitingFirstCheckpoint = nil
@@ -1254,7 +1262,7 @@ extension PlayerController: AudioPlayerEngineDelegate {
         // picks it up once the decoder has reported it.
         if checkpoint.isPlaying { qualityUpgrades?.lookForBetterCopy() }
         guard let song = currentSong, Self.itemID(for: song) == PlaybackSourceFactory.baseItemID(checkpoint.itemID) else { return }
-        let durationMs = Int64(duration * 1_000)
+        let durationMs = Self.safeMillis(duration)
         observers.values.forEach { $0.playback(progress: song, positionMs: positionMs, durationMs: durationMs, isPlaying: checkpoint.isPlaying) }
     }
 
