@@ -104,7 +104,7 @@ extension AudioPlayerEngine {
                     replacement = try? await sourceRecovery(item, reason)
                     // If sourceRecovery returned nil, it either handled fallback directly (like fellBackToYouTube)
                     // or refused replacement. In either case, do not reopen the unplayable item.
-                    guard let replacement else { return }
+                    guard replacement != nil else { return }
                 } else {
                     replacement = nil
                 }

@@ -68,7 +68,7 @@ struct NowPlayingScreen: View {
                 .environment(router)
                 .environment(player)
                 .environment(settings)
-                .environment(likeState)
+                .environment(app.likeState)
         }
         .environment(model.lyrics)
         .environment(lyricsShare)
