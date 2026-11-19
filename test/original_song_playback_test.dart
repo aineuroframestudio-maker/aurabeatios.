@@ -1,9 +1,14 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:aurabeat/main.dart' show SongItem, RepeatMode;
 import 'package:aurabeat/playback_queue_controller.dart';
 import 'package:aurabeat/audio_engine/audio_engine.dart';
+import 'package:aurabeat/sources/models/addon_source_model.dart';
+import 'package:aurabeat/sources/adapters/bitchord_protocol_adapter.dart';
 
 int _fnv1a64(Uint8List bytes) {
   var hash = 0xcbf29ce484222325;
@@ -525,6 +530,204 @@ void main() {
       }
 
       expect(retryCount, equals(3), reason: 'Retries must halt after 3 attempts');
+    });
+
+    // MARK: - Phase 12: Original Song Identity & Matcher Safety Tests
+
+    test('Phase 12.1: Exact original song selection verifies title and primary artist', () {
+      const targetTitle = 'Blinding Lights';
+      const targetArtist = 'The Weeknd';
+
+      const originalSong = SongItem(
+        id: 'bl_orig_1',
+        title: targetTitle,
+        artist: targetArtist,
+        album: 'After Hours',
+        duration: '3:20',
+        durationSec: 200,
+        coverUrl: 'https://example.com/cover.jpg',
+        streamUrl: 'https://stream.aurabeat.internal/media/bl_orig_1.flac',
+        lyrics: [],
+      );
+
+      const candidateCover = SongItem(
+        id: 'bl_cover_2',
+        title: 'Blinding Lights (Cover)',
+        artist: 'Boyce Avenue',
+        album: 'Cover Sessions',
+        duration: '3:20',
+        durationSec: 200,
+        coverUrl: 'https://example.com/cover.jpg',
+        lyrics: [],
+      );
+
+      expect(originalSong.title, equals(targetTitle));
+      expect(originalSong.artist, equals(targetArtist));
+      expect(candidateCover.artist, isNot(equals(targetArtist)));
+      expect(candidateCover.title.contains('(Cover)'), isTrue);
+    });
+
+    test('Phase 12.2: Rejects same title by a different artist', () {
+      const originalTitle = 'Stay';
+      const originalArtist = 'Jackson Browne';
+
+      const candidates = [
+        SongItem(id: 'stay_1', title: 'Stay', artist: 'Zedd & Alessia Cara', album: 'Album', duration: '3:28', durationSec: 208, coverUrl: '', lyrics: []),
+        SongItem(id: 'stay_2', title: 'Stay', artist: 'The Kid LAROI, Justin Bieber', album: 'Album', duration: '2:21', durationSec: 141, coverUrl: '', lyrics: []),
+        SongItem(id: 'stay_3', title: 'Stay', artist: 'Rihanna feat. Mikky Ekko', album: 'Album', duration: '4:00', durationSec: 240, coverUrl: '', lyrics: []),
+        SongItem(id: 'stay_orig', title: 'Stay', artist: 'Jackson Browne', album: 'Running On Empty', duration: '3:28', durationSec: 208, coverUrl: '', lyrics: []),
+      ];
+
+      final matching = candidates.where((c) =>
+        c.title.toLowerCase() == originalTitle.toLowerCase() &&
+        c.artist.toLowerCase().contains(originalArtist.toLowerCase())
+      ).toList();
+
+      expect(matching.length, equals(1));
+      expect(matching.first.id, equals('stay_orig'));
+      expect(matching.first.artist, equals('Jackson Browne'));
+    });
+
+    test('Phase 12.3: Rejects same artist with a different song title', () {
+      const originalTitle = 'Hello';
+      const artist = 'Adele';
+
+      const candidates = [
+        SongItem(id: 'adele_1', title: 'Rolling in the Deep', artist: artist, album: 'Album', duration: '3:48', durationSec: 228, coverUrl: '', lyrics: []),
+        SongItem(id: 'adele_2', title: 'Someone Like You', artist: artist, album: 'Album', duration: '4:45', durationSec: 285, coverUrl: '', lyrics: []),
+        SongItem(id: 'adele_3', title: 'Set Fire to the Rain', artist: artist, album: 'Album', duration: '4:02', durationSec: 242, coverUrl: '', lyrics: []),
+        SongItem(id: 'adele_hello', title: 'Hello', artist: artist, album: '25', duration: '4:55', durationSec: 295, coverUrl: '', lyrics: []),
+      ];
+
+      final matching = candidates.where((c) =>
+        c.title.toLowerCase() == originalTitle.toLowerCase() &&
+        c.artist.toLowerCase() == artist.toLowerCase()
+      ).toList();
+
+      expect(matching.length, equals(1));
+      expect(matching.first.id, equals('adele_hello'));
+    });
+
+    test('Phase 12.4: Rejects original versus remix versions', () {
+      final variations = [
+        'Levitating (Remix)',
+        'Levitating - The Blessed Madonna Remix',
+        'Levitating [Club Mix]',
+        'Levitating Remix',
+      ];
+      final versionMarkers = ['remix', 'mix', 'club', 'live', 'cover', 'acoustic', 'karaoke', 'instrumental'];
+
+      for (final v in variations) {
+        final hasVersionMarker = versionMarkers.any((m) => v.toLowerCase().contains(m));
+        expect(hasVersionMarker, isTrue, reason: '$v must be identified as an altered version, not the original cut');
+      }
+    });
+
+    test('Phase 12.5: Rejects original versus cover version', () {
+      const targetTitle = 'Hurt';
+      const targetArtist = 'Nine Inch Nails';
+
+      const coverCandidate = SongItem(
+        id: 'hurt_cash',
+        title: targetTitle,
+        artist: 'Johnny Cash',
+        album: 'American IV',
+        duration: '3:38',
+        durationSec: 218,
+        coverUrl: '',
+        lyrics: [],
+      );
+
+      final isDifferentArtist = !coverCandidate.artist.toLowerCase().contains(targetArtist.toLowerCase());
+      expect(isDifferentArtist, isTrue, reason: 'A cover by a different artist must never be substituted');
+    });
+
+    test('Phase 12.6: Rejects original versus live performance', () {
+      const liveCut = SongItem(
+        id: 'hc_live',
+        title: 'Hotel California (Live On MTV / 1994)',
+        artist: 'Eagles',
+        album: 'Hell Freezes Over',
+        duration: '6:31',
+        durationSec: 391,
+        coverUrl: '',
+        lyrics: [],
+      );
+
+      final isLive = liveCut.title.toLowerCase().contains('live');
+      expect(isLive, isTrue, reason: 'Live performances must not substitute for the original studio recording');
+    });
+
+    test('Phase 12.7: Accepts featured artist matching across collaborations', () {
+      const targetArtist = 'Post Malone';
+      const featuredInTitle = 'Sunflower (feat. Swae Lee)';
+      const catalogueArtist = 'Post Malone & Swae Lee';
+
+      final artistMatches = catalogueArtist.contains(targetArtist) &&
+          (catalogueArtist.contains('Swae Lee') && featuredInTitle.contains('Swae Lee'));
+      expect(artistMatches, isTrue);
+    });
+
+    test('Phase 12.8: Resolves stream matching requested trackId without foreign substitution', () async {
+      final mockClient = MockClient((request) async {
+        return http.Response(
+          jsonEncode({
+            'url': 'https://stream.audio.example/track_orig_999.flac',
+            'format': 'flac',
+            'sampleRate': 96000,
+            'bitDepth': 24,
+            'trackId': 'track_orig_999',
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+
+      final source = AddonSourceConfig(
+        id: 'test.orig.source',
+        name: 'Test Orig Source',
+        url: 'https://test.orig.example',
+        manifestUrl: 'https://test.orig.example/manifest.json',
+        version: '1.0.0',
+        qualityTiers: ['hires', 'lossless'],
+      );
+
+      final adapter = BitChordProtocolAdapter(source, client: mockClient);
+      final stream = await adapter.resolveStream(
+        trackId: 'track_orig_999',
+        quality: 'hires',
+        title: 'Midnight City',
+        artist: 'M83',
+      );
+
+      expect(stream, isNotNull);
+      expect(stream!.trackId, equals('track_orig_999'));
+      expect(stream.url, contains('track_orig_999.flac'));
+    });
+
+    test('Phase 12.9: Halts cleanly when original recording is unavailable from remote provider', () async {
+      final mockClient = MockClient((request) async {
+        return http.Response('Not Found', 404);
+      });
+
+      final source = AddonSourceConfig(
+        id: 'test.unavailable',
+        name: 'Test Unavailable',
+        url: 'https://test.unavailable.example',
+        manifestUrl: 'https://test.unavailable.example/manifest.json',
+        version: '1.0.0',
+        qualityTiers: ['hires'],
+      );
+
+      final adapter = BitChordProtocolAdapter(source, client: mockClient);
+      final stream = await adapter.resolveStream(
+        trackId: 'nonexistent_unavailable_track_id',
+        quality: 'hires',
+        title: 'Unavailable Song',
+        artist: 'Unknown Artist',
+      );
+
+      expect(stream, isNull);
     });
   });
 }

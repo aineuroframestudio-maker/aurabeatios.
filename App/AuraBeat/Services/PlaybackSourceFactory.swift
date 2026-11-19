@@ -742,7 +742,20 @@ final class PlaybackSourceFactory {
                 TrackLog.d(PlaybackSourceFactory.logCategory, "resolved '\(song.title)' in \(TrackLog.ms(since: started))ms: \(picked.origin) \(picked.format.summary)"
                     + (picked.belowRequest ? " (below request)" : ""), about: song.videoId)
             }
-            var stamped = picked
+            var verifiedStream = picked
+            if verifiedStream.origin != .youtube {
+                let expectedSec = TrackMatcher.secondsOf(song.durationText)
+                if let streamSec = verifiedStream.durationSeconds, let expectedSec,
+                   TrackMatcher.isSevereMismatch(expectedSec: expectedSec, actualSec: streamSec) {
+                    TrackLog.w(PlaybackSourceFactory.logCategory,
+                               "Substitute stream for '\(song.title)' has severe duration mismatch (\(streamSec)s vs expected \(expectedSec)s); discarding substitute and falling back to YouTube",
+                               about: song.videoId)
+                    if let youTube {
+                        verifiedStream = try await youTube.resolveStream(for: song, request: wanted)
+                    }
+                }
+            }
+            var stamped = verifiedStream
             if refind != nil, stamped.origin != .youtube {
                 // A copy found ahead counts as expired past its freshness, so the byte source finds
                 // it again before reading on (a lookup already stamped it when it was found).

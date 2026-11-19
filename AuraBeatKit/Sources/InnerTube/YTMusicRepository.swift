@@ -3,8 +3,8 @@ import AuraBeatCore
 
 // Ports data/YtMusicRepository.kt.
 
-/// Finds a track's other version — the catalogue audio of a music video, or the video of a catalogue
-/// track — among search candidates.
+/// Finds a track's other version â€” the catalogue audio of a music video, or the video of a catalogue
+/// track â€” among search candidates.
 ///
 /// Android does this with `TrackMatcher` from the Sources module; InnerTube can't depend on that
 /// module, so the app passes its matcher in.
@@ -27,8 +27,8 @@ extension SongVersionMatching {
 /// Android returned `Result<T>` from every call so the UI could show a real error; here calls are
 /// `async throws` (``InnerTubeError`` for Innertube's own failures, `URLError` for transport), and
 /// cancellation propagates as `CancellationError` rather than being reported as a failure. A call
-/// whose session is rejected (HTTP 401/403) refreshes the session scope once and retries — cookies
-/// rotate while the app is alive — but never loops and never signs the listener out.
+/// whose session is rejected (HTTP 401/403) refreshes the session scope once and retries â€” cookies
+/// rotate while the app is alive â€” but never loops and never signs the listener out.
 public final class YTMusicRepository: Sendable {
     public let client: InnerTubeClient
     private let likeState: LikeState?
@@ -108,7 +108,7 @@ public final class YTMusicRepository: Sendable {
         InnerTubeParser.collectSongsDeep(try await client.browse(Self.historyBrowseId)).distinct(by: \.videoId)
     }
 
-    /// The account's listening history, in the order YouTube Music keeps it — the page opened when
+    /// The account's listening history, in the order YouTube Music keeps it â€” the page opened when
     /// the recents shelf's twenty is not enough.
     public func history() async throws -> [Song] {
         try await call("history") { try await self.fetchHistory() }
@@ -225,7 +225,7 @@ public final class YTMusicRepository: Sendable {
         }
     }
 
-    /// The first, most relevant page only — for callers that need candidates rather than a
+    /// The first, most relevant page only â€” for callers that need candidates rather than a
     /// scrolling result screen (autoplay fallbacks, version matching).
     public func search(query: String, filter: SearchFilter) async throws -> [SearchResult] {
         try await searchPage(query: query, filter: filter).rows
@@ -269,14 +269,20 @@ public final class YTMusicRepository: Sendable {
     /// audio" toggle in the official app lands on it: searching the title and artist and taking the
     /// closest song match through `matcher`.
     ///
-    /// Returns `song` unchanged when it isn't a video, or when nothing better turns up — playing the
+    /// Returns `song` unchanged when it isn't a video, or when nothing better turns up â€” playing the
     /// video's own audio beats guessing at a substitute (a Telugu folk video once resolved to an
     /// unrelated devotional track from exactly this path). The answer is remembered either way, so
     /// the prefetcher and the eventual player switch agree on the same rendition. Search already
     /// drops video rows outside the Videos filter, so every candidate is audio-only.
     public func resolveAudio(for song: Song, using matcher: some SongVersionMatching) async -> Song {
         guard song.isVideo else { return song }
-        if let cached = await caches.audioVersion(song.videoId) { return cached }
+        if let cached = await caches.audioVersion(song.videoId) {
+            if cached.videoId == song.videoId ||
+               matcher.bestMatch(among: [cached], for: song) != nil ||
+               matcher.bestOfficialAudio(forVideo: song, among: [cached]) != nil {
+                return cached
+            }
+        }
         for query in matcher.searchQueries(for: song) {
             let candidates = ((try? await search(query: query, filter: .songs)) ?? []).compactMap { result -> Song? in
                 if case .track(let found) = result { return found }
@@ -304,7 +310,15 @@ public final class YTMusicRepository: Sendable {
     /// there isn't one (also remembered).
     public func resolveVideo(for song: Song, using matcher: some SongVersionMatching) async -> Song? {
         guard !song.isVideo else { return nil }
-        if let cached = await caches.videoVersion(song.videoId) { return cached.song }
+        if let cached = await caches.videoVersion(song.videoId) {
+            if let videoSong = cached.song {
+                if matcher.bestMatch(among: [videoSong], for: song) != nil {
+                    return videoSong
+                }
+            } else {
+                return nil
+            }
+        }
         for query in matcher.searchQueries(for: song) {
             let candidates = ((try? await search(query: query, filter: .videos)) ?? []).compactMap { result -> Song? in
                 if case .track(let found) = result { return found }
@@ -333,11 +347,11 @@ public final class YTMusicRepository: Sendable {
         }
     }
 
-    /// The channels this login can act as — its own, plus any brand channels.
+    /// The channels this login can act as â€” its own, plus any brand channels.
     ///
     /// Two endpoints are asked in turn because either can come back with no `accountItem` at all, and
-    /// the two do not fail together. An empty list from the first is not an answer — it is a shape
-    /// the parser didn't recognise — so it is treated the same as a failure.
+    /// the two do not fail together. An empty list from the first is not an answer â€” it is a shape
+    /// the parser didn't recognise â€” so it is treated the same as a failure.
     public func accountChannels() async throws -> [AccountChannel] {
         try await call("channels") {
             do {
@@ -357,11 +371,11 @@ public final class YTMusicRepository: Sendable {
     /// Liked Music: the `LM` auto-playlist, addressed as a playlist browse id. Also the page a track
     /// has to disappear from the moment it stops being liked.
     public static let likedMusicBrowseId = "VLLM"
-    /// Songs explicitly added to the library — distinct from Liked Music.
+    /// Songs explicitly added to the library â€” distinct from Liked Music.
     static let librarySongsBrowseId = "FEmusic_liked_videos"
     /// Saved and own playlists; also what the "add to playlist" picker lists.
     static let libraryPlaylistsBrowseId = "FEmusic_liked_playlists"
-    /// What the playlists shelf is called in a ``LibraryPage`` — the one shelf anything else looks for
+    /// What the playlists shelf is called in a ``LibraryPage`` â€” the one shelf anything else looks for
     /// by name (the create tile leads it; rename and delete reach into it).
     public static let playlistsShelfTitle = "Playlists"
     /// Library shelves in display order.
@@ -375,7 +389,7 @@ public final class YTMusicRepository: Sendable {
     /// A runaway feed can't hold a background load open forever.
     public static let maxPages = 10
 
-    /// The whole library in one shot — requires a signed-in session.
+    /// The whole library in one shot â€” requires a signed-in session.
     ///
     /// YouTube Music has no single "my library" feed: Liked Music is the `LM` auto-playlist, library
     /// songs are a separate feed, and every saved collection has its own browse id. They're fetched
@@ -462,7 +476,7 @@ public final class YTMusicRepository: Sendable {
     }
 
     /// Every card behind a feed or "more" browse id (an artist's full Albums or Singles shelf, a
-    /// library feed), following continuations up to ``maxPages`` — the "Show all" page.
+    /// library feed), following continuations up to ``maxPages`` â€” the "Show all" page.
     public func shelfItems(browseId: String, params: String? = nil) async throws -> [ShelfItem] {
         try await call("items:\(browseId)") { try await self.itemsPaged(browseId, params: params) }
     }
@@ -473,16 +487,16 @@ public final class YTMusicRepository: Sendable {
     public struct SongPage: Hashable, Sendable {
         public var songs: [Song]
         public var continuation: String?
-        /// Only ever non-empty for a playlist page — see ``InnerTubeParser/parsePlaylistShelf(_:)``.
+        /// Only ever non-empty for a playlist page â€” see ``InnerTubeParser/parsePlaylistShelf(_:)``.
         public var suggested: [Song]
-        /// Whether the release is in the library. Only the first page can answer — a continuation
-        /// carries rows and nothing else — so it is nil from ``moreSongs(token:)`` and must not
+        /// Whether the release is in the library. Only the first page can answer â€” a continuation
+        /// carries rows and nothing else â€” so it is nil from ``moreSongs(token:)`` and must not
         /// overwrite what ``browseSongs(browseId:)`` established.
         public var library: LibraryState?
         /// Whether this page's playlist is one the account made rather than saved. Nil for an album,
         /// a continuation, or a page that doesn't say.
         public var owned: Bool?
-        /// What the page calls itself — needed by callers that opened it with nothing but a browse
+        /// What the page calls itself â€” needed by callers that opened it with nothing but a browse
         /// id (a tapped link). Nil on a continuation.
         public var header: InnerTubeParser.BrowseHeader?
         /// The editorial blurb for the release, when it has one. Nil on a continuation.
@@ -540,7 +554,7 @@ public final class YTMusicRepository: Sendable {
         try await call("browse:more") { Self.page(of: try await self.client.browseContinuation(token)) }
     }
 
-    /// Whether `browseId` is a playlist the account made — asked on its own by whatever needs it
+    /// Whether `browseId` is a playlist the account made â€” asked on its own by whatever needs it
     /// without a page open (holding a playlist card offers Rename and Delete, and the card itself
     /// cannot say whether either applies).
     public func playlistOwned(browseId: String) async throws -> Bool? {
@@ -557,7 +571,7 @@ public final class YTMusicRepository: Sendable {
             return SongPage(songs: shelf.songs, continuation: shelf.continuation, suggested: shelf.suggested, library: library, header: header)
         }
         return SongPage(
-            // One response can name the same track twice — an album page with a "you might also
+            // One response can name the same track twice â€” an album page with a "you might also
             // like" shelf, say.
             songs: InnerTubeParser.collectSongsDeep(response).distinct(by: \.videoId),
             continuation: InnerTubeParser.continuationToken(response),
@@ -567,7 +581,7 @@ public final class YTMusicRepository: Sendable {
         )
     }
 
-    /// The complete track listing behind an album or playlist browse id — for callers that act on
+    /// The complete track listing behind an album or playlist browse id â€” for callers that act on
     /// all of it at once ("Add to queue" on a card whose page was never opened). Queueing the first
     /// hundred rows of a three-hundred-track playlist and calling it the playlist would be a quieter
     /// kind of wrong than failing outright.
@@ -688,7 +702,7 @@ public final class YTMusicRepository: Sendable {
 
     /// The lyrics YouTube Music's Lyrics tab shows for exactly this video: `next` ? the Lyrics tab's
     /// browse id ? `browse`. Plain lines (the tab is untimed); nil when the track has no lyrics, the
-    /// id isn't a YouTube video id, or any step fails — a lyrics source answers "none", it doesn't
+    /// id isn't a YouTube video id, or any step fails â€” a lyrics source answers "none", it doesn't
     /// throw.
     public func lyrics(videoId: String) async -> YouTubeMusicLyrics? {
         guard Self.youtubeVideoId.matches(videoId) else { return nil }
@@ -713,7 +727,7 @@ public final class YTMusicRepository: Sendable {
 
     // MARK: - Writes
 
-    /// The account's own state for one track — rating and library membership. A lookup rather than
+    /// The account's own state for one track â€” rating and library membership. A lookup rather than
     /// something cached with the song: the feedback tokens are per-row, and a queued track carries
     /// an id and little else. Fetched when a menu is opened, the only moment the answer is looked at.
     public func songMenu(videoId: String) async throws -> SongMenu {
@@ -735,13 +749,13 @@ public final class YTMusicRepository: Sendable {
     }
 
     /// Saves an album or playlist to the library, or removes it. `playlistId` is the one the page
-    /// named — see ``LibraryState``.
+    /// named â€” see ``LibraryState``.
     public func setSaved(playlistId: String, saved: Bool) async throws {
         try await call("library:\(playlistId)") { try await self.client.ratePlaylist(playlistId: playlistId, saved: saved) }
     }
 
     /// Subscribes to an artist's channel, or unsubscribes. `channelId` is the one the page's own
-    /// subscribe button named — see ``SubscriptionState``.
+    /// subscribe button named â€” see ``SubscriptionState``.
     public func setSubscribed(channelId: String, subscribed: Bool) async throws {
         try await call("subscription:\(channelId)") { try await self.client.setSubscribed(channelId: channelId, subscribed: subscribed) }
     }

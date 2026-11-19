@@ -253,7 +253,14 @@ struct SearchScreen: View {
             // A shorter query's rows shown meanwhile are not what was asked for.
             guard search.resultsAreFinal else { return }
             pendingPlay = nil
-            if let first = rows.lazy.compactMap(\.song).first { playSong(first) }
+            let songs = Array(rows.lazy.compactMap(\.song))
+            let target = TrackMatcher.Target(query)
+            if let match = TrackMatcher.best(songs, target) ?? songs.first(where: {
+                TrackMatcher.matches($0, title: query, artist: "") ||
+                TrackMatcher.sharesArtist(query, $0.artist)
+            }) ?? songs.first {
+                playSong(match)
+            }
         case .error:
             pendingPlay = nil
         default:

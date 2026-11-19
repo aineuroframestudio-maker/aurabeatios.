@@ -297,4 +297,88 @@ final class TrackMatcherTests: XCTestCase {
         XCTAssertTrue(SourceResolver.sameRecordingAs(jioSaavnCandidate, catalogue.durationSec))
         XCTAssertTrue(TrackMatcher.withinSeconds(song("Sao Paulo", "The Weeknd, Anitta", "5:02"), catalogue, 2))
     }
+
+    // MARK: - Phase 6: Original Song Identity & Safety Tests
+
+    func testExactOriginalSongSelection() {
+        let target = TrackMatcher.Target("Blinding Lights", "The Weeknd", durationSec: 200)
+        let exact = song("Blinding Lights", "The Weeknd", "3:20")
+        let candidates = [
+            song("Blinding Lights (Remix)", "The Weeknd", "3:20"),
+            song("Blinding Lights", "Boyce Avenue", "3:20"),
+            exact,
+            song("Blinding Lights (Live)", "The Weeknd", "3:20")
+        ]
+        XCTAssertEqual(TrackMatcher.best(candidates, target), exact)
+        XCTAssertTrue(TrackMatcher.isVerifiedOriginalMatch(exact, target))
+    }
+
+    func testRefusesSameTitleDifferentArtist() {
+        let target = TrackMatcher.Target("Stay", "Jackson Browne", durationSec: 208)
+        let zedd = song("Stay", "Zedd & Alessia Cara", "3:28")
+        let kidLaroi = song("Stay", "The Kid LAROI, Justin Bieber", "2:21")
+        let rihanna = song("Stay", "Rihanna", "4:00")
+        XCTAssertNil(TrackMatcher.best([zedd, kidLaroi, rihanna], target))
+        XCTAssertEqual(TrackMatcher.ranked([zedd, kidLaroi, rihanna], target), [])
+        XCTAssertFalse(TrackMatcher.isVerifiedOriginalMatch(zedd, target))
+    }
+
+    func testRefusesSameArtistDifferentSong() {
+        let target = TrackMatcher.Target("Hello", "Adele", durationSec: 295)
+        let rollingInTheDeep = song("Rolling in the Deep", "Adele", "3:48")
+        let someoneLikeYou = song("Someone Like You", "Adele", "4:45")
+        XCTAssertNil(TrackMatcher.best([rollingInTheDeep, someoneLikeYou], target))
+        XCTAssertFalse(TrackMatcher.isVerifiedOriginalMatch(rollingInTheDeep, target))
+    }
+
+    func testRefusesOriginalVersusRemix() {
+        let target = TrackMatcher.Target("Levitating", "Dua Lipa", durationSec: 203)
+        let remixBracketed = song("Levitating (Remix)", "Dua Lipa, DaBaby", "2:03")
+        let remixUnbracketed = song("Levitating Remix", "Dua Lipa", "2:03")
+        let clubMix = song("Levitating - The Blessed Madonna Remix", "Dua Lipa", "2:03")
+        XCTAssertNil(TrackMatcher.best([remixBracketed, remixUnbracketed, clubMix], target))
+        XCTAssertFalse(TrackMatcher.isVerifiedOriginalMatch(remixBracketed, target))
+        XCTAssertFalse(TrackMatcher.isVerifiedOriginalMatch(remixUnbracketed, target))
+    }
+
+    func testRefusesOriginalVersusCover() {
+        let target = TrackMatcher.Target("Hurt", "Nine Inch Nails", durationSec: 218)
+        let coverCash = song("Hurt", "Johnny Cash", "3:38")
+        let coverUnbracketed = song("Hurt Cover", "Nine Inch Nails Fan", "3:38")
+        let coverBracketed = song("Hurt (Cover)", "Nine Inch Nails", "3:38")
+        XCTAssertNil(TrackMatcher.best([coverCash, coverUnbracketed, coverBracketed], target))
+        XCTAssertFalse(TrackMatcher.isVerifiedOriginalMatch(coverCash, target))
+        XCTAssertFalse(TrackMatcher.isVerifiedOriginalMatch(coverBracketed, target))
+    }
+
+    func testRefusesOriginalVersusLiveVersion() {
+        let target = TrackMatcher.Target("Hotel California", "Eagles", durationSec: 391)
+        let liveBracketed = song("Hotel California (Live)", "Eagles", "6:31")
+        let liveUnbracketed = song("Hotel California Live", "Eagles", "6:31")
+        let unplugged = song("Hotel California (Live On MTV / 1994)", "Eagles", "6:31")
+        XCTAssertNil(TrackMatcher.best([liveBracketed, liveUnbracketed, unplugged], target))
+        XCTAssertFalse(TrackMatcher.isVerifiedOriginalMatch(liveBracketed, target))
+    }
+
+    func testAcceptsFeaturedArtistInTitleOrCredit() {
+        let target1 = TrackMatcher.Target("Sunflower (feat. Swae Lee)", "Post Malone", durationSec: 158)
+        let candidate1 = song("Sunflower", "Post Malone & Swae Lee", "2:38")
+        XCTAssertTrue(TrackMatcher.isVerifiedOriginalMatch(candidate1, target1))
+
+        let target2 = TrackMatcher.Target("Closer", "The Chainsmokers feat. Halsey", durationSec: 245)
+        let candidate2 = song("Closer", "The Chainsmokers, Halsey", "4:05")
+        XCTAssertTrue(TrackMatcher.isVerifiedOriginalMatch(candidate2, target2))
+    }
+
+    func testExtractsTrailingUnbracketedVersionWords() {
+        let coverSong = song("Blank Space Cover", "Taylor Swift", "3:51")
+        let acousticSong = song("Shape of You Acoustic", "Ed Sheeran", "3:53")
+        let liveSong = song("Creep Live", "Radiohead", "3:56")
+        let targetOriginal = TrackMatcher.Target("Blank Space", "Taylor Swift", durationSec: 231)
+        XCTAssertNil(TrackMatcher.best([coverSong], targetOriginal))
+        XCTAssertFalse(TrackMatcher.isVerifiedOriginalMatch(coverSong, targetOriginal))
+
+        let targetAcoustic = TrackMatcher.Target("Shape of You (Acoustic)", "Ed Sheeran", durationSec: 233)
+        XCTAssertEqual(TrackMatcher.best([acousticSong], targetAcoustic), acousticSong)
+    }
 }

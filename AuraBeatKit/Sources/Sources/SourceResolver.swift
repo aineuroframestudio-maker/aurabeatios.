@@ -292,7 +292,7 @@ public final class SourceResolver: StreamResolving, @unchecked Sendable {
         }
 
         // Last resort: a track whose own source is down is still a track the user asked for.
-        guard let (source, stream) = try await bestAcross(active.filter { $0.configId != configId }, target, tier) else {
+        guard let (source, stream) = try await bestAcross(active.filter { $0.configId != configId }, target, tier, requireSharedArtist: true) else {
             return nil
         }
         SourcesLog.d("fallback: '\(target.title)' served by \(source.displayName)")
@@ -309,7 +309,7 @@ public final class SourceResolver: StreamResolving, @unchecked Sendable {
         guard target.title.nonBlank != nil, !target.isVideo else { return nil }
         let active = registry.activeForPlayback(request)
         guard let youtube = active.first(where: { $0.kind == .youtube }) else { return nil }
-        guard let (source, stream) = try await bestAcross(Self.rankedAbove(youtube.configId, active), target, request.tier, provesFirstBytes: true) else {
+        guard let (source, stream) = try await bestAcross(Self.rankedAbove(youtube.configId, active), target, request.tier, requireSharedArtist: true, provesFirstBytes: true) else {
             return nil
         }
         SourcesLog.d("substituted: '\(target.title)' served by \(source.displayName) over YouTube at \(stream.format.summary)"
@@ -340,7 +340,7 @@ public final class SourceResolver: StreamResolving, @unchecked Sendable {
         let active = registry.activeForPlayback(request)
         guard let youtube = active.first(where: { $0.kind == .youtube }) else { return nil }
         let quick = Self.rankedAbove(youtube.configId, active).filter { $0.kind.worthPrefetching }
-        guard !quick.isEmpty, let (source, stream) = try await bestAcross(quick, target, request.tier) else { return nil }
+        guard !quick.isEmpty, let (source, stream) = try await bestAcross(quick, target, request.tier, requireSharedArtist: true) else { return nil }
         SourcesLog.d("warmed: '\(target.title)' from \(source.displayName) at \(stream.format.summary)")
         return stream
     }
@@ -477,7 +477,7 @@ public final class SourceResolver: StreamResolving, @unchecked Sendable {
         _ tier: StreamRequest.Tier,
         waitForAll: Bool = false,
         strictLength: Bool = false,
-        requireSharedArtist: Bool = false,
+        requireSharedArtist: Bool = true,
         provesFirstBytes: Bool = false,
         patience: TimeInterval? = nil,
         accept: @escaping @Sendable (MusicSource, ResolvedStream) -> Bool = { _, _ in true }
@@ -563,7 +563,7 @@ public final class SourceResolver: StreamResolving, @unchecked Sendable {
         _ tier: StreamRequest.Tier,
         waitForAll: Bool = false,
         strictLength: Bool = false,
-        requireSharedArtist: Bool = false,
+        requireSharedArtist: Bool = true,
         atmosWanted: Bool? = nil
     ) async throws -> ResolvedStream? {
         let atmos: Bool

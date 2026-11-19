@@ -88,10 +88,29 @@ public enum TrackMatcher {
     }
 
     /// Whether both credits name at least one of the same artists.
-    public static func sharesArtist(_ wanted: String, _ got: String) -> Bool {
-        let want = artistNames(wanted)
-        let have = artistNames(got)
+    public static func sharesArtist(_ wanted: String, _ got: String, wantedTitle: String = "", gotTitle: String = "") -> Bool {
+        let want = artistNames(wanted, extraTitle: wantedTitle)
+        let have = artistNames(got, extraTitle: gotTitle)
         return !want.isEmpty && !have.isEmpty && want.contains { w in have.contains { h in sameArtist(w, h) } }
+    }
+
+    /// Strict identity verification: confirms candidate is the exact same original recording.
+    /// Rejects covers, remixes, live versions, karaoke, instrumentals, and different artists.
+    public static func isVerifiedOriginalMatch(_ candidate: Song, _ target: Target) -> Bool {
+        let wanted = parseTitle(target.title, artist: target.artist)
+        let got = parseTitle(candidate.title, artist: candidate.artist)
+        guard !wanted.core.isEmpty, !got.core.isEmpty, wanted.core == got.core else { return false }
+        guard wanted.versions == got.versions else { return false }
+        if target.artist.nonBlank != nil {
+            guard sharesArtist(target.artist, candidate.artist, wantedTitle: target.title, gotTitle: candidate.title) else { return false }
+        }
+        if let wantedDur = target.durationSec, let gotDur = secondsOf(candidate.durationText) {
+            guard abs(wantedDur - gotDur) <= durationLimitSec else { return false }
+        }
+        if let wantedExp = target.isExplicit, let gotExp = candidate.isExplicit {
+            guard wantedExp == gotExp else { return false }
+        }
+        return true
     }
 
     // MARK: Judging
@@ -115,7 +134,7 @@ public enum TrackMatcher {
         let scored: [(Song, Int)] = candidates.compactMap { candidate in
             let got = parseTitle(candidate.title, artist: candidate.artist)
             guard wanted.core == got.core, wanted.versions == got.versions,
-                  let artist = artistScore(target.artist, candidate.artist) else { return nil }
+                  let artist = artistScore(target.artist, candidate.artist, wantedTitle: target.title, gotTitle: candidate.title) else { return nil }
             var duration = 0
             if let expected = target.durationSec {
                 duration = secondsOf(candidate.durationText).map { -abs(expected - $0) } ?? -120
@@ -128,7 +147,7 @@ public enum TrackMatcher {
     /// Every candidate that really is `target`, most confident first. The whole list rather than
     /// the winner: which copy to open is a quality question, and that belongs to
     /// ``SourceResolver``.
-    public static func ranked(_ candidates: [Song], _ target: Target) -> [Song] {
+    public static func ranked(_ candidates: [Song], _ target: Target, requireSharedArtist: Bool = true) -> [Song] {
         let scored: [(Song, Int)] = candidates.compactMap { candidate in
             score(candidate, target).map { (candidate, $0) }
         }
@@ -136,7 +155,10 @@ public enum TrackMatcher {
         // same master differently. If the search also returned anything carrying the requested
         // artist, the different-artist rows leave contention — which also avoids opening their
         // stream URLs while a correct result waits.
-        let credited = scored.filter { artistScore(target.artist, $0.0.artist) != nil }
+        let credited = scored.filter { artistScore(target.artist, $0.0.artist, wantedTitle: target.title, gotTitle: $0.0.title) != nil }
+        if requireSharedArtist && target.artist.nonBlank != nil {
+            return stableSortedDescending(credited).map(\.0)
+        }
         return stableSortedDescending(credited.isEmpty ? scored : credited).map(\.0)
     }
 
@@ -149,7 +171,7 @@ public enum TrackMatcher {
         // Both directions: the album cut must not land on the live take, nor the reverse.
         guard wanted.versions == got.versions else { return nil }
 
-        let creditedArtist = artistScore(target.artist, candidate.artist)
+        let creditedArtist = artistScore(target.artist, candidate.artist, wantedTitle: target.title, gotTitle: candidate.title)
         // A music video may carry a long visual intro. That drift is credible only when the row
         // names the same artist; duration must never make an unrelated artist into the song.
         guard let duration = durationScore(
@@ -286,9 +308,13 @@ public enum TrackMatcher {
         var words = wordSplit.split(text)
             .map { nonAlnum.replacing(in: $0, with: "") }
             .filter { !$0.isEmpty && !joiningWords.contains($0) }
-        // "Paniyon Sa Full Song", "Tum Hi Ho Audio": an unbracketed trailing label. Never stripped
-        // to nothing — a track really called "Song" keeps its name.
-        while words.count > 1, let last = words.last, trailingNoise.contains(last) {
+        // "Paniyon Sa Full Song", "Tum Hi Ho Audio", "Blank Space Cover", "Shape of You Acoustic":
+        // Trailing packaging words are dropped, and trailing version tokens are filed under versions.
+        // Never stripped to nothing — a track really called "Song" or "Cover" keeps its name.
+        while words.count > 1, let last = words.last, trailingNoise.contains(last) || versionWords.contains(last) {
+            if versionWords.contains(last) {
+                versions.insert(last)
+            }
             words.removeLast()
         }
         return TitleParts(words: words, core: words.joined(), versions: versions.sorted(), context: context)
@@ -322,28 +348,47 @@ public enum TrackMatcher {
 
     // MARK: Artist
 
+    /// Extracts featured artist names from title text (e.g., "(feat. Swae Lee)", "ft. Drake").
+    static func featuredArtistsInTitle(_ title: String) -> [String] {
+        guard let match = featuring.firstMatch(in: title),
+              let range = Range(match.range, in: title) else { return [] }
+        let tail = String(title[range.lowerBound...])
+        let stripped = tail.replacingOccurrences(of: #"^(?:feat\.?|ft\.?|featuring|with)\s+"#, with: "", options: [.regularExpression, .caseInsensitive])
+        let cleaned = stripped.trimmingCharacters(in: CharacterSet(charactersIn: "()[]{}").union(.whitespacesAndNewlines))
+        return cleaned.isEmpty ? [] : [cleaned]
+    }
+
     /// Points for the credit agreeing, nil when it disagrees. A partial credit must survive — a
     /// duet's "Atif Aslam" and "Atif Aslam, Tulsi Kumar" are one recording — and a side with no
     /// credit at all scores zero: there is nothing to disagree with.
-    private static func artistScore(_ wanted: String, _ got: String) -> Int? {
-        let want = artistNames(wanted)
-        let have = artistNames(got)
+    private static func artistScore(_ wanted: String, _ got: String, wantedTitle: String = "", gotTitle: String = "") -> Int? {
+        let want = artistNames(wanted, extraTitle: wantedTitle)
+        let have = artistNames(got, extraTitle: gotTitle)
         if want.isEmpty || have.isEmpty { return 0 }
-        guard sharesArtist(wanted, got) else { return nil }
+        guard sharesArtist(wanted, got, wantedTitle: wantedTitle, gotTitle: gotTitle) else { return nil }
         return want == have ? artistExact : artistShared
     }
 
     /// The credited artists, each as its own list of words, so containment is checked on whole
     /// names ("Queen" is not one of "Queensrÿche"'s artists). Single letters go: "A. R. Rahman" is
     /// "AR Rahman".
-    static func artistNames(_ value: String) -> Set<[String]> {
-        Set(
+    static func artistNames(_ value: String, extraTitle: String = "") -> Set<[String]> {
+        var names = Set(
             artistSeparators.split(value.lowercased())
                 .map { name in
                     wordSplit.split(name).map { nonAlnum.replacing(in: $0, with: "") }.filter { $0.count > 1 }
                 }
                 .filter { !$0.isEmpty }
         )
+        if !extraTitle.isEmpty {
+            for featured in featuredArtistsInTitle(extraTitle) {
+                for name in artistSeparators.split(featured.lowercased()) {
+                    let words = wordSplit.split(name).map { nonAlnum.replacing(in: $0, with: "") }.filter { $0.count > 1 }
+                    if !words.isEmpty { names.insert(words) }
+                }
+            }
+        }
+        return names
     }
 
     private static func sameArtist(_ a: [String], _ b: [String]) -> Bool { runOf(a, b) || runOf(b, a) }
@@ -451,7 +496,7 @@ public enum TrackMatcher {
     private static let wordSplit = Pattern(#"[\s.·]+"#)
     private static let nonAlnum = Pattern(#"[^a-z0-9]"#)
     private static let artistSeparators =
-        Pattern(#"\s*(?:[,&/;·|]|\band\b|\bx\b|\bvs\.?\b|\bfeat\.?\b|\bft\.?\b|\bfeaturing\b|\bwith\b)\s*"#)
+        Pattern(#"\s*(?:[,&/;+·|()[\]]|\band\b|\bx\b|\bvs\.?\b|\bfeat\.?\b|\bft\.?\b|\bfeaturing\b|\bwith\b)\s*"#)
 
     /// What makes a listing a different recording. On one side only, refused outright.
     private static let versionWords: Set<String> = [
@@ -461,8 +506,8 @@ public enum TrackMatcher {
         "vocals", "vocal", "acapella", "acappella", "backing", "stems", "stem",
         "cover", "demo", "reprise", "remake", "rework", "extended", "edit",
         "version", "mix", "dub", "vip", "session", "sessions",
-        "sped", "slowed", "reverb", "nightcore", "lofi", "orchestral", "symphonic",
-        "part", "pt", "chapter",
+        "sped", "spedup", "slow", "slowed", "fast", "reverb", "nightcore", "lofi", "orchestral", "symphonic",
+        "part", "pt", "chapter", "tribute", "parody", "synth", "synthwave",
     ]
 
     /// Asides that read like a version and describe the ordinary release.
