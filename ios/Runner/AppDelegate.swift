@@ -333,7 +333,7 @@ import UIKit
 
       case "stop":
         self.atmosPlayer.stop()
-        audioManager.stop()
+        AuraBeatAudioManager.shared.stop()
         result(true)
 
       case "seek":
@@ -356,11 +356,13 @@ import UIKit
         result(FlutterMethodNotImplemented)
       }
     }
+  }
+
   private func setupSettingsChannel() {
     guard let controller = window?.rootViewController as? FlutterViewController else { return }
     let channel = FlutterMethodChannel(name: "com.aurabeat/settings", binaryMessenger: controller.binaryMessenger)
 
-    channel.setMethodCallHandler { (call: FlutterMethodCall, result: @escaping FlutterResult) =>
+    channel.setMethodCallHandler { (call: FlutterMethodCall, result: @escaping FlutterResult) in
       let defaults = UserDefaults.standard
       let audioManager = AuraBeatAudioManager.shared
 
@@ -490,6 +492,42 @@ import UIKit
         } else {
           result(false)
         }
+
+      case "getEqBands":
+        result(AuraBeatDSPConfiguration.shared.eqBands.map { Double($0) })
+
+      case "setEqBands":
+        if let bands = call.arguments as? [Double] {
+          audioManager.setEqualizer(bands: bands.map { Float($0) })
+          result(true)
+        } else {
+          result(false)
+        }
+
+      case "getDolbyAtmosInfo":
+        result([
+          "supported": true,
+          "active": audioManager.isDolbyActive,
+          "spatialAudioEnabled": AuraBeatDSPConfiguration.shared.spatialAudioEnabled
+        ])
+
+      case "getLosslessInfo":
+        result([
+          "lossless": true,
+          "hiRes": true,
+          "sampleRate": 192000.0,
+          "bitDepth": 24
+        ])
+
+      case "getAppInfo":
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+        let build = info?["CFBundleVersion"] as? String ?? "1"
+        result([
+          "name": "AuraBeat",
+          "version": version,
+          "build": build
+        ])
 
       case "clearCache":
         // Clear caches safely

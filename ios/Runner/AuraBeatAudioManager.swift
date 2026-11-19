@@ -290,6 +290,10 @@ public final class AuraBeatDSPConfiguration {
     public var manualBands: [Float] = Array(repeating: 0.0, count: 7) {
         didSet { saveToUserDefaults() }
     }
+    public var eqBands: [Float] {
+        get { return manualBands }
+        set { manualBands = newValue }
+    }
     public var toneX: Int = 0 {
         didSet { saveToUserDefaults() }
     }
@@ -304,6 +308,10 @@ public final class AuraBeatDSPConfiguration {
     }
     public var presetName: String = "FLAT" {
         didSet { saveToUserDefaults() }
+    }
+    public var activePreset: String {
+        get { return presetName }
+        set { presetName = newValue }
     }
     public var spatialAudioEnabled: Bool = false {
         didSet { saveToUserDefaults() }
@@ -644,6 +652,24 @@ public final class AuraBeatAudioManager: NSObject {
     }
 
     private func startNativePlayback(urlStr: String, title: String) {
+        // Clean up previous observers and active player item to prevent leaks and audio overlap
+        if let observer = nativePlayerEndObserver {
+            NotificationCenter.default.removeObserver(observer)
+            nativePlayerEndObserver = nil
+        }
+        if let observer = nativePlayerErrorObserver {
+            NotificationCenter.default.removeObserver(observer)
+            nativePlayerErrorObserver = nil
+        }
+        if let observer = nativePlayerStallObserver {
+            NotificationCenter.default.removeObserver(observer)
+            nativePlayerStallObserver = nil
+        }
+        nativePlayerItemStatusObservation?.invalidate()
+        nativePlayerItemStatusObservation = nil
+        nativePlayer?.pause()
+        nativePlayer?.replaceCurrentItem(with: nil)
+
         let url: URL?
         if urlStr.hasPrefix("http://") || urlStr.hasPrefix("https://") || urlStr.hasPrefix("file://") || urlStr.contains("://") {
             url = URL(string: urlStr)

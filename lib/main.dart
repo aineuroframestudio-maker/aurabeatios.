@@ -1578,7 +1578,19 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
     super.initState();
     _queue = List<SongItem>.from(_songs);
     _queueIndex = 0;
-    _currentSong = _songs.first;
+    _currentSong = _songs.isNotEmpty
+        ? _songs.first
+        : const SongItem(
+            id: '1',
+            title: 'Midnight City',
+            artist: 'M83',
+            album: 'Hurry Up, We\'re Dreaming',
+            duration: '4:03',
+            durationSec: 243,
+            coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80',
+            lyrics: ['Waiting in a car', 'Waiting for a ride in the dark'],
+            isHiRes: true,
+          );
     _queueController.selectSong(_currentSong, newQueue: _queue);
     WebAudioBridge.init();
     WebAudioBridge.setVolume(_volume);
@@ -1675,10 +1687,21 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
 
   void _updateMetadataForSong(SongItem song, {String? sourceId, String? requestedTier}) {
     final allSources = AddonSourceRegistry.instance.allSources;
+    final fallbackSource = AddonSourceConfig(
+      id: 'dev.akira.bitchord-hires',
+      name: 'BitChord Hi-Res Add-on',
+      url: 'https://bitchord.org',
+      manifestUrl: 'https://bitchord.org/manifest.json',
+      version: '1.0.8',
+    );
     AddonSourceConfig activeSource;
     if (sourceId != null) {
       activeSource = AddonSourceRegistry.instance.getSourceById(sourceId) ??
-          (allSources.isNotEmpty ? allSources.first : AddonSourceRegistry.instance.defaultSources.first);
+          (allSources.isNotEmpty
+              ? allSources.first
+              : (AddonSourceRegistry.instance.defaultSources.isNotEmpty
+                  ? AddonSourceRegistry.instance.defaultSources.first
+                  : fallbackSource));
     } else {
       final matching = allSources.where((s) => song.id.contains(s.id) || song.album.contains(s.name)).toList();
       if (matching.isNotEmpty) {
@@ -1686,7 +1709,11 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
       } else {
         activeSource = AddonSourceRegistry.instance.enabledSources.firstWhere(
           (s) => s.id == 'dev.akira.bitchord-hires',
-          orElse: () => allSources.isNotEmpty ? allSources.first : AddonSourceRegistry.instance.defaultSources.first,
+          orElse: () => allSources.isNotEmpty
+              ? allSources.first
+              : (AddonSourceRegistry.instance.defaultSources.isNotEmpty
+                  ? AddonSourceRegistry.instance.defaultSources.first
+                  : fallbackSource),
         );
       }
     }
@@ -2135,6 +2162,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
         artist: _currentSong.artist,
         qualityProfile: profile,
       ).then((res) {
+        if (!mounted) return;
         if (res != null && res.url.isNotEmpty && _isPlaying) {
           setState(() {
             _currentSong = _currentSong.copyWith(streamUrl: res.url);
@@ -2206,6 +2234,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
         artist: song.artist,
         qualityProfile: _globalStreamingProfile,
       ).then((res) {
+        if (!mounted) return;
         if (requestGen != _playGeneration || !_isPlaying) return;
 
         if (res != null && res.url.isNotEmpty) {
@@ -2223,6 +2252,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
           });
         }
       }).catchError((err) {
+        if (!mounted) return;
         if (requestGen != _playGeneration) return;
         WebAudioBridge.stop();
         _atmosStreamingManager.player.pause();
@@ -3490,7 +3520,7 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                   Row(
                     children: [
                       ElevatedButton.icon(
-                        onPressed: () => _selectSong(_songs.first, newQueue: _songs, indexInQueue: 0),
+                        onPressed: _songs.isNotEmpty ? () => _selectSong(_songs.first, newQueue: _songs, indexInQueue: 0) : null,
                         icon: const Icon(Icons.play_arrow_rounded, color: Colors.black, size: 22),
                         label: const Text(
                           'Play Album',

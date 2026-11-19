@@ -745,10 +745,12 @@ private struct PortraitPlayer: View {
         guard main, !settings.legacyMeshGradient else { return nil }
         let mesh = model.mesh
         return { frame in
-            let now = ContinuousClock.now
-            guard now - Self.lastCanvasFrameTime >= .seconds(2) else { return }
-            Self.lastCanvasFrameTime = now
-            Task { await mesh.receiveCanvasFrame(frame) }
+            Task { @MainActor in
+                let now = ContinuousClock.now
+                guard now - Self.lastCanvasFrameTime >= .seconds(2) else { return }
+                Self.lastCanvasFrameTime = now
+                await mesh.receiveCanvasFrame(frame)
+            }
         }
     }
 }

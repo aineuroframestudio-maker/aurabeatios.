@@ -83,6 +83,7 @@ public struct DSPChannels {
     @inlinable
     public func base(of channel: Int) -> UnsafeMutablePointer<Float> {
         if let interleaved {
+            guard channel < channelCount else { return Self.dummyBuffer }
             return interleaved + channel
         }
         guard let bufferList else {
