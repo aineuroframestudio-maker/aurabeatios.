@@ -613,11 +613,11 @@ public final class AudioPlayerEngine {
                 self.active.play()
                 self.active.startIfBuffered()
             }
-            // Step 2: If still frozen at 0:00 after an additional 6 seconds (10s total), fail and recover
-            try? await Task.sleep(for: .seconds(6))
+            // Step 2: If still frozen at 0:00 after an additional 8 seconds (12s total), fail and recover only if not actively buffering
+            try? await Task.sleep(for: .seconds(8))
             guard !Task.isCancelled, self.currentItem?.id == itemID, self.playWhenReady else { return }
-            if !self.isPlaying && self.position <= 0.05 && !self.isLoadingItem {
-                PlaybackLog.error("Playback failed to begin past 0:00 after 10s; reporting stream stalled", about: self.currentItem?.trackID)
+            if !self.isPlaying && self.position <= 0.05 && !self.isLoadingItem && !self.isBuffering {
+                PlaybackLog.error("Playback failed to begin past 0:00 after 12s; reporting stream stalled", about: self.currentItem?.trackID)
                 self.handleFailure(itemID: itemID, error: PlaybackSourceError.streamStalled)
             }
         }

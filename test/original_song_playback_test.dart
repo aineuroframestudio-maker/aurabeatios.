@@ -37,7 +37,7 @@ void main() {
     setUpAll(() {
       for (final entry in fixtureFiles.entries) {
         final file = File(entry.value);
-        expect(file.existsSync(), isTrue, reason: 'Test fixture ' + entry.value + ' must exist on disk');
+        expect(file.existsSync(), isTrue, reason: 'Test fixture ${entry.value} must exist on disk');
         final bytes = file.readAsBytesSync();
         final hashHex = _fnv1a64(bytes).toRadixString(16);
         fileFingerprintMap[entry.key] = hashHex;
@@ -861,6 +861,7 @@ void main() {
     test('Phase 13.5: Prevents silent substitution of remixes, instrumentals, or cover versions', () {
       const requestedTitle = 'Calgary Cowboys';
       const requestedArtist = 'a.s. kullar, Harry Pannu';
+      expect(requestedArtist.isNotEmpty, isTrue);
 
       final candidates = [
         {'title': 'Calgary Cowboys (Acoustic Cover)', 'artist': 'Cover Band', 'isMatch': false},

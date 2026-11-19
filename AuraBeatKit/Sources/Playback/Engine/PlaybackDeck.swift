@@ -306,7 +306,6 @@ final class PlaybackDeck: TransitionDeck {
         startedOnBufferEnd = end
         PlaybackLog.debug("\(entry.item.id): starting on \(String(format: "%.1f", ahead))s buffered rather than waiting "
             + "for the stream to look fast enough" + (rebuffering ? " (after a stall)" : ""), about: entry.item.trackID)
-        player.automaticallyWaitsToMinimizeStalling = false
         player.playImmediately(atRate: player.rate > 0 ? player.rate : (player.defaultRate > 0 ? player.defaultRate : 1))
     }
 

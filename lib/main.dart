@@ -8453,6 +8453,16 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
                     ),
                   ],
                 ),
+                if (_playbackErrorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Text(
+                      'Track ${_queueIndex + 1}/${_queue.length}: $_playbackErrorMessage',
+                      style: const TextStyle(fontSize: 10, color: Colors.redAccent),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 Row(
                   children: [
                     Text(_formatTime(_currentPosition), style: TextStyle(fontSize: 11, color: const Color(0xFFFEDBB3).withOpacity(0.6))),

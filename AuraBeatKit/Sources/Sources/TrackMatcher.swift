@@ -370,11 +370,8 @@ public enum TrackMatcher {
 
     /// Extracts featured artist names from title text (e.g., "(feat. Swae Lee)", "ft. Drake").
     static func featuredArtistsInTitle(_ title: String) -> [String] {
-        guard let match = featuring.firstMatch(in: title),
-              let range = Range(match.range, in: title) else { return [] }
-        let tail = String(title[range.lowerBound...])
-        let stripped = tail.replacingOccurrences(of: #"^(?:feat\.?|ft\.?|featuring|with)\s+"#, with: "", options: [.regularExpression, .caseInsensitive])
-        let cleaned = stripped.trimmingCharacters(in: CharacterSet(charactersIn: "()[]{}").union(.whitespacesAndNewlines))
+        guard let group = featuring.firstGroup(1, in: title) else { return [] }
+        let cleaned = group.trimmingCharacters(in: CharacterSet(charactersIn: "()[]{}").union(.whitespacesAndNewlines))
         return cleaned.isEmpty ? [] : [cleaned]
     }
 
@@ -510,7 +507,7 @@ public enum TrackMatcher {
 
     private static let bracketed = Pattern(#"[(\[]([^()\[\]]*)[)\]]"#)
     private static let dash = Pattern(#"\s+[-–—|]+\s+"#)
-    private static let featuring = Pattern(#"\b(feat|ft|featuring|with)\b.*"#)
+    private static let featuring = Pattern(#"(?:^|[\s(\[{])(?:feat\.?|ft\.?|featuring)\s+([^()\[\]{}]+)"#, caseInsensitive: true)
     private static let wordSplit = Pattern(#"[\s.·]+"#)
     private static let nonAlnum = Pattern(#"[^a-z0-9]"#)
     private static let artistSeparators =

@@ -240,35 +240,48 @@ struct PlayerShimmerText: View {
 
 /// Real-time playback source and verification indicator displayed on the player controls.
 struct PlayerSourceIndicatorView: View {
-    @Environment(PlayerController.self) private var player
+    @Environment(PlayerController.self) private var player: PlayerController?
 
     var body: some View {
         let (sourceName, verificationStatus, symbol) = currentSourceInfo()
-        HStack(spacing: 5) {
-            Image(systemName: symbol)
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.7))
-            Text(sourceName)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.85))
-            if let verification = verificationStatus {
-                Text("•")
-                    .font(.system(size: 8))
-                    .foregroundStyle(.white.opacity(0.4))
-                Text(verification)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.65))
+        let isFailed = player.map { if case .failed = $0.pipelineStatus { return true } else { return false } } ?? false
+        Button {
+            if isFailed {
+                player?.retryCurrentSong()
             }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: symbol)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(isFailed ? Color.red.opacity(0.9) : Color.white.opacity(0.7))
+                Text(sourceName)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(isFailed ? Color.red.opacity(0.95) : Color.white.opacity(0.85))
+                if let verification = verificationStatus {
+                    Text("•")
+                        .font(.system(size: 8))
+                        .foregroundStyle(.white.opacity(0.4))
+                    Text(verification)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(isFailed ? Color.white.opacity(0.85) : Color.white.opacity(0.65))
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Capsule().fill(isFailed ? Color.red.opacity(0.2) : Color.white.opacity(0.08)))
+            .overlay(Capsule().strokeBorder(isFailed ? Color.red.opacity(0.4) : Color.white.opacity(0.12), lineWidth: 0.5))
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3)
-        .background(Capsule().fill(Color.white.opacity(0.08)))
-        .overlay(Capsule().strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5))
+        .buttonStyle(.plain)
+        .disabled(!isFailed)
+        .frame(height: 20)
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("nowPlaying.sourceIndicator")
     }
 
     private func currentSourceInfo() -> (name: String, status: String?, symbol: String) {
+        guard let player else {
+            return ("Audio Source", nil, "waveform")
+        }
         if let stream = player.currentStream {
             let name = PlayerNerdStatsText.sourceName(of: stream)
             switch stream.origin {
@@ -286,7 +299,7 @@ struct PlayerSourceIndicatorView: View {
         } else if player.pipelineStatus == .resolving || player.isBuffering {
             return ("Resolving Source", "Connecting...", "antenna.radiowaves.left.and.right")
         } else if case .failed = player.pipelineStatus {
-            return ("Source Verification", "Failed", "exclamationmark.triangle.fill")
+            return ("Source Verification", "Tap to retry", "exclamationmark.triangle.fill")
         }
         return ("Audio Source", nil, "waveform")
     }

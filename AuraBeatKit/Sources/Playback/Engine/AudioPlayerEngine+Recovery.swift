@@ -99,7 +99,15 @@ extension AudioPlayerEngine {
                 try? await Task.sleep(for: .seconds(RecoveryLedger.recoveryDelay))
                 // Play in the meantime already reopened it (see `play()`): that open stands.
                 guard let self, self.currentItem?.id == item.id, !self.isLoadingItem, !self.active.isPlaying else { return }
-                let replacement = try? await sourceRecovery?(item, reason)
+                let replacement: PlayableItem.Source?
+                if let sourceRecovery {
+                    replacement = try? await sourceRecovery(item, reason)
+                    // If sourceRecovery returned nil, it either handled fallback directly (like fellBackToYouTube)
+                    // or refused replacement. In either case, do not reopen the unplayable item.
+                    guard let replacement else { return }
+                } else {
+                    replacement = nil
+                }
                 guard self.currentItem?.id == item.id else { return }
                 PlaybackLog.debug("retrying \(item.id) from \(position)s (attempt \(attempt))", about: item.trackID)
                 var reopened = item

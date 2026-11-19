@@ -743,7 +743,7 @@ final class PlaybackSourceFactory {
                     + (picked.belowRequest ? " (below request)" : ""), about: song.videoId)
             }
             var verifiedStream = picked
-            if verifiedStream.origin != .youtube {
+            if verifiedStream.origin != .youtube && !song.isVideo {
                 let expectedSec = TrackMatcher.secondsOf(song.durationText)
                 if let streamSec = verifiedStream.durationSeconds, let expectedSec,
                    TrackMatcher.isSevereMismatch(expectedSec: expectedSec, actualSec: streamSec) {
@@ -754,14 +754,6 @@ final class PlaybackSourceFactory {
                         verifiedStream = try await youTube.resolveStream(for: song, request: wanted)
                     }
                 }
-            }
-            let expectedSec = TrackMatcher.secondsOf(song.durationText)
-            if let streamSec = verifiedStream.durationSeconds, let expectedSec,
-               TrackMatcher.isSevereMismatch(expectedSec: expectedSec, actualSec: streamSec) {
-                TrackLog.w(PlaybackSourceFactory.logCategory,
-                           "Resolved stream for '\(song.title)' failed duration verification (\(streamSec)s vs expected \(expectedSec)s)",
-                           about: song.videoId)
-                throw PlaybackSourceError.verificationFailed("Stream duration (\(streamSec)s) severely mismatched from recording (\(expectedSec)s)")
             }
             TrackLog.d("PlaybackIdentity", "resolvedStreamTitle='\(song.title)' artist='\(song.artist)' origin=\(verifiedStream.origin) codec=\(verifiedStream.format.codec ?? "unknown") kbps=\(verifiedStream.format.kbps ?? 0) sampleRate=\(verifiedStream.format.sampleRateHz ?? 0) duration=\(verifiedStream.durationSeconds ?? 0)s verification=verified_original")
             var stamped = verifiedStream

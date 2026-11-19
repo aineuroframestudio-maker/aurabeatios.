@@ -242,10 +242,10 @@ struct PlayerDeck: View {
     var showsActions = true
     var compact = false
 
-    @Environment(PlayerController.self) private var player
-    @Environment(AppModel.self) private var app
-    @Environment(AppSettings.self) private var settings
-    @Environment(AppRouter.self) private var router
+    @Environment(PlayerController.self) private var player: PlayerController?
+    @Environment(AppModel.self) private var app: AppModel?
+    @Environment(AppSettings.self) private var settings: AppSettings?
+    @Environment(AppRouter.self) private var router: AppRouter?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -256,21 +256,16 @@ struct PlayerDeck: View {
                     withAnimation(NowPlayingMotion.collapse) { model.panes.openLyrics() }
                 }
             }
-            PlayerScrubberView(scrub: model.scrub, loading: player.isSwappingVersion, badge: PlayerQuality.badge(player: player, app: app))
+            let badge = player.flatMap { p in app.flatMap { a in PlayerQuality.badge(player: p, app: a) } }
+            PlayerScrubberView(scrub: model.scrub, loading: player?.isSwappingVersion ?? false, badge: badge)
             if !compact {
                 PlayerSourceIndicatorView()
                     .padding(.top, 4)
-                if case .failed(let message) = player.pipelineStatus {
-                    PlayerPlaybackErrorBanner(message: message) {
-                        player.retryCurrentSong()
-                    }
-                    .padding(.top, 4)
-                }
             }
             Spacer().frame(height: (compact ? 0 : 8) + spread / 2)
             PlayerTransport(compact: compact)
             Spacer().frame(height: (compact ? 0 : 12) + spread / 2)
-            if settings.hideVolumeBar {
+            if settings?.hideVolumeBar == true {
                 // The slot keeps its footprint: a display preference shouldn't move the controls.
                 Color.clear.frame(height: 32)
             } else {
@@ -289,19 +284,19 @@ struct PlayerDeck: View {
 struct PlayerTransport: View {
     var compact = false
 
-    @Environment(PlayerController.self) private var player
+    @Environment(PlayerController.self) private var player: PlayerController?
 
     var body: some View {
-        let locked = player.controlsLocked
+        let locked = player?.controlsLocked ?? false
         PlayerTransportRow(
-            isPlaying: player.playWhenReady,
-            isLoading: player.pipelineStatus == .resolving || player.isSwappingVersion,
-            previousEnabled: PlayerTransportState.previousEnabled(controlsLocked: locked, hasPrevious: player.hasPrevious, position: player.position),
-            nextEnabled: PlayerTransportState.nextEnabled(controlsLocked: locked, hasNext: player.hasNext),
+            isPlaying: player?.playWhenReady ?? false,
+            isLoading: player?.pipelineStatus == .resolving || player?.isSwappingVersion == true,
+            previousEnabled: PlayerTransportState.previousEnabled(controlsLocked: locked, hasPrevious: player?.hasPrevious ?? false, position: player?.position ?? 0),
+            nextEnabled: PlayerTransportState.nextEnabled(controlsLocked: locked, hasNext: player?.hasNext ?? false),
             compact: compact,
-            onPrevious: { player.previous() },
-            onPlayPause: { player.togglePlayPause() },
-            onNext: { player.next() }
+            onPrevious: { player?.previous() },
+            onPlayPause: { player?.togglePlayPause() },
+            onNext: { player?.next() }
         )
     }
 }
