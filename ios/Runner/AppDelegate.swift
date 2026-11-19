@@ -2,30 +2,50 @@ import Flutter
 import UIKit
 
 @main
-@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+@objc class AppDelegate: FlutterAppDelegate {
   private let channelName = "com.aurabeat.audio/quality"
   private let atmosChannelName = "aurabeat/dolby_atmos"
   private let atmosPlayer = AtmosPlayer()
+  private var channelsConfigured = false
 
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    GeneratedPluginRegistrant.register(with: self)
     AuraBeatDSPConfiguration.shared.loadFromUserDefaults()
     AuraBeatAudioManager.shared.dspEngine.syncWithConfiguration()
-    setupMethodChannel()
-    setupDolbyAtmosChannel()
-    setupSettingsChannel()
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    setupChannelsIfNeeded()
+    return result
   }
 
-  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
-    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+  public func setupChannelsIfNeeded() {
+    guard !channelsConfigured, let messenger = getBinaryMessenger() else { return }
+    channelsConfigured = true
+    setupMethodChannel(messenger: messenger)
+    setupDolbyAtmosChannel(messenger: messenger)
+    setupSettingsChannel(messenger: messenger)
   }
 
-  private func setupMethodChannel() {
-    guard let controller = window?.rootViewController as? FlutterViewController else { return }
-    let channel = FlutterMethodChannel(name: channelName, binaryMessenger: controller.binaryMessenger)
+  private func getBinaryMessenger() -> FlutterBinaryMessenger? {
+    if let controller = window?.rootViewController as? FlutterViewController {
+      return controller.binaryMessenger
+    }
+    for scene in UIApplication.shared.connectedScenes {
+      if let windowScene = scene as? UIWindowScene {
+        for win in windowScene.windows {
+          if let controller = win.rootViewController as? FlutterViewController {
+            return controller.binaryMessenger
+          }
+        }
+      }
+    }
+    return nil
+  }
+
+  private func setupMethodChannel(messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(name: channelName, binaryMessenger: messenger)
 
     channel.setMethodCallHandler { (call: FlutterMethodCall, result: @escaping FlutterResult) in
       let audioManager = AuraBeatAudioManager.shared
@@ -277,9 +297,8 @@ import UIKit
     }
   }
 
-  private func setupDolbyAtmosChannel() {
-    guard let controller = window?.rootViewController as? FlutterViewController else { return }
-    let channel = FlutterMethodChannel(name: atmosChannelName, binaryMessenger: controller.binaryMessenger)
+  private func setupDolbyAtmosChannel(messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(name: atmosChannelName, binaryMessenger: messenger)
 
     channel.setMethodCallHandler { [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
       guard let self = self else {
@@ -358,9 +377,8 @@ import UIKit
     }
   }
 
-  private func setupSettingsChannel() {
-    guard let controller = window?.rootViewController as? FlutterViewController else { return }
-    let channel = FlutterMethodChannel(name: "com.aurabeat/settings", binaryMessenger: controller.binaryMessenger)
+  private func setupSettingsChannel(messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(name: "com.aurabeat/settings", binaryMessenger: messenger)
 
     channel.setMethodCallHandler { (call: FlutterMethodCall, result: @escaping FlutterResult) in
       let defaults = UserDefaults.standard

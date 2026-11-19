@@ -28,9 +28,11 @@ class AtmosStreamingManager {
   Future<AtmosStreamInfo> inspectStream(
     String manifestUrl,
   ) async {
-    final response = await _httpClient.get(
-      Uri.parse(manifestUrl),
-    );
+    final uri = Uri.tryParse(manifestUrl);
+    if (uri == null) {
+      throw Exception('Invalid HLS manifest URL: "$manifestUrl"');
+    }
+    final response = await _httpClient.get(uri);
 
     if (response.statusCode != 200) {
       throw Exception(

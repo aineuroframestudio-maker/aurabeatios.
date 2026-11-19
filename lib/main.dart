@@ -19,6 +19,11 @@ import 'audio_engine/audio_engine.dart';
 import 'playback_queue_controller.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('[AuraBeat FlutterError] ${details.exceptionAsString()}');
+  };
   runApp(const AuraBeatApp());
 }
 

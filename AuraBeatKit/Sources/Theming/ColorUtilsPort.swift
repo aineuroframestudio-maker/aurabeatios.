@@ -123,15 +123,15 @@ enum ColorUtilsPort {
         )
     }
 
-    /// `ColorUtils.calculateContrast`. The background must be opaque (Android throws otherwise).
+    /// `ColorUtils.calculateContrast`. The background is normalized to opaque to prevent crashes.
     static func calculateContrast(foreground: UInt32, background: UInt32) -> Double {
-        precondition(alphaOf(background) == 255, "background can not be translucent")
+        let bg = alphaOf(background) == 255 ? background : setAlpha(background, 255)
         var fg = foreground
         if alphaOf(fg) < 255 {
-            fg = compositeColors(foreground: fg, background: background)
+            fg = compositeColors(foreground: fg, background: bg)
         }
         let luminance1 = calculateLuminance(argb: fg) + 0.05
-        let luminance2 = calculateLuminance(argb: background) + 0.05
+        let luminance2 = calculateLuminance(argb: bg) + 0.05
         return max(luminance1, luminance2) / min(luminance1, luminance2)
     }
 
@@ -139,9 +139,9 @@ enum ColorUtilsPort {
     /// over `background` reaches `minContrastRatio`, or nil (Android's -1) when
     /// even an opaque foreground doesn't.
     static func calculateMinimumAlpha(foreground: UInt32, background: UInt32, minContrastRatio: Float) -> Int? {
-        precondition(alphaOf(background) == 255, "background can not be translucent")
+        let bg = alphaOf(background) == 255 ? background : setAlpha(background, 255)
         let minRatio = Double(minContrastRatio)
-        if calculateContrast(foreground: setAlpha(foreground, 255), background: background) < minRatio {
+        if calculateContrast(foreground: setAlpha(foreground, 255), background: bg) < minRatio {
             return nil
         }
         var numIterations = 0
@@ -149,7 +149,7 @@ enum ColorUtilsPort {
         var maxAlpha = 255
         while numIterations <= 10 && (maxAlpha - minAlpha) > 1 {
             let testAlpha = (minAlpha + maxAlpha) / 2
-            if calculateContrast(foreground: setAlpha(foreground, testAlpha), background: background) < minRatio {
+            if calculateContrast(foreground: setAlpha(foreground, testAlpha), background: bg) < minRatio {
                 minAlpha = testAlpha
             } else {
                 maxAlpha = testAlpha
