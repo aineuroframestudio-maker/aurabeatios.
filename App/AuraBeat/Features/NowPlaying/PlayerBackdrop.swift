@@ -31,7 +31,7 @@ struct PlayerMeshBackdrop: View {
     var body: some View {
         GeometryReader { proxy in
             let fraction = proxy.size.height > 0 ? min(max(seam / proxy.size.height, 0), 1) : 0
-            TimelineView(.animation(minimumInterval: nil, paused: fade.incoming == nil)) { timeline in
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: fade.incoming == nil)) { timeline in
                 let now = timeline.date.timeIntervalSinceReferenceDate
                 ZStack {
                     ArtworkMeshBackdropStyle.fallback.color

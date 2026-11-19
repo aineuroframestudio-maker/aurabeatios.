@@ -288,10 +288,13 @@ struct PlayerTransport: View {
 
     var body: some View {
         let locked = player?.controlsLocked ?? false
+        let hasPrev = player?.hasPrevious ?? false
+        // Short-circuit: avoid reading player?.position (which triggers 4x/sec body invalidations) when hasPrevious is true
+        let canRestart = hasPrev || ((player?.position ?? 0) > AudioPlayerEngine.backRestartsAfter)
         PlayerTransportRow(
             isPlaying: player?.playWhenReady ?? false,
             isLoading: player?.pipelineStatus == .resolving || player?.isSwappingVersion == true,
-            previousEnabled: PlayerTransportState.previousEnabled(controlsLocked: locked, hasPrevious: player?.hasPrevious ?? false, position: player?.position ?? 0),
+            previousEnabled: !locked && canRestart,
             nextEnabled: PlayerTransportState.nextEnabled(controlsLocked: locked, hasNext: player?.hasNext ?? false),
             compact: compact,
             onPrevious: { player?.previous() },

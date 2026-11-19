@@ -130,7 +130,7 @@ private struct SignalBus: View {
     let flowing: Bool
 
     var body: some View {
-        TimelineView(.animation(paused: !flowing)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: !flowing)) { context in
             GeometryReader { proxy in
                 let phase = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 2.4) / 2.4
                 let span = 0.85 / Double(max(segments, 1))

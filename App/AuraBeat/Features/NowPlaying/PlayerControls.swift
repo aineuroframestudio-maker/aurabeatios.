@@ -94,7 +94,7 @@ private struct SliderSheen: View {
     let reduceMotion: Bool
 
     var body: some View {
-        TimelineView(.animation(paused: reduceMotion)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: reduceMotion)) { context in
             GeometryReader { proxy in
                 let band = proxy.size.width * 0.34
                 let cycle = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 2)
@@ -212,7 +212,7 @@ struct PlayerShimmerText: View {
             .foregroundStyle(.white.opacity(baseAlpha))
             .overlay {
                 if !reduceMotion {
-                    TimelineView(.animation) { context in
+                    TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
                         GeometryReader { proxy in
                             let width = proxy.size.width
                             let band = width * 0.6

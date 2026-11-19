@@ -22,7 +22,7 @@ struct ShimmerBlock<S: Shape>: View {
         if reduceMotion {
             shape.fill(Color(.secondarySystemFill))
         } else {
-            TimelineView(.animation) { context in
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
                 let phase = context.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: Self.period) / Self.period
                 shape

@@ -23,7 +23,7 @@ struct SkeletonBlock: View {
         if reduceMotion {
             block
         } else {
-            TimelineView(.animation) { context in
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
                 let phase = context.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: Self.period) / Self.period
                 block.opacity(1 - 0.55 * (1 - cos(2 * .pi * phase)) / 2)

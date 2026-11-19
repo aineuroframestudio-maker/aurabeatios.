@@ -655,20 +655,34 @@ private struct DockFade: ViewModifier {
     let cutsEdge: Bool
     @Environment(AppRouter.self) private var router
 
+    @ViewBuilder
     func body(content: Content) -> some View {
         let frame = router.dockFrame
-        // Always masked, so the content keeps its identity as the sheet starts and stops moving.
-        content
-            .opacity(frame.fade)
-            .mask { EdgeMask(edge: cutsEdge ? frame.edge : 0, sheetTop: frame.stageOffset) }
+        // Only apply mask during edge transitions to avoid offscreen framebuffer passes at rest
+        if cutsEdge && frame.edge >= 1 {
+            content
+                .opacity(frame.fade)
+                .mask { EdgeMask(edge: frame.edge, sheetTop: frame.stageOffset) }
+        } else if frame.fade < 0.999 {
+            content
+                .opacity(frame.fade)
+        } else {
+            content
+        }
     }
 }
 
 private struct DockClipFade: ViewModifier {
     @Environment(AppRouter.self) private var router
 
+    @ViewBuilder
     func body(content: Content) -> some View {
-        content.opacity(max(Double(PlayerDockMotion.clipFade(router.dockFrame.t)), 1.0 / 255))
+        let alpha = max(Double(PlayerDockMotion.clipFade(router.dockFrame.t)), 1.0 / 255)
+        if alpha < 0.999 {
+            content.opacity(alpha)
+        } else {
+            content
+        }
     }
 }
 

@@ -455,13 +455,23 @@ private struct PortraitPlayer: View {
     /// The status bar always sits on light glyphs; this gradient gives them their contrast,
     /// following the cover's top band rather than flipping the glyphs per cover. A panel gets a
     /// modest floor.
+    private static let topScrimCoefficients: [(location: Double, factor: Double)] = [
+        (0.0 / 7.0, 1.0),
+        (1.0 / 7.0, 0.7936),
+        (2.0 / 7.0, 0.6046),
+        (3.0 / 7.0, 0.4330),
+        (4.0 / 7.0, 0.2810),
+        (5.0 / 7.0, 0.1527),
+        (6.0 / 7.0, 0.0540),
+        (1.0, 0.0),
+    ]
+
     private func topScrim(main: Bool) -> some View {
         let luminance = model.tint.topBandLuminance(for: PlayerArtworkLoader.url(for: song))
         let base = StatusBarContrast.topBandScrimAlpha(artworkLuminance: luminance)
         let alpha = main ? base : max(base, 0.4)
-        let stops = (0..<8).map { index -> Gradient.Stop in
-            let progress = Double(index) / 7
-            return Gradient.Stop(color: .black.opacity(alpha * pow(1 - progress, 1.5)), location: progress)
+        let stops = Self.topScrimCoefficients.map {
+            Gradient.Stop(color: .black.opacity(alpha * $0.factor), location: $0.location)
         }
         return LinearGradient(stops: stops, startPoint: .top, endPoint: .bottom)
             .frame(height: insets.top + Self.topStrip)

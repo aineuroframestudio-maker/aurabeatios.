@@ -930,7 +930,7 @@ private struct LyricGapRow: View {
         let swell: CGFloat = open ? 1 : 0
         let metrics = LyricsPanelMetrics.self
         Button(action: onTap) {
-            TimelineView(.animation(paused: !active)) { _ in
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: !active)) { _ in
                 let span = max(until - line.timeMs, 1)
                 let through = min(max(Double(clock.positionMs - line.timeMs) / Double(span), 0), 1)
                 HStack(spacing: metrics.gapDotGap) {
@@ -1001,7 +1001,7 @@ private struct LyricsSkeleton: View {
     var body: some View {
         GeometryReader { geometry in
             let column = geometry.size.width
-            TimelineView(.animation) { timeline in
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
                 let sweep = timeline.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: Self.period) / Self.period
                 VStack(alignment: .leading, spacing: 35) {
                     ForEach(Self.blocks.indices, id: \.self) { block in
