@@ -467,7 +467,7 @@ public final class HTTPAudioSource: AudioRangeDataSource, @unchecked Sendable {
             return (nil, startResolve())
         }
         if let stream = state.stream { return stream }
-        guard let task = state.task else { throw AudioCacheError.noStream }
+        guard let task = state.task else { throw AudioCacheError.badResponse("no stream and no resolver") }
         return try await finishResolve(task)
     }
 
