@@ -108,7 +108,7 @@ public enum TrackMatcher {
     }
 
     /// Whether candidate and wanted titles disagree on version markers (remix, cover, live, acoustic, etc.)
-    public static func hasVersionMismatch(_ wanted: TitleParts, _ got: TitleParts) -> Bool {
+    static func hasVersionMismatch(_ wanted: TitleParts, _ got: TitleParts) -> Bool {
         if wanted.versions != got.versions { return true }
         let wantedSet = Set(wanted.words)
         let gotSet = Set(got.words)
