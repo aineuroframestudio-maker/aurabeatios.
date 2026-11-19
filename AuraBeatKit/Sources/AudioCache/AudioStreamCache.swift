@@ -11,14 +11,14 @@ import AuraBeatCore
 ///
 ///  - **Seeking.** Everything played is written to disk on the way through, so seeking back is
 ///    always a file read. Seeking *forward* past what the player has buffered is the gap, and it
-///    closes once a track is on disk in full — which is why read-ahead fetches whole tracks rather
+///    closes once a track is on disk in full â€” which is why read-ahead fetches whole tracks rather
 ///    than openings.
 ///  - **Track changes.** The next track needs a stream URL resolved before its first byte can even
 ///    be asked for. Fetching it ahead of time moves all of that off the gap between songs.
 ///
 /// Playback asks for an asset by ``AudioCacheKey`` (track identity, never a URL; see there for
 /// why) and a byte source. AVFoundation then reads the custom-scheme URL through an
-/// `AVAssetResourceLoaderDelegate` that answers from disk and fills holes from the source — lazily,
+/// `AVAssetResourceLoaderDelegate` that answers from disk and fills holes from the source â€” lazily,
 /// so a track already cached never resolves a URL. A fully cached track therefore plays with no
 /// network at all (airplane mode).
 ///
@@ -297,7 +297,11 @@ public final class AudioStreamCache: Sendable {
         components.host = "audio"
         let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._~"))
         components.percentEncodedPath = "/" + (key.rawValue.addingPercentEncoding(withAllowedCharacters: allowed) ?? key.rawValue)
-        return components.url!
+        if let url = components.url {
+            return url
+        }
+        let safePath = key.rawValue.addingPercentEncoding(withAllowedCharacters: allowed) ?? key.rawValue
+        return URL(string: "\(urlScheme)://audio/\(safePath)") ?? URL(fileURLWithPath: "/")
     }
 
     /// The key an asset URL from ``url(for:)`` names.
@@ -480,8 +484,8 @@ public final class AudioStreamCache: Sendable {
         }
     }
 
-    /// Drops every substitute's copy (`#alt…`: an add-on's or JioSaavn's) and upgrade copy
-    /// (`#hifi…`) that is only partly on disk, except those of `keepingTracks` (the tracks around
+    /// Drops every substitute's copy (`#altâ€¦`: an add-on's or JioSaavn's) and upgrade copy
+    /// (`#hifiâ€¦`) that is only partly on disk, except those of `keepingTracks` (the tracks around
     /// the playhead, still being read, seeked through or looked ahead for). Android's
     /// `dropForeignEntries`. Nothing is left to finish such an entry once its track is behind: its
     /// URL has expired, and the next lookup may land on another file, whose different length fails

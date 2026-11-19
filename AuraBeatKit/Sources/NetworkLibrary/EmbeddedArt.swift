@@ -468,7 +468,8 @@ public enum EmbeddedArt {
 
     private static func picture(_ bytes: Data, mime: String?) -> Picture? {
         guard !bytes.isEmpty, bytes.count <= maxPictureBytes else { return nil }
-        return Picture(bytes: bytes, mime: (mime?.isEmpty == false ? mime! : sniffMime(bytes)) ?? "image/jpeg")
+        let resolvedMime = (mime?.isEmpty == false ? mime : nil) ?? sniffMime(bytes) ?? "image/jpeg"
+        return Picture(bytes: bytes, mime: resolvedMime)
     }
 
     private static func sniffMime(_ bytes: Data) -> String? {

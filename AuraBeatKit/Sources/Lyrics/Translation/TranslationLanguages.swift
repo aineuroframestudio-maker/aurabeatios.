@@ -69,7 +69,7 @@ public struct TranslationLanguage: Hashable, Sendable, Identifiable {
         // rather than the script. For those the curated name is the accurate one.
         let platform = code.contains("-") ? nil : locale.localizedString(forLanguageCode: code)
         let known = platform.map { !$0.kIsBlank && !$0.kEqualsIgnoreCase(code) } ?? false
-        let name = known ? platform! : (entry?.fallbackName ?? code)
+        let name = (known ? platform : nil) ?? entry?.fallbackName ?? code
         guard let first = name.first, first.isLowercase else { return name }
         return String(first).capitalized(with: locale) + name.dropFirst()
     }

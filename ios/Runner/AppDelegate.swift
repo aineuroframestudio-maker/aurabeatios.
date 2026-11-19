@@ -492,7 +492,9 @@ import UIKit
         result(true)
 
       case "resetPreferences":
-        defaults.removePersistentDomain(forName: Bundle.main.bundleIdentifier!)
+        if let bundleId = Bundle.main.bundleIdentifier {
+          defaults.removePersistentDomain(forName: bundleId)
+        }
         AuraBeatDSPConfiguration.shared.loadFromUserDefaults()
         audioManager.dspEngine.syncWithConfiguration()
         result(true)

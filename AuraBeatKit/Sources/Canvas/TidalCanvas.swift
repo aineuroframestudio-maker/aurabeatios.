@@ -29,7 +29,12 @@ public struct TidalCanvas: Sendable {
     }
 
     public func search(title: String, artist: String, album: String?) async -> CanvasArtwork? {
-        let query = album.isNullOrBlankForCanvas ? "\(artist) \(title)" : "\(album!) \(artist) \(title)"
+        let query: String
+        if let album, !album.isNullOrBlankForCanvas {
+            query = "\(album) \(artist) \(title)"
+        } else {
+            query = "\(artist) \(title)"
+        }
         guard let url = CanvasURL.make(Self.searchEndpoint.absoluteString, [
             ("query", query), ("limit", "10"), ("types", "TRACKS"), ("countryCode", countryCode),
         ]) else { return nil }

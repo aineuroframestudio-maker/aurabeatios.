@@ -174,7 +174,11 @@ enum OfflineHls {
             for (index, line) in lines.enumerated() where line.hasPrefix("#EXT-X-STREAM-INF") {
                 let bandwidth = firstGroup(#"[:,]BANDWIDTH=(\d+)"#, in: line).flatMap { Int($0) } ?? 0
                 guard let uri = lines[(index + 1)...].first(where: { !$0.isEmpty && !$0.hasPrefix("#") }) else { continue }
-                if best == nil || bandwidth > best!.bandwidth { best = (bandwidth, uri) }
+                if let current = best {
+                    if bandwidth > current.bandwidth { best = (bandwidth, uri) }
+                } else {
+                    best = (bandwidth, uri)
+                }
             }
             guard let best, let url = URL(string: best.uri, relativeTo: base)?.absoluteURL else {
                 throw OfflinePackageError("HLS playlist has no variants")

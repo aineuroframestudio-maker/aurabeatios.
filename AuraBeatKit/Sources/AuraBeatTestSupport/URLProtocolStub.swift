@@ -7,7 +7,7 @@ import AuraBeatCore
 /// let stub = URLProtocolStub()
 /// stub.register(host: "music.youtube.com", path: "/youtubei/v1/search", response: .json(fixtureText))
 /// let client = InnerTubeClient(session: stub.makeSession())
-/// … exercise the client …
+/// â€¦ exercise the client â€¦
 /// XCTAssertEqual(stub.requests.first?.httpMethod, "POST")
 /// ```
 ///
@@ -53,7 +53,7 @@ public final class URLProtocolStub: @unchecked Sendable {
             Response(statusCode: code)
         }
 
-        /// A transport failure (timeout, offline, …).
+        /// A transport failure (timeout, offline, â€¦).
         public static func failure(_ code: URLError.Code) -> Response {
             Response(error: URLError(code))
         }
@@ -146,7 +146,7 @@ public final class URLProtocolStub: @unchecked Sendable {
     /// `base` (by default the app's own configuration) routed through this stub.
     public func makeConfiguration(base: URLSessionConfiguration = AuraBeatHTTP.makeConfiguration()) -> URLSessionConfiguration {
         // A copy, so a configuration shared between two stubs keeps each one's routing header.
-        let configuration = base.copy() as! URLSessionConfiguration
+        guard let configuration = base.copy() as? URLSessionConfiguration else { return base }
         configuration.protocolClasses = [StubURLProtocol.self]
         var headers = configuration.httpAdditionalHeaders ?? [:]
         headers[Self.routingHeader] = id

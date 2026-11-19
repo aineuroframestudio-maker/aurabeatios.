@@ -532,8 +532,12 @@ public final class SourceResolver: StreamResolving, @unchecked Sendable {
                     outstanding -= 1
                     guard let stream else { break }
                     // Ties go to rank: an equal stream from a lower-ranked source doesn't displace.
-                    if best == nil || Self.isBetter(stream.format, than: best!.stream.format)
-                        || (!Self.isBetter(best!.stream.format, than: stream.format) && index < best!.index) {
+                    if let current = best {
+                        if Self.isBetter(stream.format, than: current.stream.format)
+                            || (!Self.isBetter(current.stream.format, than: stream.format) && index < current.index) {
+                            best = (index, stream)
+                        }
+                    } else {
                         best = (index, stream)
                     }
                     // Waiting for all, a `patience` still bounds how long a usable answer waits on
@@ -647,7 +651,11 @@ public final class SourceResolver: StreamResolving, @unchecked Sendable {
             }
             SourcesLog.d("\(source.displayName) offered \(served.summary) for \(row); looking further")
             stream.belowRequest = true
-            if settleFor == nil || Self.isBetter(stream.format, than: settleFor!.format) { settleFor = stream }
+            if let current = settleFor {
+                if Self.isBetter(stream.format, than: current.format) { settleFor = stream }
+            } else {
+                settleFor = stream
+            }
         }
         return settleFor
     }

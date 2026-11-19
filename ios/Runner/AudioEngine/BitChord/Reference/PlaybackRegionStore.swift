@@ -31,9 +31,10 @@ actor SponsorBlockStore {
         if let task = inFlight[videoId] { return await task.value }
         let task = Task<[NonMusicSegment], Never> {
             do {
-                var components = URLComponents(string: "https://sponsor.ajay.app/api/skipSegments")!
+                guard var components = URLComponents(string: "https://sponsor.ajay.app/api/skipSegments") else { return [] }
                 components.queryItems = [URLQueryItem(name: "videoID", value: videoId), URLQueryItem(name: "categories", value: "[\"music_offtopic\"]")]
-                var request = URLRequest(url: components.url!); request.timeoutInterval = 6
+                guard let url = components.url else { return [] }
+                var request = URLRequest(url: url); request.timeoutInterval = 6
                 let (data, response) = try await URLSession.shared.data(for: request)
                 guard let response = response as? HTTPURLResponse else { return [] }
                 if response.statusCode == 404 { self.remember(videoId, segments: []); return [] }

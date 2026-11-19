@@ -479,9 +479,14 @@ public actor InnerTubeClient {
         let clientVersion = webRemixVersion
         let language = languageProvider()
         let response = try await withRetry { () async throws -> InnerTubeJSON in
-            var components = URLComponents(string: "\(Self.musicBase)/\(endpoint)")!
+            guard var components = URLComponents(string: "\(Self.musicBase)/\(endpoint)") else {
+                throw InnerTubeError.invalidResponse("Invalid endpoint: \(endpoint)")
+            }
             components.queryItems = [URLQueryItem(name: "prettyPrint", value: "false"), URLQueryItem(name: "hl", value: language)] + query
-            var request = URLRequest(url: components.url!)
+            guard let url = components.url else {
+                throw InnerTubeError.invalidResponse("Failed to construct URL for: \(endpoint)")
+            }
+            var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.setValue(InnerTubeLocale.acceptLanguage(for: language), forHTTPHeaderField: "Accept-Language")
@@ -520,9 +525,14 @@ public actor InnerTubeClient {
     func postMusicAnonymous(_ endpoint: String, body extras: InnerTubeJSONObject) async throws -> InnerTubeJSON {
         let clientVersion = webRemixVersion
         return try await withRetry { () async throws -> InnerTubeJSON in
-            var components = URLComponents(string: "\(Self.musicBase)/\(endpoint)")!
+            guard var components = URLComponents(string: "\(Self.musicBase)/\(endpoint)") else {
+                throw InnerTubeError.invalidResponse("Invalid endpoint: \(endpoint)")
+            }
             components.queryItems = [URLQueryItem(name: "prettyPrint", value: "false")]
-            var request = URLRequest(url: components.url!)
+            guard let url = components.url else {
+                throw InnerTubeError.invalidResponse("Failed to construct URL for: \(endpoint)")
+            }
+            var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.setValue(AuraBeatHTTP.UserAgent.chromeDesktop, forHTTPHeaderField: "User-Agent")

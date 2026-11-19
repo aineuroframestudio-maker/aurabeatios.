@@ -371,9 +371,14 @@ public actor PlaybackHistoryTracker {
                 ] as [String: Any],
             ],
         ]
-        var components = URLComponents(string: "\(musicOrigin)/youtubei/v1/player")!
+        guard var components = URLComponents(string: "\(musicOrigin)/youtubei/v1/player") else {
+            throw URLError(.badURL)
+        }
         components.queryItems = [URLQueryItem(name: "prettyPrint", value: "false"), URLQueryItem(name: "hl", value: language)]
-        var request = URLRequest(url: components.url!)
+        guard let url = components.url else {
+            throw URLError(.badURL)
+        }
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.timeoutInterval = 15
         request.httpBody = try JSONSerialization.data(withJSONObject: body, options: [.sortedKeys])

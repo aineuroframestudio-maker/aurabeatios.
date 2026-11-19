@@ -217,12 +217,17 @@ public struct JioSaavnService: Sendable {
     // MARK: Transport
 
     private func get(_ call: [(String, String)]) async throws -> Data {
-        var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
+            throw URLError(.badURL)
+        }
         let common: [(String, String)] = [("_format", "json"), ("_marker", "0"), ("api_version", "4"), ("ctx", "android")]
         components.queryItems = (call.prefix(1) + common + call.dropFirst()).map { URLQueryItem(name: $0.0, value: $0.1) }
         // `+` must not reach the server as a space-meaning literal.
         components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
-        var request = URLRequest(url: components.url!)
+        guard let url = components.url else {
+            throw URLError(.badURL)
+        }
+        var request = URLRequest(url: url)
         request.timeoutInterval = Self.requestTimeout
         for (name, value) in Self.headers { request.setValue(value, forHTTPHeaderField: name) }
         let (data, response) = try await withDeadline(Self.requestTimeout) { [session, request] in

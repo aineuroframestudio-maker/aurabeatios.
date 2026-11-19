@@ -54,7 +54,9 @@ extension DSPChain {
             : kMTAudioProcessingTapCreationFlag_PreEffects
         let status = MTAudioProcessingTapCreate(kCFAllocatorDefault, &callbacks, flags, &tap)
         guard status == noErr, let tap else {
-            Unmanaged<DSPChain>.fromOpaque(callbacks.clientInfo!).release()
+            if let clientInfo = callbacks.clientInfo {
+                Unmanaged<DSPChain>.fromOpaque(clientInfo).release()
+            }
             throw DSPTapError.creationFailed(status)
         }
         return tap

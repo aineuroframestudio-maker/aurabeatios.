@@ -132,8 +132,9 @@ enum SilenceScanner {
             let bytes = CMBlockBufferGetDataLength(block)
             let count = bytes / MemoryLayout<Float>.size
             if scratch.count < count { scratch = [Float](repeating: 0, count: count) }
-            let copied = scratch.withUnsafeMutableBytes { raw in
-                CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: bytes, destination: raw.baseAddress!)
+            let copied = scratch.withUnsafeMutableBytes { raw -> OSStatus in
+                guard let base = raw.baseAddress else { return kCMBlockBufferNoErr }
+                return CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: bytes, destination: base)
             }
             guard copied == kCMBlockBufferNoErr else { continue }
             let start = CMSampleBufferGetPresentationTimeStamp(sample).seconds

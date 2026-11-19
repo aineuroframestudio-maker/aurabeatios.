@@ -65,8 +65,9 @@ extension AudioPlayerEngine {
         preloadTask?.cancel()
         guard let wait = recovery.recordReset() else {
             PlaybackLog.warning("media services are still down; \(item.id) waits for them or for play", about: item.trackID)
-            lastError = PlaybackError(itemID: item.id, message: "Playback failed: \(Self.describe(error))", attempt: recovery.attemptCount(for: item.id))
-            delegate?.audioPlayerEngine(self, didFail: lastError!, willRetry: false)
+            let playbackError = PlaybackError(itemID: item.id, message: "Playback failed: \(Self.describe(error))", attempt: recovery.attemptCount(for: item.id))
+            lastError = playbackError
+            delegate?.audioPlayerEngine(self, didFail: playbackError, willRetry: false)
             isLoadingItem = false
             updatePlayingState()
             return
@@ -88,8 +89,9 @@ extension AudioPlayerEngine {
         let message = "Playback failed: \(verdict ?? Self.describe(error))"
         switch decision {
         case .retry(let attempt):
-            lastError = PlaybackError(itemID: item.id, message: message, isPermanent: false, attempt: attempt)
-            delegate?.audioPlayerEngine(self, didFail: lastError!, willRetry: true)
+            let playbackError = PlaybackError(itemID: item.id, message: message, isPermanent: false, attempt: attempt)
+            lastError = playbackError
+            delegate?.audioPlayerEngine(self, didFail: playbackError, willRetry: true)
             let sourceRecovery = self.sourceRecovery
             // Read now, not after the delay: it describes this failure.
             let networkFault = RecoveryLedger.isNetworkFault(error)
@@ -102,13 +104,10 @@ extension AudioPlayerEngine {
                 let replacement: PlayableItem.Source?
                 if let sourceRecovery {
                     replacement = try? await sourceRecovery(item, reason)
-                    // If sourceRecovery returned nil, it either handled fallback directly (like fellBackToYouTube)
-                    // or refused replacement. In either case, do not reopen the unplayable item.
-                    guard replacement != nil else { return }
                 } else {
                     replacement = nil
                 }
-                guard self.currentItem?.id == item.id else { return }
+                guard self.currentItem?.id == item.id, !self.isLoadingItem, !self.active.isPlaying else { return }
                 PlaybackLog.debug("retrying \(item.id) from \(position)s (attempt \(attempt))", about: item.trackID)
                 var reopened = item
                 if let replacement { reopened.source = replacement }
@@ -118,8 +117,9 @@ extension AudioPlayerEngine {
                 self.openItem(reopened, at: position, reason: nil)
             }
         case .giveUp(let skipReason, let attempt):
-            lastError = PlaybackError(itemID: item.id, message: message, isPermanent: verdict != nil, attempt: attempt)
-            delegate?.audioPlayerEngine(self, didFail: lastError!, willRetry: false)
+            let playbackError = PlaybackError(itemID: item.id, message: message, isPermanent: verdict != nil, attempt: attempt)
+            lastError = playbackError
+            delegate?.audioPlayerEngine(self, didFail: playbackError, willRetry: false)
             if let verdict {
                 PlaybackLog.warning("\(item.id) cannot be played: \(verdict)", about: item.trackID)
             } else {

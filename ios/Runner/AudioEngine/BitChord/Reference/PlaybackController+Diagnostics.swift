@@ -227,9 +227,11 @@ extension PlaybackController {
             let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2)!
             let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 44100 * 8)!
             buffer.frameLength = buffer.frameCapacity
-            for channel in 0..<2 {
-                for frame in 0..<Int(buffer.frameLength) {
-                    buffer.floatChannelData![channel][frame] = Float(sin(Double(frame) * 2 * .pi * 220 / 44100) * 0.02)
+            if let channelData = buffer.floatChannelData {
+                for channel in 0..<2 {
+                    for frame in 0..<Int(buffer.frameLength) {
+                        channelData[channel][frame] = Float(sin(Double(frame) * 2 * .pi * 220 / 44100) * 0.02)
+                    }
                 }
             }
             var entries: [QueueEntry] = []
@@ -308,12 +310,14 @@ extension PlaybackController {
             let count: AVAudioFrameCount = 44100 * 40
             let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: count)!
             buffer.frameLength = count
-            for channel in 0..<2 {
-                for frame in 0..<Int(count) {
-                    // Vary the signal with time so a repeated output segment is
-                    // distinguishable from an ordinary steady test tone.
-                    let seconds = Double(frame) / 44100
-                    buffer.floatChannelData![channel][frame] = Float(sin(2 * .pi * (220 * seconds + 3 * seconds * seconds)) * 0.08)
+            if let channelData = buffer.floatChannelData {
+                for channel in 0..<2 {
+                    for frame in 0..<Int(count) {
+                        // Vary the signal with time so a repeated output segment is
+                        // distinguishable from an ordinary steady test tone.
+                        let seconds = Double(frame) / 44100
+                        channelData[channel][frame] = Float(sin(2 * .pi * (220 * seconds + 3 * seconds * seconds)) * 0.08)
+                    }
                 }
             }
             do {
@@ -352,7 +356,7 @@ extension PlaybackController {
                         try await Task.sleep(for: .milliseconds(200))
                         positions.append(engine.positionSeconds())
                     }
-                    checks["\(name)_\(cycle)_resume_progress"] = positions.last! > pausedPosition + 1.5
+                    checks["\(name)_\(cycle)_resume_progress"] = (positions.last ?? 0) > pausedPosition + 1.5
                     checks["\(name)_\(cycle)_monotonic"] = zip(positions, positions.dropFirst()).allSatisfy { $1 + 0.02 >= $0 }
                     checks["\(name)_\(cycle)_no_rebuild"] = engine.outputHealth().outputRebuilds == rebuilds
                     checks["\(name)_\(cycle)_audible_output"] = engine.outputHealth().outputPeak > 0.00001
@@ -491,8 +495,9 @@ extension PlaybackController {
         for _ in 0..<100 { if isPlaying || lastError != nil { break }; try? await Task.sleep(for: .milliseconds(100)) }
         pausePlayback()
         engineLoadedId = nil
-        current = .youtube(videoId: "test-seed01", title: "Seed", artist: "Seed artist")
-        queue = [current!]
+        let seedSong = QueueEntry.youtube(videoId: "test-seed01", title: "Seed", artist: "Seed artist")
+        current = seedSong
+        queue = [seedSong]
         playingIndex = 0
         state = .paused
         autoplayEnabled = true
@@ -501,7 +506,7 @@ extension PlaybackController {
         recommendationFetchOverride = { seed, reply in replies.append((seed, reply)) }
         func songs(_ ids: [String]) -> String {
             let rows = ids.map { ["videoId": $0, "title": $0, "artist": "Artist \($0)"] }
-            return String(data: try! JSONSerialization.data(withJSONObject: rows), encoding: .utf8)!
+            return (try? JSONSerialization.data(withJSONObject: rows)).flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
         }
         func settle() async { try? await Task.sleep(for: .milliseconds(100)) }
         maybeAutoplay(lowWaterRefill: true)
@@ -528,10 +533,10 @@ extension PlaybackController {
         checks["failed_rating_keeps_tail"] = replies.count == beforeRating && queue.last?.id == "suggestion1"
         refreshAfterRating(failure: nil, sessionGeneration: PageSession.generation())
         checks["successful_rating_refreshes"] = replies.count == beforeRating + 1
-        replies.last!.1(songs(["fresh-tail1"]), nil)
+        replies.last?.1(songs(["fresh-tail1"]), nil)
         await settle()
         checks["rating_appends_without_replacing_tail"] = queue.map(\.id) == ["test-seed01", "manual-song", "suggestion1", "fresh-tail1"]
-        let outgoing = replies.last!
+        let outgoing = replies.last
 
         let threeUpcoming = (0..<3).map {
             QueueEntry.youtube(videoId: "queued-\($0)", title: "Queued \($0)", artist: "Artist")
@@ -545,25 +550,25 @@ extension PlaybackController {
 
         playingIndex = 1; current = queue[1]; playGeneration &+= 1
         maybeAutoplay(lowWaterRefill: true)
-        let refillReply = replies.last!
-        checks["low_water_refill_uses_current_seed"] = refillReply.0 == "queued-0" && replies.count == beforeNaturalHandoff + 1
-        refillReply.1(songs(["queued-1", "low-water-extra"]), nil)
+        let refillReply = replies.last
+        checks["low_water_refill_uses_current_seed"] = refillReply?.0 == "queued-0" && replies.count == beforeNaturalHandoff + 1
+        refillReply?.1(songs(["queued-1", "low-water-extra"]), nil)
         await settle()
         checks["low_water_refill_appends_and_deduplicates"] = queue.map(\.id) == ["test-seed01", "queued-0", "queued-1", "queued-2", "low-water-extra"]
 
         playingIndex = 2; current = queue[2]; playGeneration &+= 1
         maybeAutoplay(force: true)
-        let nextReply = replies.last!
-        checks["manual_next_uses_new_seed"] = nextReply.0 == "queued-1"
+        let nextReply = replies.last
+        checks["manual_next_uses_new_seed"] = nextReply?.0 == "queued-1"
         playingIndex = 1; current = queue[1]; playGeneration &+= 1
         maybeAutoplay(force: true)
-        checks["manual_previous_uses_selected_seed"] = replies.last!.0 == "queued-0"
-        nextReply.1(songs(["stale-next1"]), nil); outgoing.1(songs(["stale-rate1"]), nil)
+        checks["manual_previous_uses_selected_seed"] = replies.last?.0 == "queued-0"
+        nextReply?.1(songs(["stale-next1"]), nil); outgoing?.1(songs(["stale-rate1"]), nil)
         await settle()
         checks["stale_selection_reply_ignored"] = !queue.contains { $0.id.hasPrefix("stale-") }
-        let pending = replies.last!
+        let pending = replies.last
         toggleAutoplay()
-        pending.1(songs(["disabled001"]), nil)
+        pending?.1(songs(["disabled001"]), nil)
         await settle()
         checks["disabled_autoplay_rejects_reply"] = !queue.contains { $0.id == "disabled001" }
         recommendationFetchOverride = nil

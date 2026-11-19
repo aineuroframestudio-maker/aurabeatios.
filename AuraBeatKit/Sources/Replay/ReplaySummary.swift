@@ -173,7 +173,9 @@ struct ReplayBucketMerger {
             let date = String(format: "%@-%02d", bucket.month, day)
             days[date, default: 0] += ms
         }
-        if earliest == nil || bucket.month < earliest! {
+        if let current = earliest {
+            if bucket.month < current { earliest = bucket.month }
+        } else {
             earliest = bucket.month
         }
     }

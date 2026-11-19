@@ -324,9 +324,14 @@ actor InnerTubeStreamExtractor {
     }
 
     private func embedConfig(videoId: String, profile: StreamClientProfile) async throws -> EmbedConfig {
-        var components = URLComponents(string: "https://www.youtube.com/embed/\(videoId)")!
+        guard var components = URLComponents(string: "https://www.youtube.com/embed/\(videoId)") else {
+            throw StreamResolutionError.noPlayableStream(detail: "invalid embed URL for \(videoId)")
+        }
         components.queryItems = [URLQueryItem(name: "html5", value: "1")]
-        var request = URLRequest(url: components.url!)
+        guard let url = components.url else {
+            throw StreamResolutionError.noPlayableStream(detail: "failed to construct embed URL for \(videoId)")
+        }
+        var request = URLRequest(url: url)
         request.timeoutInterval = Self.requestTimeout
         request.setValue(profile.userAgent, forHTTPHeaderField: "User-Agent")
         request.setValue(EmbedConfig.embedUrl, forHTTPHeaderField: "Referer")
@@ -482,7 +487,10 @@ actor InnerTubeStreamExtractor {
         }
         components.queryItems = query
 
-        var request = URLRequest(url: components.url!)
+        guard let url = components.url else {
+            throw StreamResolutionError.noPlayableStream(detail: "failed to construct stream URL for \(videoId)")
+        }
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.timeoutInterval = requestTimeout
         request.httpBody = try JSONSerialization.data(withJSONObject: body, options: [.sortedKeys])
