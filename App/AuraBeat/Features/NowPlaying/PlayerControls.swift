@@ -491,24 +491,31 @@ struct PlayerSystemVolumeSlider: UIViewRepresentable {
 final class CentredVolumeView: MPVolumeView {
     var onDraggingChange: (Bool) -> Void = { _ in }
 
+    /// Tracks whether we've already added targets to the slider to avoid duplicate handlers on every layout pass
+    private var hasAddedTargets = false
+
     override func volumeSliderRect(forBounds bounds: CGRect) -> CGRect {
         Self.centred(super.volumeSliderRect(forBounds: bounds), in: bounds)
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        // MPVolumeView builds its own slider, and builds it again on a route change, so every
-        // slider it holds is asked on every layout to report its touches, once.
-        for slider in subviews.compactMap({ $0 as? UISlider }) where !slider.allTargets.contains(self) {
+        // MPVolumeView builds its own slider, and builds it again on a route change.
+        // Only add targets once to avoid duplicate handlers on every layout pass.
+        guard !hasAddedTargets else { return }
+        for slider in subviews.compactMap({ $0 as? UISlider }) {
             slider.addTarget(self, action: #selector(touchBegan), for: .touchDown)
             slider.addTarget(self, action: #selector(touchEnded), for: [.touchUpInside, .touchUpOutside, .touchCancel])
         }
+        hasAddedTargets = true
     }
 
     /// A slider rebuilt from under the finger never reports the touch ending: let go for it.
     override func willRemoveSubview(_ subview: UIView) {
         super.willRemoveSubview(subview)
         if (subview as? UISlider)?.isTracking == true { onDraggingChange(false) }
+        // Reset flag if the slider is being removed so it gets re-added on next layout
+        if subview is UISlider { hasAddedTargets = false }
     }
 
     @objc private func touchBegan() { onDraggingChange(true) }
