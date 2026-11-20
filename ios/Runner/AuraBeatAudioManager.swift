@@ -787,7 +787,8 @@ public final class AuraBeatAudioManager: NSObject {
 
     public func resume() {
         isPlaying = true
-        Task.detached(priority: .userInitiated) {
+        Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self = self else { return }
             let session = AVAudioSession.sharedInstance()
             try? session.setActive(true)
         }
