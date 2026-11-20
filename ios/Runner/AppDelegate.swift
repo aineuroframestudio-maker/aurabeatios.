@@ -29,16 +29,15 @@ import UIKit
   }
 
   private func getBinaryMessenger() -> FlutterBinaryMessenger? {
-    // Fast path: window's rootViewController (set up during launch)
     if let controller = window?.rootViewController as? FlutterViewController {
       return controller.binaryMessenger
     }
-    // Fallback: iterate connected scenes to find any FlutterViewController
     for scene in UIApplication.shared.connectedScenes {
-      guard let windowScene = scene as? UIWindowScene else { continue }
-      for win in windowScene.windows where win.isKeyWindow {
-        if let controller = win.rootViewController as? FlutterViewController {
-          return controller.binaryMessenger
+      if let windowScene = scene as? UIWindowScene {
+        for win in windowScene.windows {
+          if let controller = win.rootViewController as? FlutterViewController {
+            return controller.binaryMessenger
+          }
         }
       }
     }

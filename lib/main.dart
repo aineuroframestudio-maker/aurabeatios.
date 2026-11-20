@@ -1597,19 +1597,14 @@ class _AuraBeatHomePageState extends State<AuraBeatHomePage> {
             isHiRes: true,
           );
     _queueController.selectSong(_currentSong, newQueue: _queue);
-    // Defer WebAudioBridge.init and AddonSourceRegistry.initialize until after the
-    // first frame so the Flutter engine/platform channel is fully established.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      WebAudioBridge.init();
-      WebAudioBridge.setVolume(_volume);
-      AddonSourceRegistry.instance.initialize();
-    });
+    WebAudioBridge.init();
+    WebAudioBridge.setVolume(_volume);
+    AddonSourceRegistry.instance.initialize();
     _updateMetadataForSong(_currentSong);
-    // _synchronizeWithNativeDSP() is deferred below to avoid async in initState
-    _synchronizeWithNativeDSPFuture = _synchronizeWithNativeDSP();
+    _synchronizeWithNativeDSP();
   }
 
-  Future<void> _synchronizeWithNativeDSPFuture = Future<void>.value();
+  Future<void> _synchronizeWithNativeDSP() async {
     final nativeConfig = await WebAudioBridge.getDSPConfiguration();
     if (nativeConfig != null) {
       if (mounted) {

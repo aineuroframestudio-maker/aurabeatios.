@@ -124,23 +124,9 @@ final class AtmosPlayer: NSObject {
             .playback,
             mode: .moviePlayback,
             options: [.allowBluetooth, .allowBluetoothA2DP, .allowAirPlay]
-        ) {
-            // Category set successfully; now activate the session
-            do {
-                try session.setActive(true)
-            } catch {
-                // Failed to activate — likely another app holds the session (phone call, Music app).
-                // Return without starting playback; caller should handle the error.
-                throw NSError(
-                    domain: "AuraBeatAtmos",
-                    code: 1002,
-                    userInfo: [
-                        NSLocalizedDescriptionKey:
-                        "Could not activate audio session: \(error.localizedDescription)"
-                    ]
-                )
-            }
-        }
+        )
+
+        try session.setActive(true)
 
         let asset = AVURLAsset(url: url)
         let item = AVPlayerItem(asset: asset)
@@ -434,25 +420,6 @@ final class AtmosPlayer: NSObject {
         stop()
         currentURL = nil
 
-        // Remove all audio session notification observers to prevent leaks
-        NotificationCenter.default.removeObserver(
-            interruptionObserver,
-            name: AVAudioSession.interruptionNotification,
-            object: nil
-        )
-        NotificationCenter.default.removeObserver(
-            routeChangeObserver,
-            name: AVAudioSession.routeChangeNotification,
-            object: nil
-        )
-        if #available(iOS 15.0, *) {
-            NotificationCenter.default.removeObserver(
-                spatialCapabilitiesObserver,
-                name: AVAudioSession.spatialPlaybackCapabilitiesChangedNotification,
-                object: nil
-            )
-        }
-
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
 
@@ -531,14 +498,14 @@ final class AtmosPlayer: NSObject {
     private func setupAudioSessionNotifications() {
         let center = NotificationCenter.default
 
-        interruptionObserver = center.addObserver(
+        center.addObserver(
             self,
             selector: #selector(handleInterruption),
             name: AVAudioSession.interruptionNotification,
             object: nil
         )
 
-        routeChangeObserver = center.addObserver(
+        center.addObserver(
             self,
             selector: #selector(handleRouteChange),
             name: AVAudioSession.routeChangeNotification,
@@ -546,7 +513,7 @@ final class AtmosPlayer: NSObject {
         )
 
         if #available(iOS 15.0, *) {
-            spatialCapabilitiesObserver = center.addObserver(
+            center.addObserver(
                 self,
                 selector: #selector(handleSpatialCapabilitiesChanged),
                 name: AVAudioSession.spatialPlaybackCapabilitiesChangedNotification,
@@ -554,11 +521,6 @@ final class AtmosPlayer: NSObject {
             )
         }
     }
-
-    // Observer tokens for cleanup
-    private var interruptionObserver: NSObjectProtocol?
-    private var routeChangeObserver: NSObjectProtocol?
-    private var spatialCapabilitiesObserver: NSObjectProtocol?
 
     @objc private func handleInterruption(notification: Notification) {
         guard let userInfo = notification.userInfo,
